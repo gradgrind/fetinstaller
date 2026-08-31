@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
             QCoreApplication::translate("main", "The installer must be run as a normal user."));
         return 1;
     }
-    //Wizard w;
     Installer w;
     w.show();
     return QApplication::exec();

@@ -69,18 +69,36 @@ for this to take full effect.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="83"/>
+        <location filename="../installer.cpp" line="92"/>
         <source>Creating target directory failed: </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="93"/>
+        <location filename="../installer.cpp" line="102"/>
         <source>Could not create the installed-files list</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="140"/>
+        <location filename="../installer.cpp" line="149"/>
         <source>Could not copy to: </source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>Uninstaller</name>
+    <message>
+        <location filename="../uninstaller/uninstaller.ui" line="14"/>
+        <source>Form</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../uninstaller/uninstaller.ui" line="49"/>
+        <source>FET will be uninstalled from:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../uninstaller/uninstaller.ui" line="157"/>
+        <source>## Uninstall FET</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

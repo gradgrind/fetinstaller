@@ -43,13 +43,22 @@ Installer::Installer(QWidget *parent)
         QMessageBox::warning(this, tr(WARNING), tr("Search for existing installation not possible"));
     }
     if (!which_fet.isEmpty()) {
-        qDebug() << "which fet?" << which_fet;
+        //qDebug() << "which fet?" << which_fet;
+        ui->existing_path->setText(which_fet);
+        ui->existing_fet->show();
 
         QString fet_dir{QFileInfo{which_fet}.absolutePath()};
-        QString uninstall{fet_dir + "/fet-uninstall"};
+        QString uninstall{fet_dir + "/fet_uninstall"};
+        if (QFileInfo::exists(uninstall)) {
+            ui->existingCheckBox->setChecked(true);
+            ui->existingCheckBox->show();
+        } else {
+            ui->existingCheckBox->hide();
+        }
         qDebug() << "uninstaller:" << uninstall << QFileInfo::exists(uninstall);
+    } else {
+        ui->existing_fet->hide();
     }
-
 }
 
 void Installer::page_2()
