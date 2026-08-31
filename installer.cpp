@@ -6,8 +6,8 @@
 #include <QProcess>
 #include <QPushButton>
 
-static const char *FATAL_ERROR = QT_TRANSLATE_NOOP("Wizard", "Fatal Error");
-static const char *WARNING = QT_TRANSLATE_NOOP("Wizard", "Warning");
+static const char *FATAL_ERROR = QT_TRANSLATE_NOOP("Installer", "Fatal Error");
+static const char *WARNING = QT_TRANSLATE_NOOP("Installer", "Warning");
 
 Installer::Installer(QWidget *parent)
     : QWidget(parent)

@@ -2,6 +2,7 @@
 #define UNINSTALLER_H
 
 #include <QWidget>
+#include <QDir>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,5 +20,7 @@ public:
 
 private:
     Ui::Uninstaller *ui;
+    QDir basedir;
+    void page_2();
 };
 #endif // UNINSTALLER_H
