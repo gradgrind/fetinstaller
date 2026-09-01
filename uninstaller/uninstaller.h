@@ -23,4 +23,7 @@ private:
     QDir basedir;
     void page_2();
 };
+
+extern void fatalError(QString msg);
+
 #endif // UNINSTALLER_H

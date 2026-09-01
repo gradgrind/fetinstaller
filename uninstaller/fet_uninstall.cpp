@@ -2,10 +2,14 @@
 
 #include <QApplication>
 #include <QTranslator>
+#include <QTemporaryDir>
+#include <QMessageBox>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    qDebug() << QCoreApplication::applicationDirPath();
+    qDebug() << QCoreApplication::arguments();
 
     auto locale = QLocale::system();
     QTranslator translator;
@@ -13,6 +17,53 @@ int main(int argc, char *argv[])
     if (translator.load(":/i18n/" + baseName)) {
         a.installTranslator(&translator);
     }
+
+    /*
+    QStringList arglist{QCoreApplication::arguments()};
+
+    if (arglist.length() == 2) {
+        QDir installdir{arglist.at(1)};
+        if (!installdir.exists("bin/fet_uninstall")) {
+            fatalError(
+                QCoreApplication::translate("Uninstaller", "Invalid path to FET installation: ")
+                    + installdir.path());
+            return 1;
+        }
+
+        // Copy executable and libraries to temporary directory
+
+        QTemporaryDir dir;
+        if (!dir.isValid()) {
+            fatalError(
+                QCoreApplication::translate("Uninstaller", "Couldn't create temporary directory"));
+            return 1;
+        }
+
+        // dir.path() returns the unique directory path
+        qDebug() << "TEMP:" << dir.path();
+
+        QDir tdir{dir.path()};
+        tdir.mkdir("bin");
+
+        //TODO ...
+
+
+
+
+        // The QTemporaryDir destructor removes the temporary directory
+        // as it goes out of scope.
+        return 1;
+
+    } else if (arglist.length() != 1) {
+            fatalError(
+            QCoreApplication::translate("Uninstaller", "Too many command-line arguments: ")
+                + arglist.join(" +++ "));
+        return 1;
+    }
+
+    // Actual uninstaller, now running from temporary directory ...
+
+    */
 
     Uninstaller w;
     w.show();
