@@ -1,5 +1,7 @@
 #include "uninstaller.h"
 #include "./ui_uninstaller.h"
+#include "deleteworker.h"
+#include "messages.h"
 
 #include <QFile>
 #include <QMessageBox>
@@ -15,12 +17,19 @@ static const char *ERROR1 = QT_TRANSLATE_NOOP("Uninstaller", R"(
 Continue, deleting the other %3 files?
 )");
 
-
 void fatalError(QString msg)
 {
     QMessageBox::critical(
         nullptr,
         QCoreApplication::translate("Uninstaller", FATAL_ERROR),
+        msg);
+}
+
+void warning(QString msg)
+{
+    QMessageBox::warning(
+        nullptr,
+        QCoreApplication::translate("Uninstaller", WARNING),
         msg);
 }
 
@@ -119,49 +128,40 @@ void Uninstaller::page_2()
         }
     }
 
-//TODO: background thread for deletions
+    ui->uninstallProgress->setMaximum(filesList.length() + dirsSet.size());
+    ui->uninstallProgress->setValue(0);
 
-    // Delete the files in filesList
-    int fileCount{0};
-    QStringList errorFiles;
+    // Use background thread to perform deletions
+    DeleteWorker* worker = new DeleteWorker;
+    worker->moveToThread(&workerThread);
 
-    for (const auto& fpath : filesList) {
-        if (QFile::remove(fpath)) {
-            fileCount++;
-            ui->output->appendPlainText(" - " + fpath);
-        } else {
-            errorFiles.append(fpath);
-        }
-    }
+    // Connect signals
+    connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(this, &Uninstaller::deleteFiles, worker, &DeleteWorker::deleteFiles);
 
-    // Report files not removed
-    for (const auto& fpath : errorFiles) {
-        ui->output->appendPlainText("??? " + fpath);
-    }
-    if (!errorFiles.isEmpty()) {
-        QMessageBox::warning(
-            this,
-            tr(WARNING),
-            tr("%1 files could not be deleted (lines starting with \"???\")").arg(errorFiles.length()));
-    }
+    connect(worker, &DeleteWorker::addOutputLine, ui->output, &QPlainTextEdit::appendPlainText);
+    connect(worker, &DeleteWorker::tick, this, &Uninstaller::progressOne);
+    connect(worker, &DeleteWorker::finished, this, &Uninstaller::done);
 
-    // Remove empty directories
-    QStringList dirsList{dirsSet.values()};
-    dirsList.sort();
-    int dirCount{0};
-    for (auto it = dirsList.rbegin(); it != dirsList.rend(); ++it) {
-        // Use reverse iteration to get the deepest directories first
-        if (basedir.rmdir(*it)) {
-            dirCount++;
-            ui->output->appendPlainText(" --- " + *it + '/');
-        }
-    }
-    if (basedir.rmdir(basedir.path())) {
-        dirCount++;
-        ui->output->appendPlainText(" --- " + basedir.path());
-    }
+    workerThread.start();
 
-    ui->output->appendPlainText("");
-    ui->output->appendPlainText(tr("%1 files deleted").arg(fileCount));
-    ui->output->appendPlainText(tr("%1 directories removed").arg(dirCount));
+    // Start copying
+    emit deleteFiles(basedir, filesList, dirsSet);
+}
+
+void Uninstaller::progressOne()
+{
+    int p = ui->uninstallProgress->value();
+    int max = ui->uninstallProgress->maximum();
+    if (p == max) {
+        fatalError("BUG: progress > 100%");
+        qApp->exit(2);
+    } else {
+        ui->uninstallProgress->setValue(p + 1);
+    }
+}
+
+void Uninstaller::done()
+{
+    // Enable ok button?
 }

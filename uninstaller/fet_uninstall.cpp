@@ -18,7 +18,12 @@ int main(int argc, char *argv[])
         a.installTranslator(&translator);
     }
 
-    /*
+    /* It may be necessary (on Windows?) to copy the uninstaller and its libs and plugins
+     * to a temporary directory in order to do a complete job. This might be a start ...
+     *
+     * On Linux it should not be necessary.
+     *
+
     QStringList arglist{QCoreApplication::arguments()};
 
     if (arglist.length() == 2) {
@@ -47,9 +52,6 @@ int main(int argc, char *argv[])
 
         //TODO ...
 
-
-
-
         // The QTemporaryDir destructor removes the temporary directory
         // as it goes out of scope.
         return 1;
@@ -62,6 +64,12 @@ int main(int argc, char *argv[])
     }
 
     // Actual uninstaller, now running from temporary directory ...
+
+    // ...
+
+    QProcess::startDetached()
+
+    // ...
 
     */
 

@@ -3,13 +3,13 @@
 
 #include <QObject>
 #include <QDir>
+#include <QString>
 
 class CopyWorker : public QObject
 {
     Q_OBJECT
 
 public slots:
-    //void doWork(const QDir& srcDir, const QDir& dstDir, QTextStream& log_stream);
     void copyDirectory(const QDir& srcDir, const QDir& dstDir);
 
 signals:
