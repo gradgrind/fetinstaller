@@ -15,7 +15,6 @@ qt_add_executable(fet_uninstall
     uninstaller.h uninstaller.cpp uninstaller.ui
     uninstaller_resources.qrc
     deleteworker.h deleteworker.cpp
-
 )
 
 qt_add_translations(
@@ -42,9 +41,9 @@ install(TARGETS fet_uninstall
 
 qt_generate_deploy_app_script(
     TARGET fet_uninstall
-    OUTPUT_SCRIPT deploy_script
+    OUTPUT_SCRIPT udeploy_script
     NO_TRANSLATIONS
     NO_UNSUPPORTED_PLATFORM_ERROR
     INCLUDE_PLUGINS wayland
 )
-install(SCRIPT ${deploy_script})
+install(SCRIPT ${udeploy_script})

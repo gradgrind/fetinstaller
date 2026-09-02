@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 
     auto locale = QLocale::system();
     QTranslator translator;
-    const QString baseName = "install_fet_" + locale.name();
+    const QString baseName = "fet_install_" + locale.name();
     if (translator.load(":/i18n/" + baseName)) {
         a.installTranslator(&translator);
     }
