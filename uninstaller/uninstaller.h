@@ -1,6 +1,8 @@
 #ifndef UNINSTALLER_H
 #define UNINSTALLER_H
 
+#include <ui_uninstaller.h>
+
 #include <QWidget>
 #include <QDir>
 #include <QStringList>
@@ -19,8 +21,12 @@ class Uninstaller : public QWidget
     QThread workerThread;
 
 public:
-    explicit Uninstaller(QWidget *parent = nullptr);
-    ~Uninstaller() override;
+    Uninstaller(QWidget *parent = nullptr);
+    ~Uninstaller() {
+        workerThread.quit();
+        workerThread.wait();
+        delete ui;
+    }
 
 private slots:
     void threadedWarning(QString msg);
