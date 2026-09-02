@@ -29,6 +29,7 @@ public:
 
 private slots:
     void selectInstallDir();
+    void setInstallPath(QString ipath);
     void handleNumberOfFiles(int n);
     void handleFileCopied(QString filepath);
     void handleCopyFailed(QString filepath);

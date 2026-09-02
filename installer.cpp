@@ -63,6 +63,13 @@ Installer::Installer(QWidget *parent)
     }
 }
 
+void Installer::setInstallPath(QString ipath)
+{
+    ui->installPath->setText(ipath);
+    dst_dir = ipath;
+    ui->desktopSetup->setVisible(ipath == defaultInstallationPath);
+}
+
 void Installer::page_2()
 {
     ui->stackedWidget->setCurrentIndex(1);
@@ -94,8 +101,7 @@ void Installer::selectInstallDir()
     if (!dir.isEmpty()) {
         QFileInfo finfo{dir};
         if (finfo.isWritable()) {
-            ui->installPath->setText(dir);
-            dst_dir = dir;
+            setInstallPath(dir);
         } else {
             QMessageBox::warning(this, tr(WARNING), tr("User can not write to selected directory: ") + dir);
         }
@@ -148,8 +154,6 @@ void Installer::page_3()
     emit copy(src_dir, dst_dir);
 }
 
-//TODO: Tidying up?
-
 void Installer::handleNumberOfFiles(int n)
 {
     ui->installProgress->setMaximum(n);
@@ -166,6 +170,7 @@ void Installer::handleFileCopied(QString filepath)
     } else {
         ui->installProgress->setValue(n + 1);
     }
+    ui->installDetails->appendPlainText("+ " + dst_dir.relativeFilePath(filepath));
 }
 
 void Installer::handleCopyFailed(QString filepath)

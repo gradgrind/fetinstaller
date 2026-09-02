@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QDirIterator>
+#include <QProcess>
 
 // Copy source file to destination path, creating path directories if necessary.
 // Return true if successful.
@@ -50,6 +51,20 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir) {
             emit failed_copy(dpath);
             return;
         }
+    }
+
+
+    QDir home_dir{QDir::home()};
+    if (dstDir.absolutePath() == home_dir.absoluteFilePath(".local")) {
+        //TODO
+        //emit addOutputLine("");
+        //emit addOutputLine(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
+
+        // Update file-type associations
+        QProcess::execute("update-mime-database",
+                          QStringList() << dstDir.absoluteFilePath("share/mime"));
+        QProcess::execute("update-desktop-database",
+                          QStringList() << dstDir.absoluteFilePath("share/applications"));
     }
 
     emit copying_done();
