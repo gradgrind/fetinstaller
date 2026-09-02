@@ -1,6 +1,7 @@
 #include "deleteworker.h"
 
 #include <QFile>
+#include <QProcess>
 
 QMutex mutex;
 QWaitCondition waiter;
@@ -50,6 +51,18 @@ void DeleteWorker::deleteFiles(QDir basedir, QStringList filesList, QSet<QString
     emit addOutputLine("");
     emit addOutputLine(tr("%1 files deleted").arg(fileCount));
     emit addOutputLine(tr("%1 directories removed").arg(dirCount));
+
+
+    QDir home_dir{QDir::home()};
+    if (basedir.path() == home_dir.absoluteFilePath(".local")) {
+        emit addOutputLine("");
+        emit addOutputLine(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
+        // Update file-type associations
+        QProcess::execute("update-mime-database",
+                          QStringList() << basedir.absoluteFilePath("share/mime"));
+        QProcess::execute("update-desktop-database",
+                          QStringList() << basedir.absoluteFilePath("share/applications"));
+    }
 
     emit finished();
 }
