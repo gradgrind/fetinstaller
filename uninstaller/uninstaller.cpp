@@ -1,10 +1,10 @@
 #include "uninstaller.h"
 #include "./ui_uninstaller.h"
 #include "deleteworker.h"
-#include "messages.h"
 
 #include <QFile>
 #include <QMessageBox>
+#include <QPushButton>
 
 static const QString INSTALLED_FILES{"share/fet/installed_files"};
 
@@ -17,20 +17,26 @@ static const char *ERROR1 = QT_TRANSLATE_NOOP("Uninstaller", R"(
 Continue, deleting the other %3 files?
 )");
 
-void fatalError(QString msg)
+void Uninstaller::fatalError(QString msg)
 {
     QMessageBox::critical(
-        nullptr,
+        this,
         QCoreApplication::translate("Uninstaller", FATAL_ERROR),
         msg);
 }
 
-void warning(QString msg)
+void Uninstaller::warning(QString msg)
 {
     QMessageBox::warning(
-        nullptr,
+        this,
         QCoreApplication::translate("Uninstaller", WARNING),
         msg);
+}
+
+void Uninstaller::threadedWarning(QString msg)
+{
+    warning(msg);
+    waiter.wakeAll();
 }
 
 Uninstaller::Uninstaller(QWidget *parent)
@@ -60,6 +66,8 @@ Uninstaller::~Uninstaller()
 void Uninstaller::page_2()
 {
     ui->stackedWidget->setCurrentIndex(1);
+    // Enable ok button
+    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
 
     // Read the list of installed files
     QString filespath{basedir.absoluteFilePath(INSTALLED_FILES)};
@@ -143,6 +151,9 @@ void Uninstaller::page_2()
     connect(worker, &DeleteWorker::tick, this, &Uninstaller::progressOne);
     connect(worker, &DeleteWorker::finished, this, &Uninstaller::done);
 
+
+    connect(worker, &DeleteWorker::warning, this, &Uninstaller::threadedWarning);
+
     workerThread.start();
 
     // Start copying
@@ -163,5 +174,7 @@ void Uninstaller::progressOne()
 
 void Uninstaller::done()
 {
-    // Enable ok button?
+    // Enable ok button
+    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
+    workerThread.quit();
 }

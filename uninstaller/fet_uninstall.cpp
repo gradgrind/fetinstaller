@@ -8,8 +8,6 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    qDebug() << QCoreApplication::applicationDirPath();
-    qDebug() << QCoreApplication::arguments();
 
     auto locale = QLocale::system();
     QTranslator translator;

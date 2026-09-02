@@ -23,6 +23,7 @@ public:
     ~Uninstaller() override;
 
 private slots:
+    void threadedWarning(QString msg);
     void progressOne();
     void done();
 
@@ -30,6 +31,8 @@ private:
     Ui::Uninstaller *ui;
     QDir basedir;
     void page_2();
+    void warning(QString msg);
+    void fatalError(QString msg);
 
 signals:
     void deleteFiles(QDir basedir, QStringList filesList, QSet<QString> dirsSet);

@@ -57,7 +57,11 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="fetinstall_path"/>
+        <widget class="QLineEdit" name="fetinstall_path">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
         <spacer name="verticalSpacer">

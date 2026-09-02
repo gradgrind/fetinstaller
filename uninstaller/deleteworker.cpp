@@ -1,7 +1,9 @@
 #include "deleteworker.h"
-#include "messages.h"
 
 #include <QFile>
+
+QMutex mutex;
+QWaitCondition waiter;
 
 void DeleteWorker::deleteFiles(QDir basedir, QStringList filesList, QSet<QString> dirsSet)
 {
@@ -25,11 +27,8 @@ void DeleteWorker::deleteFiles(QDir basedir, QStringList filesList, QSet<QString
         emit addOutputLine("??? " + fpath);
     }
     if (!errorFiles.isEmpty()) {
-        warning(tr("%1 files could not be deleted (lines starting with \"???\")").arg(errorFiles.length()));
+        warn(tr("%1 files could not be deleted (lines starting with \"???\")").arg(errorFiles.length()));
     }
-
-    //TODO-- just testing ...
-    warning("Just testing!");
 
     // Remove empty directories
     QStringList dirsList{dirsSet.values()};
@@ -53,4 +52,13 @@ void DeleteWorker::deleteFiles(QDir basedir, QStringList filesList, QSet<QString
     emit addOutputLine(tr("%1 directories removed").arg(dirCount));
 
     emit finished();
+}
+
+void DeleteWorker::warn(QString msg)
+{
+    // Show the message in the main thread, but wait for it to be dismissed
+    mutex.lock();
+    emit warning("Just testing!");
+    waiter.wait(&mutex);
+    mutex.unlock();
 }

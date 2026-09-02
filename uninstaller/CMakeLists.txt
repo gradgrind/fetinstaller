@@ -15,7 +15,7 @@ qt_add_executable(fet_uninstall
     uninstaller.h uninstaller.cpp uninstaller.ui
     uninstaller_resources.qrc
     deleteworker.h deleteworker.cpp
-    messages.h
+
 )
 
 qt_add_translations(
