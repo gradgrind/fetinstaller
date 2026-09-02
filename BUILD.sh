@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Build script using a standard Qt installation set up by the Qt online installer.
+# Build script for the installer and uninstaller using a standard Qt
+# installation set up by the Qt online installer.
 # Run this in the fetinstaller source (root) directory.
 
 QTVERSION="6.11.2"
