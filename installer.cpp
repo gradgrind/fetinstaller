@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QPushButton>
+#include <QFileDialog>
 
 static const char *FATAL_ERROR = QT_TRANSLATE_NOOP("Installer", "Fatal Error");
 static const char *WARNING = QT_TRANSLATE_NOOP("Installer", "Warning");
@@ -23,6 +24,7 @@ Installer::Installer(QWidget *parent)
     connect(ui->buttonBox_2, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
     connect(ui->buttonBox_3, &QDialogButtonBox::accepted, this, &QApplication::quit);
 
+    connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
 
     //TODO
     QString which_fet;
@@ -64,6 +66,11 @@ Installer::Installer(QWidget *parent)
 void Installer::page_2()
 {
     ui->stackedWidget->setCurrentIndex(1);
+    dst_dir = QDir::home();
+    dst_dir.cd(".local");
+    defaultInstallationPath = dst_dir.path();
+    ui->installPath->setText(defaultInstallationPath);
+
     //TODO? Get source path
     QDir d0{QCoreApplication::applicationDirPath()};
     QString src{d0.absoluteFilePath("install")};
@@ -76,6 +83,23 @@ void Installer::page_2()
     }
 
 
+}
+
+void Installer::selectInstallDir()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+        this, tr("Open Directory"),
+        QDir::homePath(),
+        QFileDialog::ShowDirsOnly);
+    if (!dir.isEmpty()) {
+        QFileInfo finfo{dir};
+        if (finfo.isWritable()) {
+            ui->installPath->setText(dir);
+            dst_dir = dir;
+        } else {
+            QMessageBox::warning(this, tr(WARNING), tr("User can not write to selected directory: ") + dir);
+        }
+    }
 }
 
 void Installer::page_3()

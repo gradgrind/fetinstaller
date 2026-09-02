@@ -149,7 +149,11 @@ for this to take full effect.</string>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="existing_path"/>
+           <widget class="QLineEdit" name="existing_path">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QLabel" name="existingSuggestRemove">
@@ -202,10 +206,14 @@ for this to take full effect.</string>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
-          <widget class="QLineEdit" name="lineEdit"/>
+          <widget class="QLineEdit" name="installPath">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="toolButton">
+          <widget class="QToolButton" name="installPathBrowse">
            <property name="toolTip">
             <string>Browse</string>
            </property>

@@ -1,10 +1,12 @@
 #ifndef INSTALLER_H
 #define INSTALLER_H
 
+#include <ui_installer.h>
+
 #include <QWidget>
 #include <QThread>
 #include <QDir>
-#include <ui_installer.h>
+#include <QString>
 
 namespace Ui {
 class Installer;
@@ -23,10 +25,10 @@ public:
         delete ui;
     }
 
-    void page_2();
-    void page_3();
+    QString defaultInstallationPath;
 
 private slots:
+    void selectInstallDir();
     void handleNumberOfFiles(int n);
     void handleFileCopied(QString filepath);
     void handleCopyFailed(QString filepath);
@@ -34,6 +36,10 @@ private slots:
 
 private:
     Ui::Installer *ui;
+
+    void page_2();
+    void page_3();
+
     QFile file_log;
     QTextStream log_stream;
     QDir src_dir;
