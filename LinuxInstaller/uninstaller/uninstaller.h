@@ -3,6 +3,8 @@
 
 #include <ui_uninstaller.h>
 
+#include <QApplication>
+#include <QTranslator>
 #include <QWidget>
 #include <QDir>
 #include <QStringList>

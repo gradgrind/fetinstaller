@@ -1,9 +1,6 @@
 #include "uninstaller.h"
 
-#include <QApplication>
-#include <QTranslator>
-#include <QTemporaryDir>
-#include <QMessageBox>
+#include <QLocale>
 
 int main(int argc, char *argv[])
 {

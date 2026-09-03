@@ -113,18 +113,20 @@ void Uninstaller::page_2()
 
     // Add directories within the installation directory which haven't yet been added
     // because they contain only directories
+    QSet<QString> extraDirs; // collect additional directories
     for (const auto& d : dirsSet) {
         QFileInfo dinfo{d};
         while (true) {
-            QString p{dinfo.path()};
+            QString p{dinfo.path()}; // get the parent directory
             if (p.startsWith(basepath)) {
-                dirsSet.insert(p);
+                extraDirs.insert(p);
                 dinfo = QFileInfo{p};
             } else {
                 break;
             }
         }
     }
+    dirsSet.unite(extraDirs);
 
     ui->uninstallProgress->setMaximum(filesList.length() + dirsSet.size());
     ui->uninstallProgress->setValue(0);

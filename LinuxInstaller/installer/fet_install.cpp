@@ -1,8 +1,6 @@
 #include "installer.h"
 
-#include <QApplication>
 #include <QLocale>
-#include <QTranslator>
 #include <QMessageBox>
 
 int main(int argc, char *argv[])

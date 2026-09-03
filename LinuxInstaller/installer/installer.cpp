@@ -119,7 +119,7 @@ void Installer::selectInstallDir()
     }
 }
 
-bool Installer::installationExists(QDir rootdir)
+bool Installer::installationExists()
 {
     // Simple test (not reliable!) of whether an existing installation will be overwritten
     return QFileInfo::exists(dst_dir.filePath("bin/fet"))
@@ -128,7 +128,7 @@ bool Installer::installationExists(QDir rootdir)
 
 void Installer::page_3()
 {
-    if (installationExists(dst_dir)) {
+    if (installationExists()) {
 
         if (QFileInfo::exists(dst_dir.filePath("bin/fet_uninstall"))
             && QMessageBox::warning(this, tr(WARNING),
@@ -140,7 +140,7 @@ void Installer::page_3()
         }
 
         // Test success of uninstall
-        if (installationExists(dst_dir)) {
+        if (installationExists()) {
             if (QMessageBox::warning(this, tr(WARNING),
                 tr(WARN_EXISTING_OVERWRITE),
                 QMessageBox::Yes|QMessageBox::No) != QMessageBox::Yes) {

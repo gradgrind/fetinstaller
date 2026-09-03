@@ -3,6 +3,8 @@
 
 #include <ui_installer.h>
 
+#include <QApplication>
+#include <QTranslator>
 #include <QWidget>
 #include <QThread>
 #include <QDir>
@@ -42,7 +44,7 @@ private:
     void page_2();
     void page_3();
 
-    bool installationExists(QDir rootdir);
+    bool installationExists();
 
     QString filelist; // path to file containing installed file list
     QFile file_log;
