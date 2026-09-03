@@ -1,0 +1,38 @@
+
+
+If you are not using readme checkbox on the finish page, you can use it to perform whatever action you want:
+
+Function finishpageaction
+CreateShortcut "$desktop\foo.lnk" "$instdir\foo.exe"
+FunctionEnd
+
+!define MUI_FINISHPAGE_SHOWREADME ""
+!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
+!define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
+!insertmacro MUI_PAGE_FINISH
+
+Share
+Improve this answer
+Follow
+edited Aug 29, 2023 at 11:46
+answered Oct 5, 2009 at 1:05
+Anders's user avatar
+Anders
+103k1515 gold badges126126 silver badges184184 bronze badges
+8 Comments
+TechAurelian
+Over a year ago
+Shouldn't we use MUI_FINISHPAGE_RUN, MUI_FINISHPAGE_RUN_TEXT, MUI_FINISHPAGE_RUN_FUNCTION, MUI_PAGE_FINISH instead? What is the difference between these and MUI_FINISHPAGE_SHOWREADME, etc.?
+Anders
+Over a year ago
+@David There is no real difference other than the default text.
+Ankesh kumar Jaisansaria
+Over a year ago
+@Anders Can we add this code :- CreateShortCut "$DESKTOP\${MUI_PRODUCT}.lnk" "$INSTDIR\${MUI_FILE}.exe" "" in Function .onInstSuccess
+Anders
+Over a year ago
+@AnkeshkumarJaisansaria You can but if you are not giving the user a choice then you might as well do it in a Section.
+tig
+Over a year ago
+How do you check whether the checkbox is checked or not? I want to use it to enable/disable telemetry...

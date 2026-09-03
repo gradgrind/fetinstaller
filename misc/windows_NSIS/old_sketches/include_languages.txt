@@ -1,0 +1,11 @@
+!include "FileFunc.nsh"
+
+Section
+    ${Locate} "${NSISDIR}\Contrib\Language files" "/L=F /M=*.nsh" "FoundLanguage"
+SectionEnd
+
+Function FoundLanguage
+    ${GetBaseName} "$R7" $R0
+    !insertmacro MUI_LANGUAGE "$R0"
+FunctionEnd
+

@@ -1,0 +1,7 @@
+# Using NSIS
+
+I put the scripts in the root FET directory and run them there.
+
+I have set the default install path to "$LOCALAPPDATA\Programs\FET" (something like: "C:\Users\$User\AppData\Local\Programs\FET"), but the user can change this. The contents are the same as the current binary packages, that is set by the install part of the CMakeLists.txt file (so dlls in the root directory). A shortcut is put in the start menu. Also an uninstaller is registered. Installing when a version is already installed will delete the old version.
+
+The file "installer_i18n.txt" contains the language stuff. It is imported by "fet.nsi": it imports the NSIS language support and includes a starting point for the (currently) three custom strings in "fet.nsi". I have done it in such a way that the system language is used for the installer (if it is supported), but a choice from a drop-down list is another possibility – the three lines for that have been commented out in "fet.nsis".

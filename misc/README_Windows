@@ -1,0 +1,9 @@
+My first attempt at an installer for FET on Windows used NSIS. It seems to work, but is all a bit of a brain twister. A Qt-based installer, like for the Linux version might be more attractive. 
+
+It's structure could be similar, but it would differ significantly in a few points:
+
+ - The Windows registry. I think QSettings can handle this.
+
+ - The installation directory – e.g. "$LOCALAPPDATA\Programs\FET" (something like: "C:\Users\$User\AppData\Local\Programs\FET"). See the NSIS script for clues.
+
+ - As far as I know, on Windows it is impossible to delete files which are  open – in particular the uninstaller wouldn't be able to delete itself and its libraries. To deal with this, it might be best to copy these to a temporary directory first, before running the actual uninstaller. The beginnings of some ideas are in "fet_uninstall_trial.cpp".  Of course the temporary files would then need to be cleaned up after the program has finished, somehow.
