@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>FET Installer</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -258,7 +258,7 @@ for this to take full effect.</string>
           <enum>QFrame::Shadow::Sunken</enum>
          </property>
          <property name="text">
-          <string>A desktop entry and file-type association will be set up.</string>
+          <string>A desktop-menu entry and file-type association will be set up.</string>
          </property>
          <property name="textFormat">
           <enum>Qt::TextFormat::MarkdownText</enum>
