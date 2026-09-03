@@ -31,11 +31,13 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir) {
     /* ... here is the long-running operation ... */
 
     // Collect the files here for copying later.
+    // All files except "fet_install" are copied.
     QStringList files; // relative paths
     QDirIterator it(srcDir.absolutePath(), QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     while (it.hasNext()) {
         QString apath = it.next();
-        if (it.fileInfo().isFile()) {
+        QFileInfo finfo{it.fileInfo()};
+        if (finfo.isFile() && finfo.fileName() != "fet_install") {
             auto rpath = srcDir.relativeFilePath(apath);
             files.append(rpath);
         }
