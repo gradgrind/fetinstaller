@@ -3,6 +3,10 @@ project(fet_install LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Place the executables in this non-standard directory as they are not
+# to be installed themselves.
+set(CMAKE_INSTALL_BINDIR "_bin")
+
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 
