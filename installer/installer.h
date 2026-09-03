@@ -34,6 +34,7 @@ private slots:
     void handleFileCopied(QString filepath);
     void handleCopyFailed(QString filepath);
     void handleCopyingFinished(QString msg);
+    void installationComplete();
 
 private:
     Ui::Installer *ui;

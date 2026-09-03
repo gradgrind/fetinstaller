@@ -310,6 +310,16 @@ for this to take full effect.</string>
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="launch">
+         <property name="text">
+          <string>Launch FET</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QDialogButtonBox" name="buttonBox_3">
          <property name="standardButtons">
           <set>QDialogButtonBox::StandardButton::Ok</set>

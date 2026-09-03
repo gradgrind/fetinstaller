@@ -31,7 +31,7 @@ Installer::Installer(QWidget *parent)
     connect(ui->buttonBox_1, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
     connect(ui->buttonBox_2, &QDialogButtonBox::accepted, this, &Installer::page_3);
     connect(ui->buttonBox_2, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
-    connect(ui->buttonBox_3, &QDialogButtonBox::accepted, this, &QApplication::quit);
+    connect(ui->buttonBox_3, &QDialogButtonBox::accepted, this, &Installer::installationComplete);
 
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
 
@@ -226,4 +226,15 @@ void Installer::handleCopyingFinished(QString msg)
     ui->installDetails->appendPlainText("");
     ui->installDetails->appendPlainText(msg);
     ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
+}
+
+void Installer::installationComplete()
+{
+    if (ui->launch->isChecked()) {
+        QProcess runfet;
+        runfet.setProgram(dst_dir.filePath("bin/fet"));
+        runfet.startDetached();
+    }
+
+    qApp->quit();
 }
