@@ -71,7 +71,7 @@ void DeleteWorker::warn(QString msg)
 {
     // Show the message in the main thread, but wait for it to be dismissed
     mutex.lock();
-    emit warning("Just testing!");
+    emit warning(msg);
     waiter.wait(&mutex);
     mutex.unlock();
 }

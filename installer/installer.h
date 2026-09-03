@@ -33,7 +33,7 @@ private slots:
     void handleNumberOfFiles(int n);
     void handleFileCopied(QString filepath);
     void handleCopyFailed(QString filepath);
-    void handleCopyingFinished();
+    void handleCopyingFinished(QString msg);
 
 private:
     Ui::Installer *ui;
@@ -41,10 +41,14 @@ private:
     void page_2();
     void page_3();
 
+    bool installationExists(QDir rootdir);
+
+    QString filelist; // path to file containing installed file list
     QFile file_log;
     QTextStream log_stream;
     QDir src_dir;
     QDir dst_dir;
+    QString uninstall;
 
 signals:
     void copy(const QDir& srcDir, const QDir& dstDir);

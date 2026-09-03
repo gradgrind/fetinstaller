@@ -17,7 +17,7 @@ signals:
     void copied(QString filepath);
     void failed_copy(QString filepath);
     void progress(int count);
-    void copying_done();
+    void copying_done(QString msg);
 };
 
 #endif // COPYTHREAD_H

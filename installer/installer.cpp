@@ -1,5 +1,4 @@
 #include "installer.h"
-#include "ui_installer.h"
 #include "copythread.h"
 #include <QDirIterator>
 #include <QMessageBox>
@@ -9,6 +8,16 @@
 
 static const char *FATAL_ERROR = QT_TRANSLATE_NOOP("Installer", "Fatal Error");
 static const char *WARNING = QT_TRANSLATE_NOOP("Installer", "Warning");
+
+static const char *WARN_EXISTING_UNINSTALL = QT_TRANSLATE_NOOP("Installer", R"(
+There is already a FET installation at %1.
+
+Do you want to uninstall it?)");
+
+static const char *WARN_EXISTING_OVERWRITE = QT_TRANSLATE_NOOP("Installer", R"(
+It looks like you are going to overwrite an existing FET installation.
+
+This is probably a bad idea. Do you really want to continue?)");
 
 Installer::Installer(QWidget *parent)
     : QWidget(parent)
@@ -26,7 +35,6 @@ Installer::Installer(QWidget *parent)
 
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
 
-    //TODO
     QString which_fet;
     QProcess process;
     process.start("which", QStringList() << "fet");
@@ -45,19 +53,18 @@ Installer::Installer(QWidget *parent)
         QMessageBox::warning(this, tr(WARNING), tr("Search for existing installation not possible"));
     }
     if (!which_fet.isEmpty()) {
-        //qDebug() << "which fet?" << which_fet;
         ui->existing_path->setText(which_fet);
         ui->existing_fet->show();
 
         QString fet_dir{QFileInfo{which_fet}.absolutePath()};
-        QString uninstall{fet_dir + "/fet_uninstall"};
+        uninstall = fet_dir + "/fet_uninstall";
         if (QFileInfo::exists(uninstall)) {
             ui->existingCheckBox->setChecked(true);
             ui->existingCheckBox->show();
         } else {
+            uninstall.clear();
             ui->existingCheckBox->hide();
         }
-        qDebug() << "uninstaller:" << uninstall << QFileInfo::exists(uninstall);
     } else {
         ui->existing_fet->hide();
     }
@@ -72,24 +79,28 @@ void Installer::setInstallPath(QString ipath)
 
 void Installer::page_2()
 {
-    ui->stackedWidget->setCurrentIndex(1);
-    dst_dir = QDir::home();
-    dst_dir.cd(".local");
-    defaultInstallationPath = dst_dir.path();
-    ui->installPath->setText(defaultInstallationPath);
-
-    //TODO? Get source path
-    QDir d0{QCoreApplication::applicationDirPath()};
-    QString src{d0.absoluteFilePath("install")};
-    src_dir.setPath(src);
-    if (!src_dir.exists()) {
-        qDebug() << "Source directory does not exist.";
-        QMessageBox::critical(this, tr(FATAL_ERROR), "BUG: installation files not found");
-        qApp->exit(2);
-        return;
+    // If a previous installation is to be uninstalled, do it now (if possible)
+    if (!uninstall.isEmpty() && ui->existingCheckBox->isChecked()) {
+        QProcess::execute(uninstall);
     }
 
+    ui->stackedWidget->setCurrentIndex(1);
 
+    // Default installation path
+    defaultInstallationPath = QDir::home().absoluteFilePath(".local");
+    setInstallPath(defaultInstallationPath);
+
+    // Get source path
+    src_dir = QCoreApplication::applicationDirPath();
+    src_dir.cdUp();
+
+    // A simple check that the source directory is valid (contains a FET install bundle)
+    if (!QFileInfo::exists(src_dir.filePath("bin/fet"))
+        || !QFileInfo::exists(src_dir.filePath("share/fet"))) {
+
+        QMessageBox::critical(this, tr(FATAL_ERROR), "BUG: installation files not found");
+        qApp->exit(2);
+    }
 }
 
 void Installer::selectInstallDir()
@@ -108,14 +119,43 @@ void Installer::selectInstallDir()
     }
 }
 
+bool Installer::installationExists(QDir rootdir)
+{
+    // Simple test (not reliable!) of whether an existing installation will be overwritten
+    return QFileInfo::exists(dst_dir.filePath("bin/fet"))
+        || QFileInfo::exists(dst_dir.filePath("share/fet"));
+}
+
 void Installer::page_3()
 {
-    ui->installProgress->setMinimum(0);
-    ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(false);
-    ui->stackedWidget->setCurrentIndex(2);
+    if (installationExists(dst_dir)) {
 
-    // Get path to install to
-    dst_dir.setPath(src_dir.absoluteFilePath("../target_dir")); //TODO!!!
+        if (QFileInfo::exists(dst_dir.filePath("bin/fet_uninstall"))
+            && QMessageBox::warning(this, tr(WARNING),
+                                    tr(WARN_EXISTING_UNINSTALL).arg(dst_dir.path()),
+                                    QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes) {
+
+            // Try to uninstall it
+            QProcess::execute(dst_dir.filePath("bin/fet_uninstall"));
+        }
+
+        // Test success of uninstall
+        if (installationExists(dst_dir)) {
+            if (QMessageBox::warning(this, tr(WARNING),
+                tr(WARN_EXISTING_OVERWRITE),
+                QMessageBox::Yes|QMessageBox::No) != QMessageBox::Yes) {
+
+                return;
+            }
+        }
+    }
+
+    ui->installProgress->setMinimum(0);
+    ui->installProgress->setValue(0);
+    // Disable the OK button until the copying has finished
+    ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(false);
+
+    ui->stackedWidget->setCurrentIndex(2);
 
     QString ipath{dst_dir.absoluteFilePath("share/fet")};
     if (!dst_dir.mkpath(ipath)) {
@@ -125,12 +165,13 @@ void Installer::page_3()
     }
 
     // Open file to record installed files
-    QString filelist{ipath + "/installed_files"};
+    filelist = ipath + "/installed_files";
     file_log.setFileName(filelist);
     if (!file_log.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not create the installed-files list"));
         qApp->exit(1);
+        ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
         return;
     }
     log_stream.setDevice(&file_log);
@@ -157,19 +198,19 @@ void Installer::page_3()
 void Installer::handleNumberOfFiles(int n)
 {
     ui->installProgress->setMaximum(n);
-    ui->installProgress->setValue(0);
 }
 
 void Installer::handleFileCopied(QString filepath)
 {
     log_stream << filepath << "\n";
-    //log_stream.flush();
     int n = ui->installProgress->value();
     if (n == ui->installProgress->maximum()) {
         QMessageBox::critical(this, "BUG", "Installed files miscounted");
     } else {
         ui->installProgress->setValue(n + 1);
     }
+
+    //TODO: Use relative paths? Also in the file itself?
     ui->installDetails->appendPlainText("+ " + dst_dir.relativeFilePath(filepath));
 }
 
@@ -178,7 +219,11 @@ void Installer::handleCopyFailed(QString filepath)
     QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not copy to: ") + filepath);
 }
 
-void Installer::handleCopyingFinished()
+void Installer::handleCopyingFinished(QString msg)
 {
+    log_stream << filelist << "\n";
+    file_log.close();
+    ui->installDetails->appendPlainText("");
+    ui->installDetails->appendPlainText(msg);
     ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
 }

@@ -5,11 +5,11 @@
 #include <QMessageBox>
 #include <QPushButton>
 
-static const QString INSTALLED_FILES{"share/fet/installed_files"};
+static const char* INSTALLED_FILES = "share/fet/installed_files";
 
-static const char *FATAL_ERROR = QT_TRANSLATE_NOOP("Uninstaller", "Fatal Error");
-static const char *WARNING = QT_TRANSLATE_NOOP("Uninstaller", "Warning");
-static const char *ERROR1 = QT_TRANSLATE_NOOP("Uninstaller", R"(
+static const char* FATAL_ERROR = QT_TRANSLATE_NOOP("Uninstaller", "Fatal Error");
+static const char* WARNING = QT_TRANSLATE_NOOP("Uninstaller", "Warning");
+static const char* ERROR1 = QT_TRANSLATE_NOOP("Uninstaller", R"(
 %1 files not within installation base directory (lines starting with "!!!")
 %2 files not found (lines starting with "***")
 
@@ -110,10 +110,6 @@ void Uninstaller::page_2()
             return;
         }
     }
-
-    // Add uninstaller files
-    filesList.append(basedir.absoluteFilePath("bin/fet_uninstall"));
-    filesList.append(basedir.absoluteFilePath(INSTALLED_FILES));
 
     // Add directories within the installation directory which haven't yet been added
     // because they contain only directories

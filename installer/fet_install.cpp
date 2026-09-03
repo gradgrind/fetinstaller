@@ -1,4 +1,3 @@
-//#include "wizard.h"
 #include "installer.h"
 
 #include <QApplication>

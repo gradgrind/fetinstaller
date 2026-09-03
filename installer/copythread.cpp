@@ -53,12 +53,14 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir) {
         }
     }
 
-
     QDir home_dir{QDir::home()};
+    QString done_message;
     if (dstDir.absolutePath() == home_dir.absoluteFilePath(".local")) {
-        //TODO
-        //emit addOutputLine("");
-        //emit addOutputLine(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
+        // Only perform these operations if installing to "~/.local". For them to work with
+        // other installation locations, the relevant (modified) files would still need to
+        // be placed in "~/.local".
+
+        done_message = tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database");
 
         // Update file-type associations
         QProcess::execute("update-mime-database",
@@ -67,40 +69,5 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir) {
                           QStringList() << dstDir.absoluteFilePath("share/applications"));
     }
 
-    emit copying_done();
+    emit copying_done(done_message);
 }
-
-    /* OLD ...
-
-    if (!dstDir.exists()) {
-        dstDir.mkpath(dst); // Create destination directory if it doesn't exist
-    }
-
-    int count{0};
-    const QFileInfoList entries = srcDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
-    for (const QFileInfo& entry : entries) {
-        QString newDestPath = dstDir.filePath(entry.fileName());
-        if (entry.isDir()) {
-            if (!copyDirectory(entry.absoluteFilePath(), newDestPath, log_stream)) {
-                return false;
-            }
-        } else {
-            if (QFile::exists(newDestPath)) {
-                QFile::remove(newDestPath);
-            }
-            if (QFile::copy(entry.absoluteFilePath(), newDestPath)) {
-                // save to list file
-                log_stream << newDestPath << "\n";
-                emit progress(count);
-                //ui->installProgress->setValue(ui->installProgress->value() + 1);
-            } else {
-                //TODO
-                QMessageBox::critical(nullptr, tr("FATAL_ERROR"), tr("Failed to copy file to: ") + newDestPath);
-                qApp->exit(1);
-                return false;
-            }
-        }
-    }
-    return true;
-    */
-//}
