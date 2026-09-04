@@ -21,7 +21,7 @@ class Uninstaller : public QWidget
     QThread workerThread;
 
 public:
-    Uninstaller(QWidget *parent = nullptr);
+    explicit Uninstaller(QWidget *parent = nullptr);
     ~Uninstaller();
 
 private slots:

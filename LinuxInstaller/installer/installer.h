@@ -38,6 +38,7 @@ private:
     void page_2();
     void page_3();
 
+    void scanSource();
     bool installationExists();
 
     QString filelist; // path to file containing installed file list
@@ -49,6 +50,7 @@ private:
 
 signals:
     void copy(const QDir& srcDir, const QDir& dstDir);
+    void exit_cc(int cc);
 };
 
 #endif // INSTALLER_H

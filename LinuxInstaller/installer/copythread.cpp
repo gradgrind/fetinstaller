@@ -5,6 +5,8 @@
 #include <QDirIterator>
 #include <QProcess>
 
+//TODO: If an error occurs, it would be good to remove all installed files.
+
 // Copy source file to destination path, creating path directories if necessary.
 // Return true if successful.
 bool copyFile(QString sFile, QString dFile)
@@ -21,6 +23,9 @@ bool copyFile(QString sFile, QString dFile)
     QFileInfo sinfo{sFile};
     if (sinfo.isSymLink()) {
         //TODO: This will not handle absolute links correctly!
+
+        qDebug() << "LINK" << sinfo.readSymLink() << "&" << sinfo.symLinkTarget(); // raw & absolute path
+
         return QFile::link(sinfo.readSymLink(), dFile);
     } else {
         return QFile::copy(sFile, dFile);
@@ -31,7 +36,7 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir) {
     /* ... here is the long-running operation ... */
 
     // Collect the files here for copying later.
-    // All files except from directory "_bin" are copied.
+    // All files except from root directories starting with "_" (currently just "_bin") are copied.
     QStringList files; // relative paths
     QDirIterator it(srcDir.absolutePath(), QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     while (it.hasNext()) {
