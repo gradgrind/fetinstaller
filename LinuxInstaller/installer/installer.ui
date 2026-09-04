@@ -185,6 +185,9 @@ for this to take full effect.</string>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <widget class="QPlainTextEdit" name="symlink_messages">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(192, 28, 40);</string>
+         </property>
          <property name="readOnly">
           <bool>true</bool>
          </property>

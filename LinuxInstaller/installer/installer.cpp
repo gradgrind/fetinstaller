@@ -162,48 +162,74 @@ void Installer::scanSource()
         if (finfo.isSymLink()) {
 
             QString linkPath = finfo.readSymLink();
-            qDebug() << "LINK" << rpath << "->" << linkPath; // << "&" << finfo.symLinkTarget(); // raw & absolute path
+            //qDebug() << "LINK" << rpath << "->" << linkPath; // << "&" << finfo.symLinkTarget(); // raw & absolute path
 
-            if (!finfo.exists()) {
-                qDebug() << "MISSING!";
-            } else {
+            bool linkTargetExists = false;
+            if (finfo.exists()) {
+                linkTargetExists = true;
                 if (finfo.isDir()) {
                     qDebug() << "DIRECTORY!";
+                    rpath += "/";
                 }
-                if (QFileInfo(linkPath).isRelative()) {
-                    qDebug() << "RELATIVE";
-                    // A relative link within the install package is acceptable.
-                    // A relative link outside the package is an error.
-                    QString lrpath = src_dir.relativeFilePath(finfo.symLinkTarget());
-                    if (lrpath.startsWith("..")) {
-                        // outside the package
-                        qDebug() << "ERROR, relative symlink outside package:" << rpath << "->" << linkPath;
-                        ui->symlink_messages->appendPlainText(
-                            tr("WARNING, relative symlink outside package: %1 -> %2")
-                                .arg(rpath, linkPath));
-                        badfiles++;
-                    }
+            } else {
+                qDebug() << "MISSING LINK:" << finfo.isDir() << QFileInfo(linkPath).isRelative() << rpath;
+                //ui->symlink_messages->appendPlainText(
+                //    tr("WARNING, symlink missing target: %1 -> %2")
+                //        .arg(rpath, linkPath));
+            }
+
+            if (QFileInfo(linkPath).isRelative()) {
+                // A relative link within the install package is acceptable, as long as its target exists.
+                // A relative link outside the package is an error.
+                QString lrpath = src_dir.relativeFilePath(finfo.symLinkTarget());
+                if (lrpath.startsWith("..")) {
+                    // outside the package
+                    qDebug() << "ERROR, relative symlink outside package:" << rpath << "->" << linkPath;
+                    ui->symlink_messages->appendPlainText(
+                        tr("ERROR, relative symlink outside package: %1 -> %2")
+                            .arg(rpath, linkPath));
+                    ui->symlink_messages->appendPlainText("");
+                    badfiles++;
                 } else {
-                    qDebug() << "ABSOLUTE";
-                    // An absolute link within the install package is an error.
-                    // An absolute link outside the package will be accepted, but a warning will be issued.
-                    QString lrpath = src_dir.relativeFilePath(linkPath);
-                    if (lrpath.startsWith("..")) {
-                        // outside the package
-                        qDebug() << "WARNING, absolute symlink:" << rpath << "->" << linkPath;
+                    // within the package
+                    if (!linkTargetExists) {
                         ui->symlink_messages->appendPlainText(
-                            tr("WARNING, absolute symlink: %1 -> %2")
+                            tr("ERROR, target missing for relative symlink: %1 -> %2")
                                 .arg(rpath, linkPath));
-                    } else {
-                        // inside the package
-                        qDebug() << "ERROR, absolute symlink within package:" << rpath << "->" << linkPath;
-                        ui->symlink_messages->appendPlainText(
-                            tr("ERROR, absolute symlink within package: %1 -> %2")
-                                .arg(rpath, linkPath));
+                        ui->symlink_messages->appendPlainText("");
                         badfiles++;
                     }
+                }
+            } else {
+                // An absolute link within the install package is an error.
+                // An absolute link outside the package will be accepted, but a warning will be issued.
+                QString lrpath = src_dir.relativeFilePath(linkPath);
+                if (lrpath.startsWith("..")) {
+                    // outside the package
+
+                    //TODO: mention linkTargetExists?
+
+                    qDebug() << "WARNING, absolute symlink:" << rpath << "->" << linkPath;
+                    ui->symlink_messages->appendPlainText(
+                        tr("WARNING, absolute symlink: %1 -> %2")
+                            .arg(rpath, linkPath));
+                    ui->symlink_messages->appendPlainText("");
+                } else {
+                    // inside the package
+                    qDebug() << "ERROR, absolute symlink within package:" << rpath << "->" << linkPath;
+                    ui->symlink_messages->appendPlainText(
+                        tr("ERROR, absolute symlink within package: %1 -> %2")
+                            .arg(rpath, linkPath));
+                    ui->symlink_messages->appendPlainText("");
+                    badfiles++;
                 }
             }
+
+
+
+
+
+
         }
 
     //TODO...
