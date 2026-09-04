@@ -1,4 +1,5 @@
 #include "uninstaller.h"
+#include <ui_uninstaller.h>
 #include "deleteworker.h"
 
 #include <QFile>
@@ -55,6 +56,12 @@ Uninstaller::Uninstaller(QWidget *parent)
 
     ui->fetinstall_path->setText(basedir.path());
 
+}
+
+Uninstaller::~Uninstaller() {
+    workerThread.quit();
+    workerThread.wait();
+    delete ui;
 }
 
 void Uninstaller::page_2()

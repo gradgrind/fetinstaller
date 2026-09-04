@@ -1,8 +1,6 @@
 #ifndef INSTALLER_H
 #define INSTALLER_H
 
-#include <ui_installer.h>
-
 #include <QApplication>
 #include <QTranslator>
 #include <QWidget>
@@ -20,12 +18,8 @@ class Installer : public QWidget
     QThread workerThread;
 
 public:
-    Installer(QWidget *parent = nullptr);
-    ~Installer() {
-        workerThread.quit();
-        workerThread.wait();
-        delete ui;
-    }
+    explicit Installer(QWidget *parent = nullptr);
+    ~Installer();
 
     QString defaultInstallationPath;
 

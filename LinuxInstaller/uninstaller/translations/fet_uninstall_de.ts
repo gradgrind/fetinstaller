@@ -42,17 +42,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="10"/>
+        <location filename="../uninstaller.cpp" line="11"/>
         <source>Fatal Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="11"/>
+        <location filename="../uninstaller.cpp" line="12"/>
         <source>Warning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="12"/>
+        <location filename="../uninstaller.cpp" line="13"/>
         <source>
 %1 files not within installation base directory (lines starting with &quot;!!!&quot;)
 %2 files not found (lines starting with &quot;***&quot;)
@@ -62,7 +62,7 @@ Continue, deleting the other %3 files?
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="70"/>
+        <location filename="../uninstaller.cpp" line="77"/>
         <source>Couldn&apos;t read file list at: </source>
         <translation type="unfinished"></translation>
     </message>

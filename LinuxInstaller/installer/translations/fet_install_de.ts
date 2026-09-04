@@ -72,17 +72,17 @@ for this to take full effect.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="9"/>
+        <location filename="../installer.cpp" line="10"/>
         <source>Fatal Error</source>
         <translation>Kritischer Fehler</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="10"/>
+        <location filename="../installer.cpp" line="11"/>
         <source>Warning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="12"/>
+        <location filename="../installer.cpp" line="13"/>
         <source>
 There is already a FET installation at %1.
 
@@ -90,7 +90,7 @@ Do you want to uninstall it?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="17"/>
+        <location filename="../installer.cpp" line="18"/>
         <source>
 It looks like you are going to overwrite an existing FET installation.
 
@@ -98,37 +98,37 @@ This is probably a bad idea. Do you really want to continue?</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="49"/>
+        <location filename="../installer.cpp" line="50"/>
         <source>Search for existing installation failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="53"/>
+        <location filename="../installer.cpp" line="54"/>
         <source>Search for existing installation not possible</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="109"/>
+        <location filename="../installer.cpp" line="117"/>
         <source>Open Directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="117"/>
+        <location filename="../installer.cpp" line="125"/>
         <source>User can not write to selected directory: </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="162"/>
+        <location filename="../installer.cpp" line="170"/>
         <source>Creating target directory failed: </source>
         <translation>Der Zielordner konnte nicht erstellt werden:</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="172"/>
+        <location filename="../installer.cpp" line="180"/>
         <source>Could not create the installed-files list</source>
         <translation>Die Liste der installierten Dateien konnte nicht erstellt werden</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="219"/>
+        <location filename="../installer.cpp" line="227"/>
         <source>Could not copy to: </source>
         <translation>Kopieren schlug fehl, nach:</translation>
     </message>
@@ -136,12 +136,12 @@ This is probably a bad idea. Do you really want to continue?</source>
 <context>
     <name>main</name>
     <message>
-        <location filename="../fet_install.cpp" line="22"/>
+        <location filename="../fet_install.cpp" line="20"/>
         <source>&apos;root&apos; user</source>
         <translation>Benutzer „root“ (Administrator)</translation>
     </message>
     <message>
-        <location filename="../fet_install.cpp" line="23"/>
+        <location filename="../fet_install.cpp" line="21"/>
         <source>The installer must be run as a normal user.</source>
         <translation>Das Installationsprogramm muss von einem normalen Benutzer ausgführt werden.</translation>
     </message>

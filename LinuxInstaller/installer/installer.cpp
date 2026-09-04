@@ -1,4 +1,5 @@
 #include "installer.h"
+#include "ui_installer.h"
 #include "copythread.h"
 #include <QDirIterator>
 #include <QMessageBox>
@@ -69,6 +70,13 @@ Installer::Installer(QWidget *parent)
         ui->existing_fet->hide();
     }
 }
+
+Installer::~Installer() {
+    workerThread.quit();
+    workerThread.wait();
+    delete ui;
+}
+
 
 void Installer::setInstallPath(QString ipath)
 {
