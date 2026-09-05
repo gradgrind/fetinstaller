@@ -22,8 +22,14 @@ public slots:
 
 signals:
     void number_of_files(int count);
-    void copied(QString filepath);
+    void dir_nocopy(QString filepath);
+    void dir_written(QString filepath);
+    void dir_failed_write(QString filepath);
+    void dir_failed_overwrite(QString filepath);
+    void file_copied(QString filepath);
     void failed_copy(QString filepath);
+    void link_copied(QPair<QString, QString> filepaths);
+    void failed_link(QPair<QString, QString> filepaths);
     void progress(int count);
     void copying_done(QString msg);
 };

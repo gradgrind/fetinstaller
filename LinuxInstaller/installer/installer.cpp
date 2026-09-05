@@ -285,6 +285,10 @@ void Installer::page_2()
 
     // Default installation path
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
+
+    //TODO--
+    defaultInstallationPath = "/home/mt/Development/fet/installer/tmp";
+
     setInstallPath(defaultInstallationPath);
 }
 
@@ -315,7 +319,11 @@ void Installer::setInstallPath(QString ipath)
         ok = false;
     } else {
         // Check for FET installation here
-        if ( dst_dir.exists("bin/fet") ) {
+
+        //TODO--
+        if ( dst_dir.exists("bin/fetXXX-TODO") ) {
+
+        //if ( dst_dir.exists("bin/fet") ) {
             ui->would_overwrite->appendPlainText(tr(WARN_EXISTING).arg(dst_dir.path()));
             // Check for FET uninstaller
             if ( dst_dir.exists("bin/fet_uninstall") ) {
@@ -352,6 +360,13 @@ void Installer::setInstallPath(QString ipath)
         }
         // Test for the existence of each file in the destination directory
         for (const auto& f : flist) {
+
+            //TODO--
+            if ( !f.startsWith("bin") ) continue;
+            QFileInfo fin( dst_dir.absoluteFilePath(f) );
+            qDebug() << "?" << f << dst_dir.exists(f) << fin.exists() << fin.symLinkTarget();
+            continue;
+
             //qDebug() << "?" << f << dst_dir.exists(f) << dst_dir.absoluteFilePath(f);
             if ( dst_dir.exists(f) ) {
                 ok = false;
@@ -373,23 +388,10 @@ void Installer::page_3()
 
     ui->stackedWidget->setCurrentIndex(3);
 
-    QString ipath{dst_dir.absoluteFilePath("share/fet")};
-    if (!dst_dir.mkpath(ipath)) {
-        QMessageBox::critical(this, tr(FATAL_ERROR), tr("Creating target directory failed: ") + ipath);
-        emit exit_cc(1);
-        return;
-    }
+    //TODO: Is it correct to start copying immediately?
 
-    // Open file to record installed files
-    filelist = ipath + "/installed_files";
-    file_log.setFileName(filelist);
-    if (!file_log.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not create the installed-files list"));
-        emit exit_cc(1);
-        return;
-    }
-    log_stream.setDevice(&file_log);
+    dstDirectories.clear(); // collect the directories in the installation
+    dstFiles.clear(); // collect the files in the installation
 
     // Use background thread to perform copying
 
@@ -399,9 +401,24 @@ void Installer::page_3()
     // Connect signals
     connect(&workerThread, &QThread::finished, copyWorker, &QObject::deleteLater);
     connect(this, &Installer::doCopy, copyWorker, &CopyWorker::copyDirectory);
+
+    void dir_nocopy(QString filepath);
+    void dir_written(QString filepath);
+    void dir_failed_write(QString filepath);
+    void dir_failed_overwrite(QString filepath);
+
     connect(copyWorker, &CopyWorker::number_of_files, this, &Installer::handleNumberOfFiles);
-    connect(copyWorker, &CopyWorker::copied, this, &Installer::handleFileCopied);
+
+    connect(copyWorker, &CopyWorker::dir_nocopy, this, &Installer::handleDirNotCopied);
+    connect(copyWorker, &CopyWorker::dir_written, this, &Installer::handleDirWritten);
+    connect(copyWorker, &CopyWorker::dir_failed_write, this, &Installer::handleDirWriteFailed);
+    connect(copyWorker, &CopyWorker::dir_failed_overwrite, this, &Installer::handleDirOverwriteFailed);
+
+    connect(copyWorker, &CopyWorker::file_copied, this, &Installer::handleFileCopied);
     connect(copyWorker, &CopyWorker::failed_copy, this, &Installer::handleCopyFailed);
+    connect(copyWorker, &CopyWorker::link_copied, this, &Installer::handleLinkCopied);
+    connect(copyWorker, &CopyWorker::failed_link, this, &Installer::handleLinkFailed);
+
     connect(copyWorker, &CopyWorker::copying_done, this, &Installer::handleCopyingFinished);
 
     workerThread.start();
@@ -410,33 +427,113 @@ void Installer::page_3()
     emit doCopy(src_dir, dst_dir, installFiles);
 }
 
+// In the slots below, the filepath arguments are all relative to the destination base
+
 void Installer::handleNumberOfFiles(int n)
 {
     ui->installProgress->setMaximum(n);
 }
 
-void Installer::handleFileCopied(QString filepath)
+void Installer::handleDirWritten(QString filepath)
 {
-    log_stream << filepath << "\n";
+    dstDirectories.append(filepath);
+    incrementProgress();
+    ui->installDetails->appendPlainText("+ " + filepath + "/");
+}
+
+void Installer::handleDirNotCopied(QString filepath)
+{
+    dstDirectories.append(filepath);
+    incrementProgress();
+    ui->installDetails->appendPlainText("(+) " + filepath + "/");
+}
+
+void Installer::handleDirWriteFailed(QString filepath)
+{
+    // TODO: show absolute path?
+    QMessageBox::critical(
+        this,
+        tr(FATAL_ERROR),
+        tr("Could not create directory: %1").arg(filepath));
+    emit exit_cc(2);
+}
+
+void Installer::handleDirOverwriteFailed(QString filepath)
+{
+    // TODO: show absolute path?
+    QMessageBox::critical(
+        this,
+        tr(FATAL_ERROR),
+        tr("Existing item is not writable directory: %1").arg(filepath));
+    emit exit_cc(2);
+}
+
+void Installer::incrementProgress()
+{
     int n = ui->installProgress->value();
     if (n == ui->installProgress->maximum()) {
         QMessageBox::critical(this, "BUG", "Installed files miscounted");
+        emit exit_cc(2);
     } else {
         ui->installProgress->setValue(n + 1);
     }
+}
+
+void Installer::handleFileCopied(QString filepath)
+{
+    //TODO: log_stream << filepath << "\n";
+    dstFiles.append(filepath);
+    incrementProgress();
 
     //TODO: Use relative paths? Also in the file itself?
-    ui->installDetails->appendPlainText("+ " + dst_dir.relativeFilePath(filepath));
+    ui->installDetails->appendPlainText("+ " + filepath);
 }
 
 void Installer::handleCopyFailed(QString filepath)
 {
-    QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not copy to: ") + filepath);
+    QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not copy file to: %1").arg(filepath));
+    emit exit_cc(2);
 }
 
+void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
+{
+    //TODO: log_stream << filepaths.first << "\n";
+    dstFiles.append(filepaths.first);
+    incrementProgress();
+
+    //TODO: Use relative paths? Also in the file itself?
+    ui->installDetails->appendPlainText("+ " + filepaths.second);
+}
+
+void Installer::handleLinkFailed(QPair<QString, QString> filepaths)
+{
+    QMessageBox::critical(
+        this, tr(FATAL_ERROR),
+        tr("Could not link %1 to: %2").arg(filepaths.first, filepaths.second));
+}
+
+//TODO: Could this take too long?
 void Installer::handleCopyingFinished(QString msg)
 {
-    log_stream << filelist << "\n";
+    // Open file to record installed files
+    QString filelistpath{"share/fet/installed_files"};
+    filelist = dst_dir.absoluteFilePath(filelistpath);
+    file_log.setFileName(filelist);
+    if (!file_log.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not create the installed-files list"));
+        emit exit_cc(1);
+        return;
+    }
+    log_stream.setDevice(&file_log);
+    dstFiles.append(filelistpath);
+    for (auto it = dstFiles.begin(); it != dstFiles.end(); ++it) {
+        log_stream << *it << "\n";
+    }
+    // List the directories in reverse order (starting at the leaves)
+    for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {
+        log_stream << *it << "/\n"; // suffix "/"
+    }
     file_log.close();
     ui->installDetails->appendPlainText("");
     ui->installDetails->appendPlainText(msg);
@@ -452,4 +549,27 @@ void Installer::installationComplete()
     }
 
     qApp->quit();
+}
+
+//TODO: call this on error exits
+void Installer::uninstallPartial()
+{
+    // Remove installed files and directories
+    QStringList xdirs; // not uninstalled directories
+    QStringList xfiles; // not uninstalled files
+    for (auto it = dstFiles.begin(); it != dstFiles.end(); ++it) {
+        if ( !dst_dir.remove(*it) ) {
+            xfiles.append(*it);
+        }
+    }
+    // Remove the directories in reverse order (starting at the leaves)
+    for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {
+        if ( !dst_dir.rmdir(*it) ) {
+            xdirs.append(*it);
+        }
+    }
+
+    // Report the results
+    //TODO
+
 }

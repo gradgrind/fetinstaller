@@ -7,60 +7,54 @@
 
 //TODO: If an error occurs, it would be good to remove all installed files.
 
-// Copy source file to destination path, creating path directories if necessary.
-// Return true if successful.
-bool copyFile(QString sFile, QString dFile)
-{
-    QFileInfo df{dFile};
-    if (df.exists()) {
-        if (!QFile::remove(dFile)) return false;
-    } else {
-        QDir dd{df.dir()};
-        if (!dd.exists()) {
-            dd.mkpath(dd.absolutePath());
-        }
-    }
-    QFileInfo sinfo{sFile};
-    if (sinfo.isSymLink()) {
-        //TODO: This will not handle absolute links correctly!
-
-        //qDebug() << "LINK" << sinfo.readSymLink() << "&" << sinfo.symLinkTarget(); // raw & absolute path
-
-        return QFile::link(sinfo.readSymLink(), dFile);
-    } else {
-        return QFile::copy(sFile, dFile);
-    }
-}
-
 void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles) {
     /* ... here is the long-running operation ... */
 
-    //TODO: Use iFiles ...
+    // StartCopy with the directories, which should be sorted such that parent directories are always
+    // before their child directories. Alphabetical sorting should be adequate.
+    emit number_of_files(
+        iFiles.installationDirs.length()
+        + iFiles.installationFiles.length()
+        + iFiles.installationLinksAbs.length()
+        + iFiles.installationLinksRel.length());
 
-    // Collect the files here for copying later.
-    // All files except from root directories starting with "_" (currently just "_bin") are copied.
-    QStringList files; // relative paths
-    QDirIterator it(srcDir.absolutePath(), QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString apath = it.next();
-        QString rpath = srcDir.relativeFilePath(apath);
-        if (rpath.startsWith("_")) {
-            continue;
-        }
-        if (it.fileInfo().isFile()) {
-            files.append(rpath);
+    for ( const auto& d : iFiles.installationDirs ) {
+        if ( dstDir.exists(d) ) {
+            QFileInfo dd{dstDir.filePath(d)};
+            if ( dd.isDir() && dd.isWritable() ) {
+                emit dir_nocopy(d);
+            } else {
+                emit dir_failed_overwrite(d);
+            }
+        } else if ( dstDir.mkdir(d) ) {
+            emit dir_written(d);
+        } else {
+            emit dir_failed_write(d);
         }
     }
-    emit number_of_files(files.length());
 
-    // Now copy the files.
-    for (const auto& rpath : files) {
-        QString dpath{dstDir.absoluteFilePath(rpath)};
-        if (copyFile(srcDir.absoluteFilePath(rpath), dpath)) {
-            emit copied(dpath);
+    // Copy the regular files
+    for ( const auto& f : iFiles.installationFiles ) {
+        if ( QFile::copy(srcDir.filePath(f), dstDir.filePath(f)) ) {
+            emit file_copied(f);
         } else {
-            emit failed_copy(dpath);
-            return;
+            emit failed_copy(f);
+        }
+    }
+
+    // Set symlinks
+    for ( const auto& fx : iFiles.installationLinksAbs ) {
+        if ( QFile::link(fx.second, dstDir.filePath(fx.first)) ) {
+            emit link_copied(fx);
+        } else {
+            emit failed_link(fx);
+        }
+    }
+    for ( const auto& fx : iFiles.installationLinksRel ) {
+        if ( QFile::link(fx.second, dstDir.filePath(fx.first)) ) {
+            emit link_copied(fx);
+        } else {
+            emit failed_link(fx);
         }
     }
 
