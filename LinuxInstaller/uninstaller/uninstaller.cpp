@@ -94,7 +94,9 @@ void Uninstaller::page_2()
             continue;
         } else if (fpath.startsWith(basepath)) {
             QFileInfo finfo{fpath};
-            if (!finfo.exists()) {
+            // In the case of a symlink with missing target, the symlink will be reported
+            // as non-existent, so a second check is needed.
+            if (!finfo.exists() && finfo.readSymLink().isEmpty()) {
                 errorCount2++;
                 ui->output->appendPlainText("*** " + fpath);
                 continue;

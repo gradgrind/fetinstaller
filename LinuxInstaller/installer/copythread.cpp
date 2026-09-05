@@ -24,7 +24,7 @@ bool copyFile(QString sFile, QString dFile)
     if (sinfo.isSymLink()) {
         //TODO: This will not handle absolute links correctly!
 
-        qDebug() << "LINK" << sinfo.readSymLink() << "&" << sinfo.symLinkTarget(); // raw & absolute path
+        //qDebug() << "LINK" << sinfo.readSymLink() << "&" << sinfo.symLinkTarget(); // raw & absolute path
 
         return QFile::link(sinfo.readSymLink(), dFile);
     } else {
@@ -32,8 +32,10 @@ bool copyFile(QString sFile, QString dFile)
     }
 }
 
-void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir) {
+void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles) {
     /* ... here is the long-running operation ... */
+
+    //TODO: Use iFiles ...
 
     // Collect the files here for copying later.
     // All files except from root directories starting with "_" (currently just "_bin") are copied.

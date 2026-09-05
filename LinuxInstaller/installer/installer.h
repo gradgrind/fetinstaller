@@ -7,6 +7,7 @@
 #include <QThread>
 #include <QDir>
 #include <QString>
+#include "copythread.h"
 
 namespace Ui {
 class Installer;
@@ -41,10 +42,9 @@ private:
     void tidyPartial();
     void error_exit(int cc);
 
-    bool installationExists();
-
     QString defaultInstallationPath;
     bool installationPartial{false};
+    InstallFiles installFiles;
     QString filelist; // path to file containing installed file list
     QFile file_log;
     QTextStream log_stream;
@@ -53,7 +53,7 @@ private:
     QString uninstall;
 
 signals:
-    void copy(const QDir& srcDir, const QDir& dstDir);
+    void doCopy(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);
     void exit_cc(int cc);
 };
 
