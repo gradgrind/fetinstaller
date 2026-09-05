@@ -6,6 +6,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QFileDialog>
+#include <QTimer>
 
 static const char *FATAL_ERROR = QT_TRANSLATE_NOOP("Installer", "Fatal Error");
 static const char *WARNING = QT_TRANSLATE_NOOP("Installer", "Warning");
@@ -20,6 +21,41 @@ It looks like you are going to overwrite an existing FET installation.
 
 This is probably a bad idea. Do you really want to continue?)");
 
+//TODO: This is probably only for the "X" button. After an error, the partial installation
+// should be done anyway.
+static const char *WARN_UNFINISHED = QT_TRANSLATE_NOOP("Installer", R"(
+The installation is not complete. If you quit now, any already installed files will be removed.
+
+Do you really want to cancel the installation?)");
+
+
+//TODO
+void Installer::tidyPartial() {
+    qDebug() << "TODO: tidy()";
+}
+
+void Installer::closeEvent(QCloseEvent *event)
+{
+    if ( installationPartial ) { //TODO: set to true during file copying, etc.
+        if ( QMessageBox::warning(this, tr(WARNING), tr(WARN_UNFINISHED),
+                QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes ) {
+            tidyPartial();
+            event->accept();
+        } else {
+            event->ignore(); // Don't close the window
+        }
+    } else {
+        event->accept();
+    }
+}
+
+void Installer::error_exit(int cc)
+{
+    if ( installationPartial )
+        tidyPartial();
+    qApp->exit(cc);
+}
+
 Installer::Installer(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Installer)
@@ -30,9 +66,11 @@ Installer::Installer(QWidget *parent)
     // *** Connect signals ***
 
     // This one is for quitting the program on errors
-    connect(this, &Installer::exit_cc, qApp, &QApplication::exit, Qt::QueuedConnection);
+    connect(this, &Installer::exit_cc, this, &Installer::error_exit, Qt::QueuedConnection);
 
     // page switching
+    connect(ui->buttonBox_0, &QDialogButtonBox::accepted, this, &Installer::page_1);
+    connect(ui->buttonBox_0, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
     connect(ui->buttonBox_1, &QDialogButtonBox::accepted, this, &Installer::page_2);
     connect(ui->buttonBox_1, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
     connect(ui->buttonBox_2, &QDialogButtonBox::accepted, this, &Installer::page_3);
@@ -41,6 +79,144 @@ Installer::Installer(QWidget *parent)
 
     // select destination directory
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
+
+    // Check installation data, collect files to be installed
+    //TODO: If the time is too short, a black window might get shown ...
+    ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(false);
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    QTimer::singleShot(100, this, &Installer::scanSource);
+}
+
+Installer::~Installer() {
+    workerThread.quit();
+    workerThread.wait();
+    delete ui;
+}
+
+void Installer::scanSource()
+{
+    // Return true if there is something to report (=> show the messages).
+
+    // This runs quickly enough not to be run in a background thread. It sets a busy cursor,
+    // but the processing should be so quick that this will not be visible.
+
+    // Collect the files here for copying later: their paths are relative to the source root.
+    // All files, except from root directories starting with "_" (currently just "_bin"), are copied.
+    QStringList installationFiles;
+    QStringList installationDirs;
+    QList<QPair<QString, QString>> installationLinksRel; // relative symlinks (within the installation)
+    QList<QPair<QString, QString>> installationLinksAbs; // absolute symlinks (outside the installation)
+
+    //TODO-- !!!
+    QObject().thread()->usleep(1000*1000*3);
+
+    //qDebug() << "Searching" << src_dir.path();
+    using F = QDirListing::IteratorFlag;
+    // Recursive search, but don't recurse into symlinked directories.
+    int badfiles{0};
+    int warnings{0};
+    for (const auto &dirEntry : QDirListing(
+             src_dir.path(),
+             F::Recursive | F::IncludeHidden | F::ExcludeOther | F::ResolveSymlinks | F::IncludeBrokenSymlinks)) {
+        QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
+
+        //qDebug() << "R" << rpath;
+
+        if (rpath.startsWith("_")) {
+            continue;
+        }
+
+        const QFileInfo finfo = dirEntry.fileInfo();
+        if (finfo.isSymLink()) {
+            // I need to test whether QFile::link can create links with non-existent targets and
+            // whether directory links work the same as file links.
+
+            QString linkPath = finfo.readSymLink(); // target path, relative or absolute
+            //qDebug() << "LINK" << rpath << "->" << linkPath; // << "&" << finfo.symLinkTarget(); // raw & absolute path
+
+            bool linkTargetExists = finfo.exists();
+
+            if (QFileInfo(linkPath).isRelative()) {
+                // A relative link within the install package is acceptable, as long as its target exists.
+                // A relative link outside the package is an error.
+                QString lrpath = src_dir.relativeFilePath(finfo.symLinkTarget());
+                if (lrpath.startsWith("..")) {
+                    // outside the package
+                    ui->symlink_messages->appendPlainText(
+                        tr("ERROR, relative symlink outside package: %1 -> %2")
+                            .arg(rpath, linkPath));
+                    ui->symlink_messages->appendPlainText("");
+                    badfiles++;
+                } else {
+                    // within the package
+                    if (linkTargetExists) {
+                        installationLinksRel.append({rpath, linkPath});
+                    } else {
+                        ui->symlink_messages->appendPlainText(
+                            tr("ERROR, target missing for relative symlink: %1 -> %2")
+                                .arg(rpath, linkPath));
+                        ui->symlink_messages->appendPlainText("");
+                        badfiles++;
+                    }
+                }
+            } else {
+                // An absolute link within the install package is an error.
+                // An absolute link outside the package will be accepted, but a warning will be issued.
+                if (src_dir.relativeFilePath(linkPath).startsWith("..")) {
+                    // outside the package
+                    QString x;
+                    if ( linkTargetExists ) {
+                        x = tr(" (doesn't exist!)");
+                    }
+                    ui->symlink_messages->appendPlainText(
+                        tr("WARNING, absolute symlink: %1 -> %2%3")
+                            .arg(rpath, linkPath, x));
+                    warnings++;
+                    ui->symlink_messages->appendPlainText("");
+                    installationLinksAbs.append({rpath, linkPath});
+                } else {
+                    // inside the package
+                    ui->symlink_messages->appendPlainText(
+                        tr("ERROR, absolute symlink within package: %1 -> %2")
+                            .arg(rpath, linkPath));
+                    ui->symlink_messages->appendPlainText("");
+                    badfiles++;
+                }
+            }
+        } else {
+            // Normal file or directory
+            if ( finfo.isDir() ) {
+                installationDirs.append(rpath);
+            } else {
+                // Normal file
+                if ( finfo.isReadable() ) {
+                    installationFiles.append(rpath);
+                } else {
+                    ui->symlink_messages->appendPlainText(
+                        tr("ERROR, file not readable: %1").arg(rpath));
+                    badfiles++;
+                }
+            }
+        }
+
+        //TODO? Where to put the lists?
+
+    }
+    QApplication::restoreOverrideCursor();
+    if (badfiles == 0) {
+        // Allow continuation
+        ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(true);
+    } else {
+        ui->symlink_messages->appendPlainText(
+            tr("%1 invalid files – installation is not possible.").arg(badfiles));
+    }
+    if ( badfiles == 0 && warnings == 0 )
+        page_1();
+}
+
+void Installer::page_1()
+{
+    ui->stackedWidget->setCurrentIndex(1);
 
     QString which_fet;
     QProcess process;
@@ -93,16 +269,7 @@ Installer::Installer(QWidget *parent)
         emit exit_cc(2);
         return;
     }
-
-    scanSource();
 }
-
-Installer::~Installer() {
-    workerThread.quit();
-    workerThread.wait();
-    delete ui;
-}
-
 
 void Installer::setInstallPath(QString ipath)
 {
@@ -111,136 +278,6 @@ void Installer::setInstallPath(QString ipath)
     ui->desktopSetup->setVisible(ipath == defaultInstallationPath);
 
     //TODO: Check for overwrites?
-}
-
-void Installer::scanSource()
-{
-    // Collect the files here for copying later: their paths relative to the source root.
-    // All files except from root directories starting with "_" (currently just "_bin") are copied.
-    QStringList rfiles; // relative paths
-
-    /*
-    QDirIterator it(src_dir.path(), QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString apath = it.next();
-        QString rpath = src_dir.relativeFilePath(apath);
-        if (rpath.startsWith("_")) {
-            continue; // skip root directories starting with "_"
-        }
-
-//TODO: Can I stop recursing into symlinked directories?
-        QFileInfo finfo{apath};
-        if (finfo.isSymLink()) {
-
-            qDebug() << "LINK" << finfo.readSymLink() << "&" << finfo.symLinkTarget(); // raw & absolute path
-        }
-
-
-        if (it.fileInfo().isFile()) {
-            rfiles.append(rpath);
-        }
-    }
-    */
-
-    qDebug() << "Searching" << src_dir.path();
-    using F = QDirListing::IteratorFlag;
-    // Recursive search, but don't recurse into symlinked directories.
-    int badfiles = 0;
-    for (const auto &dirEntry : QDirListing(
-            src_dir.path(),
-            F::Recursive | F::IncludeHidden | F::ExcludeOther | F::ResolveSymlinks | F::IncludeBrokenSymlinks)) {
-        QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
-
-        //qDebug() << "R" << rpath;
-
-        if (rpath.startsWith("_")) {
-            continue;
-        }
-
-
-        const QFileInfo finfo = dirEntry.fileInfo();
-        if (finfo.isSymLink()) {
-
-            QString linkPath = finfo.readSymLink();
-            //qDebug() << "LINK" << rpath << "->" << linkPath; // << "&" << finfo.symLinkTarget(); // raw & absolute path
-
-            bool linkTargetExists = false;
-            if (finfo.exists()) {
-                linkTargetExists = true;
-                if (finfo.isDir()) {
-                    qDebug() << "DIRECTORY!";
-                    rpath += "/";
-                }
-            } else {
-                qDebug() << "MISSING LINK:" << finfo.isDir() << QFileInfo(linkPath).isRelative() << rpath;
-                //ui->symlink_messages->appendPlainText(
-                //    tr("WARNING, symlink missing target: %1 -> %2")
-                //        .arg(rpath, linkPath));
-            }
-
-            if (QFileInfo(linkPath).isRelative()) {
-                // A relative link within the install package is acceptable, as long as its target exists.
-                // A relative link outside the package is an error.
-                QString lrpath = src_dir.relativeFilePath(finfo.symLinkTarget());
-                if (lrpath.startsWith("..")) {
-                    // outside the package
-                    qDebug() << "ERROR, relative symlink outside package:" << rpath << "->" << linkPath;
-                    ui->symlink_messages->appendPlainText(
-                        tr("ERROR, relative symlink outside package: %1 -> %2")
-                            .arg(rpath, linkPath));
-                    ui->symlink_messages->appendPlainText("");
-                    badfiles++;
-                } else {
-                    // within the package
-                    if (!linkTargetExists) {
-                        ui->symlink_messages->appendPlainText(
-                            tr("ERROR, target missing for relative symlink: %1 -> %2")
-                                .arg(rpath, linkPath));
-                        ui->symlink_messages->appendPlainText("");
-                        badfiles++;
-                    }
-                }
-            } else {
-                // An absolute link within the install package is an error.
-                // An absolute link outside the package will be accepted, but a warning will be issued.
-                QString lrpath = src_dir.relativeFilePath(linkPath);
-                if (lrpath.startsWith("..")) {
-                    // outside the package
-
-                    //TODO: mention linkTargetExists?
-
-                    qDebug() << "WARNING, absolute symlink:" << rpath << "->" << linkPath;
-                    ui->symlink_messages->appendPlainText(
-                        tr("WARNING, absolute symlink: %1 -> %2")
-                            .arg(rpath, linkPath));
-                    ui->symlink_messages->appendPlainText("");
-                } else {
-                    // inside the package
-                    qDebug() << "ERROR, absolute symlink within package:" << rpath << "->" << linkPath;
-                    ui->symlink_messages->appendPlainText(
-                        tr("ERROR, absolute symlink within package: %1 -> %2")
-                            .arg(rpath, linkPath));
-                    ui->symlink_messages->appendPlainText("");
-                    badfiles++;
-                }
-            }
-
-
-
-
-
-
-        }
-
-    //TODO...
-
-    }
-
-    if (badfiles != 0) {
-        qDebug() << badfiles << "invalid files. DON'T CONTINUE";
-        //TODO: Report "N invalid files" ... disallow continuation
-    }
-
 }
 
 void Installer::page_2()
@@ -256,7 +293,7 @@ void Installer::page_2()
         QProcess::execute(uninstall);
     }
 
-    ui->stackedWidget->setCurrentIndex(1);
+    ui->stackedWidget->setCurrentIndex(2);
 
     // Default installation path
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
@@ -315,12 +352,12 @@ void Installer::page_3()
     // Disable the OK button until the copying has finished
     ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(false);
 
-    ui->stackedWidget->setCurrentIndex(2);
+    ui->stackedWidget->setCurrentIndex(3);
 
     QString ipath{dst_dir.absoluteFilePath("share/fet")};
     if (!dst_dir.mkpath(ipath)) {
         QMessageBox::critical(this, tr(FATAL_ERROR), tr("Creating target directory failed: ") + ipath);
-        qApp->exit(1);
+        emit exit_cc(1);
         return;
     }
 
@@ -330,8 +367,7 @@ void Installer::page_3()
     if (!file_log.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not create the installed-files list"));
-        qApp->exit(1);
-        ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
+        emit exit_cc(1);
         return;
     }
     log_stream.setDevice(&file_log);

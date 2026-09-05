@@ -21,9 +21,8 @@ public:
     explicit Installer(QWidget *parent = nullptr);
     ~Installer();
 
-    QString defaultInstallationPath;
-
 private slots:
+    void scanSource();
     void selectInstallDir();
     void setInstallPath(QString ipath);
     void handleNumberOfFiles(int n);
@@ -34,13 +33,18 @@ private slots:
 
 private:
     Ui::Installer *ui;
+    void closeEvent(QCloseEvent *event) override;
 
+    void page_1();
     void page_2();
     void page_3();
+    void tidyPartial();
+    void error_exit(int cc);
 
-    void scanSource();
     bool installationExists();
 
+    QString defaultInstallationPath;
+    bool installationPartial{false};
     QString filelist; // path to file containing installed file list
     QFile file_log;
     QTextStream log_stream;
