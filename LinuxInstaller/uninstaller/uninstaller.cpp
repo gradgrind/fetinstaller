@@ -3,25 +3,11 @@
 #include "deleteworker.h"
 
 #include <QFile>
-#include <QMessageBox>
 #include <QPushButton>
 #include <QTimer>
 #include <QProcess>
 
 static const char* INSTALLED_FILES = "share/fet/installed_files";
-
-//TODO: Remove some of these ...
-
-static const char* FATAL_ERROR = QT_TRANSLATE_NOOP("Uninstaller", "Fatal Error");
-
-static const char* WARNING = QT_TRANSLATE_NOOP("Uninstaller", "Warning");
-
-static const char* ERROR1 = QT_TRANSLATE_NOOP("Uninstaller", R"(
-%1 files not within installation base directory (lines starting with "!!!")
-%2 files not found (lines starting with "***")
-
-Continue, deleting the other %3 files?
-)");
 
 static const char* CORRUPT_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", R"(
 It looks like the installation has been corrupted.
@@ -29,22 +15,6 @@ It looks like the installation has been corrupted.
 Continuing to uninstall might not produce the desired results. Consider carefully
 whether you want to proceed.
 )");
-
-void Uninstaller::fatalError(QString msg)
-{
-    QMessageBox::critical(
-        this,
-        QCoreApplication::translate("Uninstaller", FATAL_ERROR),
-        msg);
-}
-
-void Uninstaller::warning(QString msg)
-{
-    QMessageBox::warning(
-        this,
-        QCoreApplication::translate("Uninstaller", WARNING),
-        msg);
-}
 
 Uninstaller::Uninstaller(QWidget *parent)
     : QWidget(parent)
@@ -83,7 +53,7 @@ void Uninstaller::page_1()
     // Read the list of installed files
     QString filespath{basedir.filePath(INSTALLED_FILES)};
     QFile textFile{filespath};
-    ui->filesReport->appendPlainText(tr("Reading file list from: %s").arg(filespath));
+    ui->filesReport->appendPlainText(tr("Reading file list from: %1").arg(filespath));
     ui->filesReport->appendPlainText("");
     if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
         ui->filesReport->appendPlainText(tr("*** CRITICAL ERROR: couldn't read file list ***"));
@@ -126,6 +96,8 @@ void Uninstaller::page_1()
     } else {
         ui->filesReport->appendPlainText(tr(CORRUPT_INSTALLATION));
     }
+    // Add the root directory, basedir
+    dirsList.append(basedir.path());
     ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
 
@@ -188,13 +160,17 @@ void Uninstaller::progressOne()
 {
     int p = ui->uninstallProgress->value();
     int max = ui->uninstallProgress->maximum();
-    if (p == max) {
-        //TODO: Do I still need the fatal error popup? What about a report in the output window?
-        fatalError("BUG: progress > 100%");
-        qApp->exit(2);
-        // Also ensure it only happens once!
-    } else {
+    if ( p < max ) {
         ui->uninstallProgress->setValue(p + 1);
+    }
+    if (p == max) {
+        ui->output->appendPlainText("");
+        ui->output->appendPlainText("BUG: progress > 100%");
+
+        qApp->exit(2);
+        //TODO: ensure it only happens once! Probably all subsequent output
+        // should be handled differently ... don't lose the message!
+        // Can the delete loop be stopped?
     }
 }
 
@@ -218,6 +194,7 @@ void Uninstaller::done()
     }
 
     //TODO: remove the root directory if empty?
+
 
     // Enable ok button
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
