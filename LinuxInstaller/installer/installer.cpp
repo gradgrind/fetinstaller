@@ -21,6 +21,11 @@ There is already a FET installation at %1.
 
 You must remove this before you can install the new version here.)");
 
+static const char *WARN_NOT_EMPTY = QT_TRANSLATE_NOOP("Installer", R"(
+The installation directory is not empty.
+
+Check that you really want to place the installation there.)");
+
 //TODO: This is probably only for the "X" button. After an error, the partial installation
 // should be done anyway.
 static const char *WARN_UNFINISHED = QT_TRANSLATE_NOOP("Installer", R"(
@@ -78,7 +83,9 @@ Installer::Installer(QWidget *parent)
     connect(ui->buttonBox_3, &QDialogButtonBox::accepted, this, &Installer::installationComplete);
 
     // select destination directory
+    connect(ui->setDefaultPath, &QPushButton::clicked, this, &Installer::selectDefaultDir);
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
+    connect(ui->installNonEmpty, &QCheckBox::clicked, this, &Installer::allowNonEmpty);
 
     connect(ui->installInvalid, &QCheckBox::clicked, this, &Installer::installInvalidClicked);
     // Check installation data, collect files to be installed
@@ -299,29 +306,42 @@ void Installer::page_2()
 
     // Default installation path
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
-
     //TODO--
-    defaultInstallationPath = "/home/mt/Development/fet/installer/tmp";
+    //defaultInstallationPath = "/home/mt/Development/fet/installer/tmp";
 
+    setInstallPath(defaultInstallationPath);
+}
+
+void Installer::selectDefaultDir()
+{
     setInstallPath(defaultInstallationPath);
 }
 
 void Installer::selectInstallDir()
 {
+    QString p0{ui->installPath->text()};
     QString dir = QFileDialog::getExistingDirectory(
         this, tr("Open Directory"),
-        QDir::homePath(),
+        p0 == defaultInstallationPath ? QDir::homePath() : p0,
         QFileDialog::ShowDirsOnly);
     if (!dir.isEmpty()) {
         setInstallPath(dir);
     }
 }
 
+void Installer::allowNonEmpty(bool checked)
+{
+    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(checked);
+}
+
 void Installer::setInstallPath(QString ipath)
 {
     ui->installPath->setText(ipath);
     dst_dir = ipath;
+    ui->setDefaultPath->setEnabled(ipath != defaultInstallationPath);
     ui->desktopSetup->hide();
+    ui->installNonEmpty->setChecked(false);
+    ui->installNonEmpty->hide();
 
     // Check destination
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
@@ -356,8 +376,7 @@ void Installer::setInstallPath(QString ipath)
 
         // Check for overwrites ...
 
-        ui->would_overwrite->appendPlainText("");
-        ui->would_overwrite->appendPlainText(tr("Files exist already:"));
+        ui->would_overwrite->appendPlainText(tr("These files exist already (blocking installation):"));
         ui->would_overwrite->appendPlainText("");
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
@@ -398,8 +417,16 @@ void Installer::setInstallPath(QString ipath)
         }
         if ( ok ) {
             ui->would_overwrite->clear();
-            ui->would_overwrite->appendPlainText(tr("No conflicts."));
-            ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
+            // Check for empty installation directory.
+            // In the default installation directory this is to be expected, but
+            // otherwise probably not.
+            if ( ipath != defaultInstallationPath && !dst_dir.isEmpty() ) {
+                ui->would_overwrite->appendPlainText(tr(WARN_NOT_EMPTY));
+                ui->installNonEmpty->show();
+            } else {
+                ui->would_overwrite->appendPlainText(tr("No conflicts."));
+                ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
+            }
             if ( ipath == defaultInstallationPath ) {
                 ui->desktopSetup->show();
             }
@@ -514,11 +541,8 @@ void Installer::incrementProgress()
 
 void Installer::handleFileCopied(QString filepath)
 {
-    //TODO: log_stream << filepath << "\n";
     dstFiles.append(filepath);
     incrementProgress();
-
-    //TODO: Use relative paths? Also in the file itself?
     ui->installDetails->appendPlainText("+ " + filepath);
 }
 
@@ -530,11 +554,8 @@ void Installer::handleCopyFailed(QString filepath)
 
 void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
 {
-    //TODO: log_stream << filepaths.first << "\n";
     dstFiles.append(filepaths.first);
     incrementProgress();
-
-    //TODO: Use relative paths? Also in the file itself?
     ui->installDetails->appendPlainText("+ " + filepaths.second);
 }
 
@@ -563,6 +584,7 @@ void Installer::handleCopyingFinished(QString msg)
     for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
         log_stream << *it << "\n";
     }
+    // Add the installed-files list.
     log_stream << filelistpath << "\n";
     // List the directories in reverse order (starting at the leaves)
     for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {

@@ -25,8 +25,10 @@ public:
 private slots:
     void scanSource();
     void installInvalidClicked(bool checked);
+    void selectDefaultDir();
     void selectInstallDir();
     void setInstallPath(QString ipath);
+    void allowNonEmpty(bool checked);
     void handleNumberOfFiles(int n);
 
     void handleDirWritten(QString filepath);
