@@ -24,6 +24,7 @@ public:
 
 private slots:
     void scanSource();
+    void installInvalidClicked(bool checked);
     void selectInstallDir();
     void setInstallPath(QString ipath);
     void handleNumberOfFiles(int n);
@@ -53,6 +54,8 @@ private:
     void incrementProgress();
     void uninstallPartial();
 
+    bool scanComplete;
+    bool scanOk;
     QString defaultInstallationPath;
     bool installationPartial{false};
     InstallFiles installFiles; // files and directories to be installed

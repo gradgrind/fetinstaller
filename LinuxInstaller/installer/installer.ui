@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>528</width>
+    <width>539</width>
     <height>488</height>
    </rect>
   </property>
@@ -86,7 +86,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page_0">
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -107,6 +107,23 @@
          </property>
          <property name="readOnly">
           <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="installInvalid">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(224, 27, 36);</string>
+         </property>
+         <property name="text">
+          <string>[not recommended] Install in spite of errors (without invalid files)</string>
          </property>
         </widget>
        </item>
@@ -269,7 +286,7 @@ for this to take full effect.</string>
           <item>
            <widget class="QPlainTextEdit" name="would_overwrite">
             <property name="styleSheet">
-             <string notr="true">color: rgb(192, 28, 40);</string>
+             <string notr="true">color: rgb(224, 27, 36);</string>
             </property>
             <property name="readOnly">
              <bool>true</bool>

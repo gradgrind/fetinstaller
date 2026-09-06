@@ -80,10 +80,10 @@ Installer::Installer(QWidget *parent)
     // select destination directory
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
 
+    connect(ui->installInvalid, &QCheckBox::clicked, this, &Installer::installInvalidClicked);
     // Check installation data, collect files to be installed
-    ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(false);
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-    //TODO: If the time is too short, a black window might get shown at first ...
+    //NOTE: If the time is too short, a blank window might get shown at first ...
     QTimer::singleShot(100, this, &Installer::scanSource);
 }
 
@@ -93,10 +93,22 @@ Installer::~Installer() {
     delete ui;
 }
 
+void Installer::installInvalidClicked(bool checked)
+{
+    if (scanComplete)
+        ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(checked || scanOk);
+}
+
 void Installer::scanSource()
 {
     // This runs quickly enough not to be run in a background thread. It sets a busy cursor,
     // but the processing should be so quick that this will not be visible.
+
+    ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(false);
+    scanComplete =false;
+    scanOk = false;
+    ui->installInvalid->setChecked(false);
+    ui->installInvalid->hide();
 
     // Collect the files here for copying later: their paths are relative to the source root.
     // All files, except from root directories starting with "_" (currently just "_bin"), are copied.
@@ -220,17 +232,19 @@ void Installer::scanSource()
     installFiles.installationLinksAbs = installationLinksAbs;
 
     QApplication::restoreOverrideCursor();
-    if (badfiles == 0) {
+    scanOk = badfiles == 0;
+    if (scanOk) {
         // Allow continuation
         ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(true);
     } else {
         ui->symlink_messages->appendPlainText(
-            tr("%1 invalid files – installation is not possible.").arg(badfiles));
+            tr("%1 invalid files – installation is not recommended!").arg(badfiles));
+        ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(ui->installInvalid->isChecked());
+        ui->installInvalid->show();
     }
+    scanComplete = true;
 
-    //TODO!!!
-    //if ( badfiles == 0 && warnings == 0 )
-    if ( true )
+    if ( scanOk && warnings == 0 )
         // If there is nothing to report, jump straight to the next page
         page_1();
 }
@@ -307,23 +321,19 @@ void Installer::setInstallPath(QString ipath)
 {
     ui->installPath->setText(ipath);
     dst_dir = ipath;
-    ui->desktopSetup->setVisible(ipath == defaultInstallationPath);
+    ui->desktopSetup->hide();
 
     // Check destination
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
-    bool ok{true};
     ui->would_overwrite->clear();
     // Destination writable? (not reliable on Windows?)
     if ( !QFileInfo{ipath}.isWritable() ) {
         ui->would_overwrite->appendPlainText(tr("Destination not writable: %1").arg(ipath));
-        ok = false;
     } else {
         // Check for FET installation here
+        bool ok{true};
 
-        //TODO--
-        if ( dst_dir.exists("bin/fetXXX-TODO") ) {
-
-        //if ( dst_dir.exists("bin/fet") ) {
+        if ( dst_dir.exists("bin/fet") ) {
             ui->would_overwrite->appendPlainText(tr(WARN_EXISTING).arg(dst_dir.path()));
             // Check for FET uninstaller
             if ( dst_dir.exists("bin/fet_uninstall") ) {
@@ -341,6 +351,7 @@ void Installer::setInstallPath(QString ipath)
             } else {
                 return;
             }
+            ui->would_overwrite->clear();
         }
 
         // Check for overwrites ...
@@ -350,32 +361,54 @@ void Installer::setInstallPath(QString ipath)
         ui->would_overwrite->appendPlainText("");
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-        // Collect all source files, skip the directories
-        QStringList flist = installFiles.installationFiles;
-        for (const auto& fpair : std::as_const(installFiles.installationLinksAbs)) {
-            flist.append(fpair.first);
-        }
-        for (const auto& fpair : std::as_const(installFiles.installationLinksRel)) {
-            flist.append(fpair.first);
-        }
         // Test for the existence of each file in the destination directory
-        for (const auto& f : flist) {
-
-            //TODO--
-            if ( !f.startsWith("bin") ) continue;
-            QFileInfo fin( dst_dir.absoluteFilePath(f) );
-            qDebug() << "?" << f << dst_dir.exists(f) << fin.exists() << fin.symLinkTarget();
-            continue;
-
-            //qDebug() << "?" << f << dst_dir.exists(f) << dst_dir.absoluteFilePath(f);
+        for ( const auto& f : std::as_const(installFiles.installationFiles) ) {
             if ( dst_dir.exists(f) ) {
                 ok = false;
-                ui->would_overwrite->appendPlainText(dst_dir.absoluteFilePath(f));
+                ui->would_overwrite->appendPlainText(dst_dir.filePath(f));
             }
         }
+        for ( const auto& fpair : std::as_const(installFiles.installationLinksAbs) ) {
+            QFileInfo f{dst_dir.filePath(fpair.first)};
+            if ( f.exists() || !f.readSymLink().isEmpty() ) {
+                ok = false;
+                ui->would_overwrite->appendPlainText(f.filePath());
+            }
+        }
+        for ( const auto& fpair : std::as_const(installFiles.installationLinksRel) ) {
+            QFileInfo f{dst_dir.filePath(fpair.first)};
+            if ( f.exists() || !f.readSymLink().isEmpty() ) {
+                ok = false;
+                ui->would_overwrite->appendPlainText(f.filePath());
+            }
+        }
+
+        // Check any existing directories are valid directories and writable
+        for ( const auto& d : std::as_const(installFiles.installationDirs) ) {
+            QFileInfo dd{dst_dir.filePath(d)};
+            if ( dd.exists() ) {
+                if ( !dd.isDir() || !dd.isWritable() ) {
+                    ok = false;
+                    ui->would_overwrite->appendPlainText(dd.filePath());
+                }
+            } else if ( !dd.readSymLink().isEmpty() ) {
+                ok = false;
+                ui->would_overwrite->appendPlainText(dd.filePath());
+            }
+        }
+        if ( ok ) {
+            ui->would_overwrite->clear();
+            ui->would_overwrite->appendPlainText(tr("No conflicts."));
+            ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
+            if ( ipath == defaultInstallationPath ) {
+                ui->desktopSetup->show();
+            }
+        }
+        else {
+            ui->would_overwrite->appendPlainText("");
+            ui->would_overwrite->appendPlainText(tr("*** Installation is not possible ***"));
+        }
     }
-    if ( ok )
-        ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
     QApplication::restoreOverrideCursor();
 }
 
@@ -526,10 +559,11 @@ void Installer::handleCopyingFinished(QString msg)
         return;
     }
     log_stream.setDevice(&file_log);
-    dstFiles.append(filelistpath);
-    for (auto it = dstFiles.begin(); it != dstFiles.end(); ++it) {
+    // List the files in reverse order (starting with the symlinks)
+    for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
         log_stream << *it << "\n";
     }
+    log_stream << filelistpath << "\n";
     // List the directories in reverse order (starting at the leaves)
     for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {
         log_stream << *it << "/\n"; // suffix "/"
@@ -557,7 +591,8 @@ void Installer::uninstallPartial()
     // Remove installed files and directories
     QStringList xdirs; // not uninstalled directories
     QStringList xfiles; // not uninstalled files
-    for (auto it = dstFiles.begin(); it != dstFiles.end(); ++it) {
+    // Remove the files in reverse order (starting with the symlinks)
+    for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
         if ( !dst_dir.remove(*it) ) {
             xfiles.append(*it);
         }
