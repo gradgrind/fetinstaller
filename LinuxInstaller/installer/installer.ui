@@ -86,7 +86,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page_0">
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -103,7 +103,7 @@
        <item>
         <widget class="QPlainTextEdit" name="symlink_messages">
          <property name="styleSheet">
-          <string notr="true">color: rgb(192, 28, 40);</string>
+          <string notr="true"/>
          </property>
          <property name="readOnly">
           <bool>true</bool>
@@ -120,7 +120,7 @@
        <item>
         <widget class="QCheckBox" name="installInvalid">
          <property name="styleSheet">
-          <string notr="true">color: rgb(224, 27, 36);</string>
+          <string notr="true"/>
          </property>
          <property name="text">
           <string>[not recommended] Install in spite of errors (without invalid files)</string>
@@ -310,7 +310,7 @@ for this to take full effect.</string>
           <item>
            <widget class="QPlainTextEdit" name="would_overwrite">
             <property name="styleSheet">
-             <string notr="true">color: rgb(224, 27, 36);</string>
+             <string notr="true"/>
             </property>
             <property name="readOnly">
              <bool>true</bool>
@@ -327,7 +327,7 @@ for this to take full effect.</string>
           <item>
            <widget class="QCheckBox" name="installNonEmpty">
             <property name="styleSheet">
-             <string notr="true">color: rgb(224, 27, 36);</string>
+             <string notr="true"/>
             </property>
             <property name="text">
              <string>Install to non-empty destination directory</string>
