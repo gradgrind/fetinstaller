@@ -25,19 +25,31 @@ public:
     ~Uninstaller();
 
 private slots:
-    void threadedWarning(QString msg);
-    void progressOne();
+    void page_1();
+    void page_2();
+    void file_deleted(QString fpath, bool ok);
+    void dir_removed(QString fpath, bool ok);
     void done();
+
+//??
+    void progressOne();
 
 private:
     Ui::Uninstaller *ui;
     QDir basedir;
-    void page_2();
+
+    QStringList filesList;
+    QStringList dirsList;
+    QStringList linksList;
+
+    QStringList failed_files;
+    QStringList failed_dirs;
+
     void warning(QString msg);
     void fatalError(QString msg);
 
 signals:
-    void deleteFiles(QDir basedir, QStringList filesList, QSet<QString> dirsSet);
+    void deleteFiles(const QStringList links, const QStringList files, const QStringList dirs);
 };
 
 extern void fatalError(QString msg);

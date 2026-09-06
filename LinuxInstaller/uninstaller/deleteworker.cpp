@@ -1,77 +1,38 @@
 #include "deleteworker.h"
 
 #include <QFile>
-#include <QProcess>
+#include <QDir>
 
-QMutex mutex;
-QWaitCondition waiter;
-
-void DeleteWorker::deleteFiles(QDir basedir, QStringList filesList, QSet<QString> dirsSet)
+void DeleteWorker::deleteFiles(const QStringList links, const QStringList files, const QStringList dirs)
 {
-    // Delete the files in filesList
-    int fileCount{0};
-    QStringList errorFiles;
-
-    for (const auto& fpath : filesList) {
-        if (QFile::remove(fpath)) {
-            fileCount++;
-            emit addOutputLine(" - " + fpath);
-            //ui->output->appendPlainText(" - " + fpath);
+    // Delete the links
+    for (const auto& fpath : links) {
+        emit deletedFile(fpath, QFile::remove(fpath));
+    }
+    // Delete the files
+    for (const auto& fpath : files) {
+        emit deletedFile(fpath, QFile::remove(fpath));
+    }
+    // Delete the directories. These should already be sorted correctly (children first), but
+    // collect failures in case the list was sorted wrongly, to then try again afterwards.
+    QStringList dirfails;
+    QDir d0;
+    for (const auto& fpath : dirs) {
+        if ( d0.rmdir(fpath) ) {
+            emit removedDir(fpath, true);
         } else {
-            errorFiles.append(fpath);
+            dirfails.append(fpath);
         }
-        emit tick();
     }
-
-    // Report files not removed
-    for (const auto& fpath : errorFiles) {
-        emit addOutputLine("??? " + fpath);
-    }
-    if (!errorFiles.isEmpty()) {
-        warn(tr("%1 files could not be deleted (lines starting with \"???\")").arg(errorFiles.length()));
-    }
-
-    // Remove empty directories
-    QStringList dirsList{dirsSet.values()};
-    dirsList.sort();
-    int dirCount{0};
-    for (auto it = dirsList.rbegin(); it != dirsList.rend(); ++it) {
-        // Use reverse iteration to get the deepest directories first
-        if (basedir.rmdir(*it)) {
-            dirCount++;
-            emit addOutputLine(" --- " + *it + '/');
+    if ( !dirfails.isEmpty() ) {
+        // First sort the list.
+        dirfails.sort();
+        // Do a reverse iteration, to get the child directories first.
+        // List the directories in reverse order (starting at the leaves)
+        for (auto it = dirfails.rbegin(); it != dirfails.rend(); ++it) {
+            emit removedDir(*it, d0.rmdir(*it));
         }
-        emit tick();
-    }
-    if (basedir.rmdir(basedir.path())) {
-        dirCount++;
-        emit addOutputLine(" --- " + basedir.path());
-    }
-
-    emit addOutputLine("");
-    emit addOutputLine(tr("%1 files deleted").arg(fileCount));
-    emit addOutputLine(tr("%1 directories removed").arg(dirCount));
-
-
-    QDir home_dir{QDir::home()};
-    if (basedir.path() == home_dir.absoluteFilePath(".local")) {
-        emit addOutputLine("");
-        emit addOutputLine(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
-        // Update file-type associations
-        QProcess::execute("update-mime-database",
-                          QStringList() << basedir.absoluteFilePath("share/mime"));
-        QProcess::execute("update-desktop-database",
-                          QStringList() << basedir.absoluteFilePath("share/applications"));
     }
 
     emit finished();
-}
-
-void DeleteWorker::warn(QString msg)
-{
-    // Show the message in the main thread, but wait for it to be dismissed
-    mutex.lock();
-    emit warning(msg);
-    waiter.wait(&mutex);
-    mutex.unlock();
 }

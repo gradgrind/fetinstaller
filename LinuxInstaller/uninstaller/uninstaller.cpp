@@ -5,16 +5,29 @@
 #include <QFile>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QTimer>
+#include <QProcess>
 
 static const char* INSTALLED_FILES = "share/fet/installed_files";
 
+//TODO: Remove some of these ...
+
 static const char* FATAL_ERROR = QT_TRANSLATE_NOOP("Uninstaller", "Fatal Error");
+
 static const char* WARNING = QT_TRANSLATE_NOOP("Uninstaller", "Warning");
+
 static const char* ERROR1 = QT_TRANSLATE_NOOP("Uninstaller", R"(
 %1 files not within installation base directory (lines starting with "!!!")
 %2 files not found (lines starting with "***")
 
 Continue, deleting the other %3 files?
+)");
+
+static const char* CORRUPT_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", R"(
+It looks like the installation has been corrupted.
+
+Continuing to uninstall might not produce the desired results. Consider carefully
+whether you want to proceed.
 )");
 
 void Uninstaller::fatalError(QString msg)
@@ -33,12 +46,6 @@ void Uninstaller::warning(QString msg)
         msg);
 }
 
-void Uninstaller::threadedWarning(QString msg)
-{
-    warning(msg);
-    waiter.wakeAll();
-}
-
 Uninstaller::Uninstaller(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Uninstaller)
@@ -52,10 +59,13 @@ Uninstaller::Uninstaller(QWidget *parent)
     connect(ui->buttonBox_2, &QDialogButtonBox::accepted, this, &QApplication::quit);
 
     basedir.setPath(QCoreApplication::applicationDirPath());
-    basedir.cdUp(); // base directory of installation
+    basedir.makeAbsolute();
+    basedir.cdUp(); // base directory of installationProcess
 
     ui->fetinstall_path->setText(basedir.path());
 
+    //NOTE: If the time is too short, a blank window might get shown at first ...
+    QTimer::singleShot(100, this, &Uninstaller::page_1);
 }
 
 Uninstaller::~Uninstaller() {
@@ -64,80 +74,71 @@ Uninstaller::~Uninstaller() {
     delete ui;
 }
 
+void Uninstaller::page_1()
+{
+    ui->stackedWidget->setCurrentIndex(0);
+    ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(false);
+    ui->filesReport->clear();
+
+    // Read the list of installed files
+    QString filespath{basedir.filePath(INSTALLED_FILES)};
+    QFile textFile{filespath};
+    ui->filesReport->appendPlainText(tr("Reading file list from: %s").arg(filespath));
+    ui->filesReport->appendPlainText("");
+    if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
+        ui->filesReport->appendPlainText(tr("*** CRITICAL ERROR: couldn't read file list ***"));
+        return;
+    }
+    QTextStream textStream(&textFile);
+    filesList.clear();
+    dirsList.clear();
+    linksList.clear();
+    int errors{0};
+    while ( true )
+    {
+        QString line = textStream.readLine();
+        if ( line.isNull() )
+            break;    // end of file
+        QString rpath{line.trimmed()};
+        if ( rpath.isEmpty() )
+            continue;
+        if ( rpath.startsWith("/") || rpath.startsWith("..") ) {
+            // Only allow relative paths within the installer package.
+            ui->filesReport->appendPlainText(tr("Invalid line in file list: %1").arg(rpath));
+            errors++;
+            continue;
+        }
+        QString fpath{basedir.absoluteFilePath(rpath)};
+        QFileInfo f{fpath};
+        if ( f.isSymLink() ) {
+            linksList.append(fpath);
+        } else if ( f.isDir() ) {
+            dirsList.append(fpath);
+        } else if ( f.exists() ) {
+            filesList.append(fpath);
+        } else {
+            ui->filesReport->appendPlainText(tr("File not found: %1").arg(fpath));
+            errors++;
+        }
+    }
+    if ( errors == 0 ) {
+        ui->filesReport->appendPlainText(tr("Press OK to uninstall."));
+    } else {
+        ui->filesReport->appendPlainText(tr(CORRUPT_INSTALLATION));
+    }
+    ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(true);
+}
+
 void Uninstaller::page_2()
 {
     ui->stackedWidget->setCurrentIndex(1);
-    // Enable ok button
+
+    // Disable ok button
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
 
-    // Read the list of installed files
-    QString filespath{basedir.absoluteFilePath(INSTALLED_FILES)};
-    QFile textFile{filespath};
-    if (!textFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        fatalError(tr("Couldn't read file list at: ") + filespath);
-        return;
-    }
-    QStringList filesList;
-    QSet<QString> dirsSet; // collect directories
-    QTextStream textStream(&textFile);
-    int errorCount1{0}; // file not within installation directory
-    int errorCount2{0}; // file not founs
-    // For checking that files are within the installation directory:
-    QString basepath{basedir.path() + "/"};
-    while (true)
-    {
-        QString line = textStream.readLine();
-        if (line.isNull())
-            break;    // Report files not removed
-        QString fpath{line.trimmed()};
-        if (fpath.isEmpty()) {
-            continue;
-        } else if (fpath.startsWith(basepath)) {
-            QFileInfo finfo{fpath};
-            // In the case of a symlink with missing target, the symlink will be reported
-            // as non-existent, so a second check is needed.
-            if (!finfo.exists() && finfo.readSymLink().isEmpty()) {
-                errorCount2++;
-                ui->output->appendPlainText("*** " + fpath);
-                continue;
-            }
-            filesList.append(fpath);
-            dirsSet.insert(finfo.dir().absolutePath());
-        } else {
-            // File not within installation directory
-            errorCount1++;
-            ui->output->appendPlainText("!!! " + fpath);
-        }
-    }
-    if (errorCount1 != 0 || errorCount2 != 0) {
-        if (QMessageBox::warning(
-                this,
-                tr(WARNING),
-                tr(ERROR1).arg(errorCount1).arg(errorCount2).arg(filesList.length()),
-                QMessageBox::Ok|QMessageBox::Cancel) != QMessageBox::Ok) {
-
-            return;
-        }
-    }
-
-    // Add directories within the installation directory which haven't yet been added
-    // because they contain only directories
-    QSet<QString> extraDirs; // collect additional directories
-    for (const auto& d : dirsSet) {
-        QFileInfo dinfo{d};
-        while (true) {
-            QString p{dinfo.path()}; // get the parent directory
-            if (p.startsWith(basepath)) {
-                extraDirs.insert(p);
-                dinfo = QFileInfo{p};
-            } else {
-                break;
-            }
-        }
-    }
-    dirsSet.unite(extraDirs);
-
-    ui->uninstallProgress->setMaximum(filesList.length() + dirsSet.size());
+    // Initialize progress bar
+    ui->uninstallProgress->setMinimum(0);
+    ui->uninstallProgress->setMaximum(linksList.length() + filesList.length() + dirsList.size());
     ui->uninstallProgress->setValue(0);
 
     // Use background thread to perform deletions
@@ -148,17 +149,39 @@ void Uninstaller::page_2()
     connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
     connect(this, &Uninstaller::deleteFiles, worker, &DeleteWorker::deleteFiles);
 
-    connect(worker, &DeleteWorker::addOutputLine, ui->output, &QPlainTextEdit::appendPlainText);
-    connect(worker, &DeleteWorker::tick, this, &Uninstaller::progressOne);
+    connect(worker, &DeleteWorker::deletedFile, this, &Uninstaller::file_deleted);
+    connect(worker, &DeleteWorker::removedDir, this, &Uninstaller::dir_removed);
     connect(worker, &DeleteWorker::finished, this, &Uninstaller::done);
-
-
-    connect(worker, &DeleteWorker::warning, this, &Uninstaller::threadedWarning);
 
     workerThread.start();
 
-    // Start copying
-    emit deleteFiles(basedir, filesList, dirsSet);
+     // Start deleting.
+    failed_files.clear();
+    failed_dirs.clear();
+    ui->output->clear();
+    // The directories should already be sorted correctly (longest first), so that
+    // leaf directories will come before parent directories.
+    emit deleteFiles(linksList, filesList, dirsList);
+}
+
+void Uninstaller::file_deleted(QString fpath, bool ok)
+{
+    if ( ok ) {
+        ui->output->appendPlainText(" - " + fpath);
+    } else {
+        failed_files.append(fpath);
+    }
+    progressOne();
+}
+
+void Uninstaller::dir_removed(QString fpath, bool ok)
+{
+    if ( ok ) {
+        ui->output->appendPlainText(" -/ " + fpath);
+    } else {
+        failed_files.append(fpath);
+    }
+    progressOne();
 }
 
 void Uninstaller::progressOne()
@@ -166,8 +189,10 @@ void Uninstaller::progressOne()
     int p = ui->uninstallProgress->value();
     int max = ui->uninstallProgress->maximum();
     if (p == max) {
+        //TODO: Do I still need the fatal error popup? What about a report in the output window?
         fatalError("BUG: progress > 100%");
         qApp->exit(2);
+        // Also ensure it only happens once!
     } else {
         ui->uninstallProgress->setValue(p + 1);
     }
@@ -175,6 +200,25 @@ void Uninstaller::progressOne()
 
 void Uninstaller::done()
 {
+    int fileCount = filesList.length() + linksList.length() - failed_files.length();
+    int dirCount = dirsList.length() - failed_dirs.length();
+    ui->output->appendPlainText("");
+    ui->output->appendPlainText(tr("%1 files deleted").arg(fileCount));
+    ui->output->appendPlainText(tr("%1 directories removed").arg(dirCount));
+
+    QDir home_dir{QDir::home()};
+    if (basedir.path() == home_dir.absoluteFilePath(".local")) {
+        ui->output->appendPlainText("");
+        ui->output->appendPlainText(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
+        // Update file-type associations
+        QProcess::execute("update-mime-database",
+                          QStringList() << basedir.absoluteFilePath("share/mime"));
+        QProcess::execute("update-desktop-database",
+                          QStringList() << basedir.absoluteFilePath("share/applications"));
+    }
+
+    //TODO: remove the root directory if empty?
+
     // Enable ok button
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
 }

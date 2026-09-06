@@ -234,6 +234,8 @@ void Installer::scanSource()
     }
     // Save results
     installFiles.installationFiles = installationFiles;
+    // Sort alphabetically, so parent directories always come before their children:
+    installationDirs.sort();
     installFiles.installationDirs = installationDirs;
     installFiles.installationLinksRel = installationLinksRel;
     installFiles.installationLinksAbs = installationLinksAbs;
