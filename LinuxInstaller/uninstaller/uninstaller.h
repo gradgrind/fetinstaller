@@ -33,9 +33,6 @@ private slots:
     void dir_removed(QString fpath, bool ok);
     void done(bool ok);
 
-//??
-    void progressOne();
-
 private:
     Ui::Uninstaller *ui;
     QDir basedir;
@@ -47,6 +44,8 @@ private:
     QStringList failed_files;
     QStringList failed_dirs;
 
+    void progressOne();
+    bool bugflag{false};
     void warning(QString msg);
     void fatalError(QString msg);
 

@@ -173,11 +173,9 @@ void Uninstaller::progressOne()
     int max = ui->uninstallProgress->maximum();
     if ( p < max ) {
         ui->uninstallProgress->setValue(p + 1);
-    } else {
-        //TODO-- ui->output->appendPlainText("");
+    } else if ( !bugflag ) {
         ui->output->appendPlainText("\nBUG: progress > 100%");
-        // Tell the delete loop to stop
-        worker->abort_deleting = true;
+        bugflag = true; // suppress further reports
     }
 }
 

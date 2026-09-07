@@ -5,24 +5,12 @@
 
 void DeleteWorker::deleteFiles(const QStringList links, const QStringList files, const QStringList dirs)
 {
-    abort_deleting = false;
-
     // Delete the links
     for (const auto& fpath : links) {
-        if ( abort_deleting ) {
-            emit finished(false);
-            return;
-        }
-
         emit deletedFile(fpath, QFile::remove(fpath));
     }
     // Delete the files
     for (const auto& fpath : files) {
-        if ( abort_deleting ) {
-            emit finished(false);
-            return;
-        }
-
         emit deletedFile(fpath, QFile::remove(fpath));
     }
     // Delete the directories. These should already be sorted correctly (children first), but
@@ -30,11 +18,6 @@ void DeleteWorker::deleteFiles(const QStringList links, const QStringList files,
     QStringList dirfails;
     QDir d0;
     for (const auto& fpath : dirs) {
-        if ( abort_deleting ) {
-            emit finished(false);
-            return;
-        }
-
         if ( d0.rmdir(fpath) ) {
             emit removedDir(fpath, true);
         } else {
@@ -47,11 +30,6 @@ void DeleteWorker::deleteFiles(const QStringList links, const QStringList files,
         // Do a reverse iteration, to get the child directories first.
         // List the directories in reverse order (starting at the leaves)
         for (auto it = dirfails.rbegin(); it != dirfails.rend(); ++it) {
-            if ( abort_deleting ) {
-                emit finished(false);
-                return;
-            }
-
             emit removedDir(*it, d0.rmdir(*it));
         }
     }
