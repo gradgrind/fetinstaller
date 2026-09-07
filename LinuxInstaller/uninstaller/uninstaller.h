@@ -44,6 +44,8 @@ private:
     QStringList failed_files;
     QStringList failed_dirs;
 
+    void print_1(QString line);
+    void print_2(QString line);
     void progressOne();
     bool bugflag{false};
     void warning(QString msg);

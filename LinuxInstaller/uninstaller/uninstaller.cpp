@@ -54,6 +54,12 @@ Uninstaller::~Uninstaller() {
     delete ui;
 }
 
+void Uninstaller::print_1(QString line)
+{
+    if ( !bugflag )
+        ui->filesReport->appendPlainText(line);
+}
+
 void Uninstaller::page_1()
 {
     ui->stackedWidget->setCurrentIndex(0);
@@ -63,10 +69,10 @@ void Uninstaller::page_1()
     // Read the list of installed files
     QString filespath{basedir.filePath(INSTALLED_FILES)};
     QFile textFile{filespath};
-    ui->filesReport->appendPlainText(tr("Reading file list from: %1").arg(filespath));
-    ui->filesReport->appendPlainText("");
+    print_1(tr("Reading file list from: %1").arg(filespath));
+    print_1("");
     if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-        ui->filesReport->appendPlainText(tr("*** CRITICAL ERROR: couldn't read file list ***"));
+        print_1(tr("*** CRITICAL ERROR: couldn't read file list ***"));
         return;
     }
     QTextStream textStream(&textFile);
@@ -83,9 +89,9 @@ void Uninstaller::page_1()
         if ( rpath.isEmpty() )
             continue;
         QFileInfo fr{rpath};
-        if ( !fr.isRelative() || rpath.contains("..") ) {
+        if ( fr.isAbsolute() || rpath.contains("..") ) {
             // Only allow relative paths without "..", i.e. guaranteed to be within the package.
-            ui->filesReport->appendPlainText(tr("Invalid line in file list: %1").arg(rpath));
+            print_1(tr("Invalid line in file list: %1").arg(rpath));
             errors++;
             continue;
         }
@@ -98,14 +104,14 @@ void Uninstaller::page_1()
         } else if ( f.exists() ) {
             filesList.append(fpath);
         } else {
-            ui->filesReport->appendPlainText(tr("File not found: %1").arg(fpath));
+            print_1(tr("File not found: %1").arg(fpath));
             errors++;
         }
     }
     if ( errors == 0 ) {
-        ui->filesReport->appendPlainText(tr("Press OK to uninstall."));
+        print_1(tr("Press OK to uninstall."));
     } else {
-        ui->filesReport->appendPlainText(tr(CORRUPT_INSTALLATION));
+        print_1(tr(CORRUPT_INSTALLATION));
     }
     // Add the root directory, basedir
     dirsList.append(basedir.path());
@@ -150,7 +156,7 @@ void Uninstaller::page_2()
 void Uninstaller::file_deleted(QString fpath, bool ok)
 {
     if ( ok ) {
-        ui->output->appendPlainText(" - " + fpath);
+        print_2(" - " + fpath);
     } else {
         failed_files.append(fpath);
     }
@@ -160,7 +166,7 @@ void Uninstaller::file_deleted(QString fpath, bool ok)
 void Uninstaller::dir_removed(QString fpath, bool ok)
 {
     if ( ok ) {
-        ui->output->appendPlainText(" -/ " + fpath);
+        print_2(" -/ " + fpath);
     } else {
         failed_files.append(fpath);
     }
@@ -174,15 +180,20 @@ void Uninstaller::progressOne()
     if ( p < max ) {
         ui->uninstallProgress->setValue(p + 1);
     } else if ( !bugflag ) {
-        ui->output->appendPlainText("\nBUG: progress > 100%");
+        print_2("\nBUG: progress > 100%");
         bugflag = true; // suppress further reports
     }
+}
+
+void Uninstaller::print_2(QString line)
+{
+    if ( !bugflag )
+        ui->output->appendPlainText(line);
 }
 
 void Uninstaller::done(bool ok)
 {
     if ( !ok ) {
-        // TODO: needs to tidy up?
         // Enable ok button
         ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
         return;
@@ -190,14 +201,14 @@ void Uninstaller::done(bool ok)
 
     int fileCount = filesList.length() + linksList.length() - failed_files.length();
     int dirCount = dirsList.length() - failed_dirs.length();
-    ui->output->appendPlainText("");
-    ui->output->appendPlainText(tr("%1 files deleted").arg(fileCount));
-    ui->output->appendPlainText(tr("%1 directories removed").arg(dirCount));
+    print_2("");
+    print_2(tr("%1 files deleted").arg(fileCount));
+    print_2(tr("%1 directories removed").arg(dirCount));
 
     QDir home_dir{QDir::home()};
     if ( basedir.path() == home_dir.absoluteFilePath(".local") ) {
-        ui->output->appendPlainText("");
-        ui->output->appendPlainText(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
+        print_2("");
+        print_2(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
         // Update file-type associations
         QProcess::execute("update-mime-database",
                           QStringList() << basedir.absoluteFilePath("share/mime"));
@@ -206,8 +217,8 @@ void Uninstaller::done(bool ok)
     } else {
         // Seek remaining directories, test if empty.
         if ( basedir.exists() ) {
-            ui->output->appendPlainText("");
-            ui->output->appendPlainText(tr(DIR_NOT_EMPTY).arg(basedir.path()));
+            print_2("");
+            print_2(tr(DIR_NOT_EMPTY).arg(basedir.path()));
         }
     }
 
