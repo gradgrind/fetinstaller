@@ -8,6 +8,7 @@
 #include <QStringList>
 #include <QSet>
 #include <QThread>
+#include "deleteworker.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,6 +20,7 @@ class Uninstaller : public QWidget
 {
     Q_OBJECT
     QThread workerThread;
+    DeleteWorker* worker;
 
 public:
     explicit Uninstaller(QWidget *parent = nullptr);
@@ -29,7 +31,7 @@ private slots:
     void page_2();
     void file_deleted(QString fpath, bool ok);
     void dir_removed(QString fpath, bool ok);
-    void done();
+    void done(bool ok);
 
 //??
     void progressOne();

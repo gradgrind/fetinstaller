@@ -20,6 +20,9 @@ class CopyWorker : public QObject
 public slots:
     void copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);
 
+public:
+    bool abort_copying;
+
 signals:
     void number_of_files(int count);
     void dir_nocopy(QString filepath);
@@ -31,7 +34,7 @@ signals:
     void link_copied(QPair<QString, QString> filepaths);
     void failed_link(QPair<QString, QString> filepaths);
     void progress(int count);
-    void copying_done(QString msg);
+    void copying_done(QString msg, bool ok);
 };
 
 #endif // COPYTHREAD_H

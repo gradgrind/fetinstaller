@@ -17,13 +17,14 @@ class Installer : public QWidget
 {
     Q_OBJECT
     QThread workerThread;
+    CopyWorker* copyWorker;
 
 public:
     explicit Installer(QWidget *parent = nullptr);
     ~Installer();
 
 private slots:
-    void scanSource();
+    void page_0();
     void installInvalidClicked(bool checked);
     void selectDefaultDir();
     void selectInstallDir();
@@ -41,7 +42,7 @@ private slots:
     void handleLinkCopied(QPair<QString, QString> filepaths);
     void handleLinkFailed(QPair<QString, QString> filepaths);
 
-    void handleCopyingFinished(QString msg);
+    void handleCopyingFinished(QString msg, bool ok);
     void installationComplete();
 
 private:

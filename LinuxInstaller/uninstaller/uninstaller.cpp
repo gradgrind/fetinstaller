@@ -1,6 +1,5 @@
 #include "uninstaller.h"
 #include <ui_uninstaller.h>
-#include "deleteworker.h"
 
 #include <QFile>
 #include <QPushButton>
@@ -14,6 +13,17 @@ It looks like the installation has been corrupted.
 
 Continuing to uninstall might not produce the desired results. Consider carefully
 whether you want to proceed.
+)");
+
+//TODO: Consider allowing certain files to be ignored when checking for emptiness.
+// This would allow, say, configuration files to be retained when updating an
+// installation.
+static const char* DIR_NOT_EMPTY = QT_TRANSLATE_NOOP("Uninstaller", R"(
+The installation directory is not empty:
+  %1
+
+Please check its contents and delete manually, if they are no longer required.
+A renewed installation prefers an empty folder.
 )");
 
 Uninstaller::Uninstaller(QWidget *parent)
@@ -72,8 +82,9 @@ void Uninstaller::page_1()
         QString rpath{line.trimmed()};
         if ( rpath.isEmpty() )
             continue;
-        if ( rpath.startsWith("/") || rpath.startsWith("..") ) {
-            // Only allow relative paths within the installer package.
+        QFileInfo fr{rpath};
+        if ( !fr.isRelative() || rpath.contains("..") ) {
+            // Only allow relative paths without "..", i.e. guaranteed to be within the package.
             ui->filesReport->appendPlainText(tr("Invalid line in file list: %1").arg(rpath));
             errors++;
             continue;
@@ -114,7 +125,7 @@ void Uninstaller::page_2()
     ui->uninstallProgress->setValue(0);
 
     // Use background thread to perform deletions
-    DeleteWorker* worker = new DeleteWorker;
+    worker = new DeleteWorker;
     worker->moveToThread(&workerThread);
 
     // Connect signals
@@ -162,20 +173,23 @@ void Uninstaller::progressOne()
     int max = ui->uninstallProgress->maximum();
     if ( p < max ) {
         ui->uninstallProgress->setValue(p + 1);
-    }
-    if (p == max) {
-        ui->output->appendPlainText("");
-        ui->output->appendPlainText("BUG: progress > 100%");
-
-        qApp->exit(2);
-        //TODO: ensure it only happens once! Probably all subsequent output
-        // should be handled differently ... don't lose the message!
-        // Can the delete loop be stopped?
+    } else {
+        //TODO-- ui->output->appendPlainText("");
+        ui->output->appendPlainText("\nBUG: progress > 100%");
+        // Tell the delete loop to stop
+        worker->abort_deleting = true;
     }
 }
 
-void Uninstaller::done()
+void Uninstaller::done(bool ok)
 {
+    if ( !ok ) {
+        // TODO: needs to tidy up?
+        // Enable ok button
+        ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
+        return;
+    }
+
     int fileCount = filesList.length() + linksList.length() - failed_files.length();
     int dirCount = dirsList.length() - failed_dirs.length();
     ui->output->appendPlainText("");
@@ -183,7 +197,7 @@ void Uninstaller::done()
     ui->output->appendPlainText(tr("%1 directories removed").arg(dirCount));
 
     QDir home_dir{QDir::home()};
-    if (basedir.path() == home_dir.absoluteFilePath(".local")) {
+    if ( basedir.path() == home_dir.absoluteFilePath(".local") ) {
         ui->output->appendPlainText("");
         ui->output->appendPlainText(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
         // Update file-type associations
@@ -191,10 +205,13 @@ void Uninstaller::done()
                           QStringList() << basedir.absoluteFilePath("share/mime"));
         QProcess::execute("update-desktop-database",
                           QStringList() << basedir.absoluteFilePath("share/applications"));
+    } else {
+        // Seek remaining directories, test if empty.
+        if ( basedir.exists() ) {
+            ui->output->appendPlainText("");
+            ui->output->appendPlainText(tr(DIR_NOT_EMPTY).arg(basedir.path()));
+        }
     }
-
-    //TODO: remove the root directory if empty?
-
 
     // Enable ok button
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
