@@ -52,11 +52,13 @@ private:
     void page_1();
     void page_2();
     void page_3();
+    void print_3(QString line);
     void tidyPartial();
     void error_exit(int cc);
-    void incrementProgress();
+    void progressOne();
     void uninstallPartial();
 
+    bool bugflag{false};
     bool scanComplete;
     bool scanOk;
     QString defaultInstallationPath;

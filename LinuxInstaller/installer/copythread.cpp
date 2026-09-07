@@ -1,8 +1,4 @@
 #include "copythread.h"
-#include <QDir>
-#include <QMessageBox>
-#include <QApplication>
-#include <QDirIterator>
 #include <QProcess>
 
 //TODO: If an error occurs, it would be good to remove all installed files.
@@ -10,7 +6,6 @@
 void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles) {
     /* ... here is the long-running operation ... */
 
-    abort_copying = false;
     // StartCopy with the directories, which should be sorted such that parent directories are always
     // before their child directories. Alphabetical sorting should be adequate.
     emit number_of_files(
@@ -20,11 +15,6 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
         + iFiles.installationLinksRel.length());
 
     for ( const auto& d : iFiles.installationDirs ) {
-        if ( abort_copying ) {
-            emit copying_done("", false);
-            return;
-        }
-
         if ( dstDir.exists(d) ) {
             QFileInfo dd{dstDir.filePath(d)};
             if ( dd.isDir() && dd.isWritable() ) {
@@ -41,11 +31,6 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
 
     // Copy the regular files
     for ( const auto& f : iFiles.installationFiles ) {
-        if ( abort_copying ) {
-            emit copying_done("", false);
-            return;
-        }
-
         if ( QFile::copy(srcDir.filePath(f), dstDir.filePath(f)) ) {
             emit file_copied(f);
         } else {
@@ -55,11 +40,6 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
 
     // Set symlinks
     for ( const auto& fx : iFiles.installationLinksAbs ) {
-        if ( abort_copying ) {
-            emit copying_done("", false);
-            return;
-        }
-
         if ( QFile::link(fx.second, dstDir.filePath(fx.first)) ) {
             emit link_copied(fx);
         } else {
@@ -67,11 +47,6 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
         }
     }
     for ( const auto& fx : iFiles.installationLinksRel ) {
-        if ( abort_copying ) {
-            emit copying_done("", false);
-            return;
-        }
-
         if ( QFile::link(fx.second, dstDir.filePath(fx.first)) ) {
             emit link_copied(fx);
         } else {

@@ -515,15 +515,15 @@ void Installer::handleNumberOfFiles(int n)
 void Installer::handleDirWritten(QString filepath)
 {
     dstDirectories.append(filepath);
-    incrementProgress();
-    ui->installDetails->appendPlainText("+ " + filepath + "/");
+    progressOne();
+    print_3("+ " + filepath + "/");
 }
 
 void Installer::handleDirNotCopied(QString filepath)
 {
     dstDirectories.append(filepath);
-    incrementProgress();
-    ui->installDetails->appendPlainText("(+) " + filepath + "/");
+    progressOne();
+    print_3("(+) " + filepath + "/");
 }
 
 void Installer::handleDirWriteFailed(QString filepath)
@@ -546,25 +546,30 @@ void Installer::handleDirOverwriteFailed(QString filepath)
     emit exit_cc(2);
 }
 
-void Installer::incrementProgress()
+void Installer::print_3(QString line)
+{
+    if ( !bugflag )
+        ui->installDetails->appendPlainText(line);
+}
+
+
+void Installer::progressOne()
 {
     int p = ui->installProgress->value();
     int max = ui->installProgress->maximum();
     if ( p < max ) {
         ui->installProgress->setValue(p + 1);
-    } else {
-        //TODO-- ui->installDetails->appendPlainText("");
-        ui->installDetails->appendPlainText("\nBUG: progress > 100%");
-        // Tell the copying loop to stop
-        copyWorker->abort_copying = true;
+    } else if ( !bugflag ) {
+        print_3("\nBUG: progress > 100%");
+        bugflag = true; // suppress further reports
     }
 }
 
 void Installer::handleFileCopied(QString filepath)
 {
     dstFiles.append(filepath);
-    incrementProgress();
-    ui->installDetails->appendPlainText("+ " + filepath);
+    progressOne();
+    print_3("+ " + filepath);
 }
 
 void Installer::handleCopyFailed(QString filepath)
@@ -576,8 +581,8 @@ void Installer::handleCopyFailed(QString filepath)
 void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
 {
     dstFiles.append(filepaths.first);
-    incrementProgress();
-    ui->installDetails->appendPlainText("+ " + filepaths.second);
+    progressOne();
+    print_3("+ " + filepaths.second);
 }
 
 void Installer::handleLinkFailed(QPair<QString, QString> filepaths)
@@ -618,8 +623,8 @@ void Installer::handleCopyingFinished(QString msg, bool ok)
         log_stream << *it << "/\n"; // suffix "/"
     }
     file_log.close();
-    ui->installDetails->appendPlainText("");
-    ui->installDetails->appendPlainText(msg);
+    print_3("");
+    print_3(msg);
     ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
 
