@@ -86,7 +86,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="page_0">
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -104,9 +104,6 @@
         <widget class="QPlainTextEdit" name="messages_0">
          <property name="styleSheet">
           <string notr="true"/>
-         </property>
-         <property name="readOnly">
-          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -192,7 +189,7 @@ for this to take full effect.</string>
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="existing_fet_1" native="true">
+         <widget class="QWidget" name="existing_fet_1">
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
             <widget class="QLabel" name="label_7">
@@ -282,6 +279,13 @@ Please constact the distributor.</string>
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="refresh_2">
+           <property name="text">
+            <string>Refresh view</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
@@ -310,6 +314,13 @@ Please constact the distributor.</string>
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="removeExisting">
+         <property name="text">
+          <string>Remove existing FET installation</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="overwriteBox">
@@ -424,6 +435,34 @@ Please constact the distributor.</string>
        </item>
        <item>
         <widget class="QDialogButtonBox" name="buttonBox_3">
+         <property name="standardButtons">
+          <set>QDialogButtonBox::StandardButton::Ok</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="page_4">
+      <layout class="QVBoxLayout" name="verticalLayout_10">
+       <item>
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>### Remove incomplete installation</string>
+         </property>
+         <property name="textFormat">
+          <enum>Qt::TextFormat::MarkdownText</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="uninstall">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDialogButtonBox" name="buttonBox_4">
          <property name="standardButtons">
           <set>QDialogButtonBox::StandardButton::Ok</set>
          </property>

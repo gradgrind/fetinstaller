@@ -8,61 +8,25 @@
 #include <QFileDialog>
 #include <QTimer>
 
-static const char *FATAL_ERROR = QT_TRANSLATE_NOOP("Installer", "Fatal Error");
-static const char *WARNING = QT_TRANSLATE_NOOP("Installer", "Warning");
-
 static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   Please check that your installer has not been corrupted.
   If necessary, contact the distributor.)");
 
-static const char *WARN_EXISTING_UNINSTALL = QT_TRANSLATE_NOOP("Installer", R"(
-There is already a FET installation at %1.
-
-Do you want to uninstall it?)");
-
 static const char *WARN_EXISTING = QT_TRANSLATE_NOOP("Installer", R"(
-There is already a FET installation at %1.
-
+There seems to be a FET installation at '%1' already.<br>
 You must remove this before you can install the new version here.)");
 
 static const char *WARN_NOT_EMPTY = QT_TRANSLATE_NOOP("Installer", R"(
-The installation directory is not empty.
-
+The installation directory is not empty.<br>
 Check that you really want to place the installation there.)");
-
-//TODO: This is probably only for the "X" button. After an error, the partial installation
-// should be done anyway.
-static const char *WARN_UNFINISHED = QT_TRANSLATE_NOOP("Installer", R"(
-The installation is not complete. If you quit now, any already installed files will be removed.
-
-Do you really want to cancel the installation?)");
-
-
-//TODO
-void Installer::tidyPartial() {
-    qDebug() << "TODO: tidy()";
-}
 
 void Installer::closeEvent(QCloseEvent *event)
 {
-    if ( installationPartial ) { //TODO: set to true during file copying, etc.
-        if ( QMessageBox::warning(this, tr(WARNING), tr(WARN_UNFINISHED),
-                QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes ) {
-            tidyPartial();
-            event->accept();
-        } else {
-            event->ignore(); // Don't close the window
-        }
+    if ( installationPartial ) { // set to true during file copying, etc.
+        event->ignore(); // don't close the window
     } else {
         event->accept();
     }
-}
-
-void Installer::error_exit(int cc)
-{
-    if ( installationPartial )
-        tidyPartial();
-    qApp->exit(cc);
 }
 
 Installer::Installer(QWidget *parent)
@@ -74,9 +38,6 @@ Installer::Installer(QWidget *parent)
 
     // *** Connect signals ***
 
-    // This one is for quitting the program on errors
-    connect(this, &Installer::exit_cc, this, &Installer::error_exit, Qt::QueuedConnection);
-
     // page switching
     connect(ui->buttonBox_0, &QDialogButtonBox::accepted, this, &Installer::page_1);
     connect(ui->buttonBox_0, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
@@ -84,11 +45,14 @@ Installer::Installer(QWidget *parent)
     connect(ui->buttonBox_1, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
     connect(ui->buttonBox_2, &QDialogButtonBox::accepted, this, &Installer::page_3);
     connect(ui->buttonBox_2, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
-    connect(ui->buttonBox_3, &QDialogButtonBox::accepted, this, &Installer::installationComplete);
+    connect(ui->buttonBox_3, &QDialogButtonBox::accepted, this, &Installer::page_4);
+    connect(ui->buttonBox_4, &QDialogButtonBox::accepted, qApp, &QApplication::quit);
 
     // select destination directory
+    connect(ui->refresh_2, &QPushButton::clicked, this, &Installer::refreshView);
     connect(ui->setDefaultPath, &QPushButton::clicked, this, &Installer::selectDefaultDir);
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
+    connect(ui->removeExisting, &QPushButton::clicked, this, &Installer::uninstallExisting);
     connect(ui->installNonEmpty, &QCheckBox::clicked, this, &Installer::allowNonEmpty);
 
     //NOTE: If the time is too short, a blank window might get shown at first ...
@@ -101,10 +65,9 @@ Installer::~Installer() {
     delete ui;
 }
 
-void Installer::installInvalidClicked(bool checked)
+void addBoldLine(QPlainTextEdit* e, QString line)
 {
-    if (scanComplete)
-        ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(checked || scanOk);
+    e->appendHtml("<b>" + line + "</b");
 }
 
 void Installer::page_0()
@@ -137,8 +100,8 @@ void Installer::page_0()
     if (!QFileInfo::exists(src_dir.filePath("bin/fet"))
         || !QFileInfo::exists(src_dir.filePath("share/fet"))) {
 
-        ui->messages_0->appendPlainText("BUG: installation files not found.");
-        ui->messages_0->appendPlainText(tr(BAD_INSTALLER));
+        addBoldLine(ui->messages_0, "BUG: installation files not found.");
+        addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
     }
 
@@ -168,7 +131,8 @@ void Installer::page_0()
                 QString lrpath = src_dir.relativeFilePath(finfo.symLinkTarget());
                 if (lrpath.startsWith("..")) {
                     // outside the package
-                    ui->messages_0->appendPlainText(
+                    addBoldLine(
+                        ui->messages_0,
                         tr("ERROR, relative symlink outside package: %1 -> %2")
                             .arg(rpath, linkPath));
                     ui->messages_0->appendPlainText("");
@@ -178,7 +142,8 @@ void Installer::page_0()
                     if (linkTargetExists) {
                         installationLinksRel.append({rpath, linkPath});
                     } else {
-                        ui->messages_0->appendPlainText(
+                        addBoldLine(
+                            ui->messages_0,
                             tr("ERROR, target missing for relative symlink: %1 -> %2")
                                 .arg(rpath, linkPath));
                         ui->messages_0->appendPlainText("");
@@ -202,7 +167,8 @@ void Installer::page_0()
                     installationLinksAbs.append({rpath, linkPath});
                 } else {
                     // inside the package
-                    ui->messages_0->appendPlainText(
+                    addBoldLine(
+                        ui->messages_0,
                         tr("ERROR, absolute symlink within package: %1 -> %2")
                             .arg(rpath, linkPath));
                     ui->messages_0->appendPlainText("");
@@ -218,7 +184,8 @@ void Installer::page_0()
                 if ( finfo.isReadable() ) {
                     installationFiles.append(rpath);
                 } else {
-                    ui->messages_0->appendPlainText(
+                    addBoldLine(
+                        ui->messages_0,
                         tr("ERROR, file not readable: %1").arg(rpath));
                     badfiles++;
                 }
@@ -239,13 +206,18 @@ void Installer::page_0()
         // Allow continuation
         ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(true);
     } else {
+        addBoldLine(
+            ui->messages_0,
+            "–––––>>>");
         if ( src_dir.exists("_bin/allow_file_errors") ) {
-            ui->messages_0->appendPlainText(
+            addBoldLine(
+                ui->messages_0,
                 tr("%1 invalid files – installation is not recommended, rather fix the source!")
                     .arg(badfiles));
             ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(true);
         } else {
-            ui->messages_0->appendPlainText(
+            addBoldLine(
+                ui->messages_0,
                 tr("%1 invalid files – please fix the source!")
                     .arg(badfiles));
         }
@@ -261,6 +233,10 @@ void Installer::page_1()
 {
     ui->stackedWidget->setCurrentIndex(1);
 
+    // Default installation path
+    defaultInstallationPath = QDir::home().absoluteFilePath(".local");
+
+    // Seek existing installation
     QString which_fet;
     bool which_fet_failed{false};
     QProcess process;
@@ -287,8 +263,8 @@ void Installer::page_1()
         ui->existing_fet->setCurrentIndex(1);
         ui->existing_path->setText(which_fet);
 
-        QString fet_dir{QFileInfo{which_fet}.absolutePath()};
-        uninstall = fet_dir + "/fet_uninstall";
+        QDir fet_dir{QFileInfo{which_fet}.canonicalPath()};
+        uninstall = fet_dir.filePath("fet_uninstall");
         if (QFileInfo::exists(uninstall)) {
             ui->existingCheckBox->setChecked(true);
             ui->existingCheckBox->show();
@@ -305,14 +281,7 @@ void Installer::page_2()
     if (!uninstall.isEmpty() && ui->existingCheckBox->isChecked()) {
         QProcess::execute(uninstall);
     }
-
     ui->stackedWidget->setCurrentIndex(2);
-
-    // Default installation path
-    defaultInstallationPath = QDir::home().absoluteFilePath(".local");
-    //TODO--
-    //defaultInstallationPath = "/home/mt/Development/fet/installer/tmp";
-
     setInstallPath(defaultInstallationPath);
 }
 
@@ -340,8 +309,17 @@ void Installer::allowNonEmpty(bool checked)
 
 void Installer::setInstallPath(QString ipath)
 {
-    ui->installPath->setText(ipath);
-    dst_dir = ipath;
+    ui->removeExisting->hide();
+    if ( ipath.isEmpty() ) {
+        // Reentering setInstallpath, use existing path
+        ipath = dst_dir.absolutePath();
+        if ( !dst_dir.exists() ) {
+            dst_dir.mkdir(ipath);
+        }
+    } else {
+        ui->installPath->setText(ipath);
+        dst_dir = ipath;
+    }
     ui->setDefaultPath->setEnabled(ipath != defaultInstallationPath);
     ui->desktopSetup->hide();
     ui->installNonEmpty->setChecked(false);
@@ -352,36 +330,26 @@ void Installer::setInstallPath(QString ipath)
     ui->would_overwrite->clear();
     // Destination writable? (not reliable on Windows?)
     if ( !QFileInfo{ipath}.isWritable() ) {
-        ui->would_overwrite->appendPlainText(tr("Destination not writable: %1").arg(ipath));
+        addBoldLine(ui->would_overwrite, tr("Destination not writable: %1").arg(ipath));
         return;
     }
     // Check for FET installation here
     if ( dst_dir.exists("bin/fet") ) {
-        ui->would_overwrite->appendPlainText(tr(WARN_EXISTING).arg(dst_dir.path()));
+        addBoldLine(ui->would_overwrite, tr(WARN_EXISTING).arg(dst_dir.path()));
         // Check for FET uninstaller
         if ( dst_dir.exists("bin/fet_uninstall") ) {
-            if ( QMessageBox::warning(
-                    this,
-                    tr(WARNING),
-                    tr(WARN_EXISTING_UNINSTALL).arg(dst_dir.path()),
-                    QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes ) {
-
-                // Try to uninstall it
-                QProcess::execute(dst_dir.filePath("bin/fet_uninstall"));
-            } else {
-                return;
-            }
-        } else {
-            return;
+            ui->removeExisting->show();
         }
-        ui->would_overwrite->clear();
+        return;
     }
-
+    // Check for overwrites
     if ( dst_dir.exists() ) {
         if ( !dst_dir.isEmpty() ) {
             // Check for overwrites ...
             bool ok{true};
-            ui->would_overwrite->appendPlainText(tr("These files exist already (blocking installation):"));
+            addBoldLine(
+                ui->would_overwrite,
+                tr("These files exist already (blocking installation):"));
             ui->would_overwrite->appendPlainText("");
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
@@ -428,23 +396,28 @@ void Installer::setInstallPath(QString ipath)
                 // In the default installation directory this is to be expected, but
                 // otherwise probably not.
                 if ( ipath != defaultInstallationPath && !dst_dir.isEmpty() ) {
-                    ui->would_overwrite->appendPlainText(tr(WARN_NOT_EMPTY));
+                    addBoldLine(
+                        ui->would_overwrite,
+                        tr(WARN_NOT_EMPTY));
                     ui->installNonEmpty->show();
                     return;
-                } else {
-                    ui->would_overwrite->appendPlainText(tr("No conflicts."));
-                    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
                 }
             } else {
                 ui->would_overwrite->appendPlainText("");
-                ui->would_overwrite->appendPlainText(tr("*** Installation is not possible ***"));
+                addBoldLine(
+                    ui->would_overwrite,
+                    "–––––>>>");
+                addBoldLine(
+                    ui->would_overwrite,
+                    tr("*** Installation is not possible ***"));
+                return;
             }
         }
-
     } else {
         // Destination folder doesn't exist
         if ( !dst_dir.mkdir(ipath) ) {
-            ui->would_overwrite->appendPlainText(
+            addBoldLine(
+                ui->would_overwrite,
                 tr("Couldn't create installation folder: %1").arg(ipath));
             return;
         }
@@ -452,9 +425,20 @@ void Installer::setInstallPath(QString ipath)
     if ( ipath == defaultInstallationPath ) {
         ui->desktopSetup->show();
     }
-
     ui->would_overwrite->appendPlainText(tr("No conflicts."));
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
+}
+
+void Installer::uninstallExisting()
+{
+    // Try to remove the installation in dst_dir
+    QProcess::execute(dst_dir.filePath("bin/fet_uninstall"));
+    setInstallPath();
+}
+
+void Installer::refreshView()
+{
+    setInstallPath();
 }
 
 void Installer::page_3()
@@ -466,7 +450,7 @@ void Installer::page_3()
 
     ui->stackedWidget->setCurrentIndex(3);
 
-    //TODO: Is it correct to start copying immediately?
+    installationPartial = true;
 
     dstDirectories.clear(); // collect the directories in the installation
     dstFiles.clear(); // collect the files in the installation
@@ -502,6 +486,7 @@ void Installer::page_3()
     workerThread.start();
 
     // Start copying
+    copyErrors.clear();
     emit doCopy(src_dir, dst_dir, installFiles);
 }
 
@@ -516,42 +501,35 @@ void Installer::handleDirWritten(QString filepath)
 {
     dstDirectories.append(filepath);
     progressOne();
-    print_3("+ " + filepath + "/");
+    print_3("+ " + dst_dir.filePath(filepath) + "/");
 }
 
 void Installer::handleDirNotCopied(QString filepath)
 {
     dstDirectories.append(filepath);
     progressOne();
-    print_3("(+) " + filepath + "/");
+    print_3("(+) " + dst_dir.filePath(filepath) + "/");
 }
 
 void Installer::handleDirWriteFailed(QString filepath)
 {
-    // TODO: show absolute path?
-    QMessageBox::critical(
-        this,
-        tr(FATAL_ERROR),
-        tr("Could not create directory: %1").arg(filepath));
-    emit exit_cc(2);
+    copyErrors.append(tr("ERROR, could not create directory: %1").arg(dst_dir.filePath(filepath)));
 }
 
 void Installer::handleDirOverwriteFailed(QString filepath)
 {
-    // TODO: show absolute path?
-    QMessageBox::critical(
-        this,
-        tr(FATAL_ERROR),
-        tr("Existing item is not writable directory: %1").arg(filepath));
-    emit exit_cc(2);
+    copyErrors.append(tr("ERROR, existing item is not writable directory: %1").arg(dst_dir.filePath(filepath)));
 }
 
-void Installer::print_3(QString line)
+void Installer::print_3(QString line, bool bold)
 {
-    if ( !bugflag )
-        ui->installDetails->appendPlainText(line);
+    if ( !bugflag ) {
+        if ( bold )
+            addBoldLine(ui->installDetails, line);
+        else
+            ui->installDetails->appendPlainText(line);
+    }
 }
-
 
 void Installer::progressOne()
 {
@@ -560,7 +538,7 @@ void Installer::progressOne()
     if ( p < max ) {
         ui->installProgress->setValue(p + 1);
     } else if ( !bugflag ) {
-        print_3("\nBUG: progress > 100%");
+        print_3("\nBUG: progress > 100%", true);
         bugflag = true; // suppress further reports
     }
 }
@@ -569,96 +547,160 @@ void Installer::handleFileCopied(QString filepath)
 {
     dstFiles.append(filepath);
     progressOne();
-    print_3("+ " + filepath);
+    print_3("+ " + dst_dir.filePath(filepath));
 }
 
 void Installer::handleCopyFailed(QString filepath)
 {
-    QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not copy file to: %1").arg(filepath));
-    emit exit_cc(2);
+    copyErrors.append(tr("ERROR, could not copy file to: %1").arg(dst_dir.filePath(filepath)));
 }
 
 void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
 {
     dstFiles.append(filepaths.first);
     progressOne();
-    print_3("+ " + filepaths.second);
+    print_3("+ " + dst_dir.filePath(filepaths.second));
 }
 
 void Installer::handleLinkFailed(QPair<QString, QString> filepaths)
 {
-    QMessageBox::critical(
-        this, tr(FATAL_ERROR),
-        tr("Could not link %1 to: %2").arg(filepaths.first, filepaths.second));
+    copyErrors.append(
+        tr("ERROR, could not link '%1' to: %2")
+            .arg(dst_dir.filePath(filepaths.first),
+                dst_dir.filePath(filepaths.second)));
 }
 
-//TODO: Could this take too long?
-void Installer::handleCopyingFinished(QString msg, bool ok)
+void Installer::handleCopyingFinished()
 {
-    if ( !ok ) {
-        // TODO: needs to tidy up ...
-        ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
-        return;
-    }
+    ui->launch->setChecked(false);
+    ui->launch->hide();
+    // This seems to run quickly. If it should turn out to block the GUI for too long,
+    // it should perhaps be moved to a background thread.
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    if ( copyErrors.isEmpty() ) {
+        if ( dst_dir.absolutePath() == defaultInstallationPath ) {
+            // Only perform these operations if installing to "~/.local". For them to work with
+            // other installation locations, the relevant (modified) files would still need to
+            // be placed in "~/.local".
 
-    // Open file to record installed files
-    QString filelistpath{"share/fet/installed_files"};
-    filelist = dst_dir.absoluteFilePath(filelistpath);
-    file_log.setFileName(filelist);
-    if (!file_log.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        QMessageBox::critical(this, tr(FATAL_ERROR), tr("Could not create the installed-files list"));
-        emit exit_cc(1);
-        return;
+            // Update file-type associations and desktop files
+            print_3("");
+            print_3("update-mime-database");
+            QProcess::execute("update-mime-database",
+                              QStringList() << dst_dir.absoluteFilePath("share/mime"));
+            print_3("update-desktop-database");
+            QProcess::execute("update-desktop-database",
+                              QStringList() << dst_dir.absoluteFilePath("share/applications"));
+        }
+
+        // Open file to record installed files
+        QString filelistpath{"share/fet/installed_files"};
+        filelist = dst_dir.absoluteFilePath(filelistpath);
+        file_log.setFileName(filelist);
+        if (file_log.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            log_stream.setDevice(&file_log);
+            // List the files in reverse order (starting with the symlinks)
+            for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
+                log_stream << *it << "\n";
+            }
+            // Add the installed-files list.
+            log_stream << filelistpath << "\n";
+            // List the directories in reverse order (starting at the leaves)
+            for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {
+                log_stream << *it << "/\n"; // suffix "/"
+            }
+            file_log.close();
+            ui->launch->setChecked(true);
+            ui->launch->show();
+            installationPartial = false;
+        } else {
+            print_3("");
+            print_3("–––––>>>", true);
+            print_3(tr("ERROR, could not create the installed-files list"), true);
+        }
+    } else {
+        print_3("");
+        for ( const auto& e : std::as_const(copyErrors) ) {
+            print_3(e, true);
+        }
+        print_3("");
+        print_3("–––––>>>", true);
+        print_3(tr("%1 copying errors").arg(copyErrors.length()), true);
     }
-    log_stream.setDevice(&file_log);
-    // List the files in reverse order (starting with the symlinks)
-    for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
-        log_stream << *it << "\n";
-    }
-    // Add the installed-files list.
-    log_stream << filelistpath << "\n";
-    // List the directories in reverse order (starting at the leaves)
-    for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {
-        log_stream << *it << "/\n"; // suffix "/"
-    }
-    file_log.close();
-    print_3("");
-    print_3(msg);
+    QApplication::restoreOverrideCursor();
     ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
 
-void Installer::installationComplete()
+void Installer::page_4()
 {
-    if (ui->launch->isChecked()) {
-        QProcess runfet;
-        runfet.setProgram(dst_dir.filePath("bin/fet"));
-        runfet.startDetached();
-    }
+    if ( installationPartial ) {
+        // Installation incomplete, go to the additional page to tidy up
+        ui->stackedWidget->setCurrentIndex(4);
+        ui->buttonBox_4->button(QDialogButtonBox::Ok)->setEnabled(false);
 
-    qApp->quit();
+        // Remove installed files and directories
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+        connect(this, &Installer::doRemove, copyWorker, &CopyWorker::removePartial);
+        connect(copyWorker, &CopyWorker::remove_file, this, &Installer::removedFile);
+        connect(copyWorker, &CopyWorker::remove_dir, this, &Installer::removedDir);
+        connect(copyWorker, &CopyWorker::removing_done, this, &Installer::removingDone);
+
+        xdirs.clear(); // not uninstalled directories
+        xfiles.clear(); // not uninstalled files
+        emit doRemove(dst_dir, dstDirectories, dstFiles);
+    } else {
+        // Installation complete, don't switch to the additional page
+        if (ui->launch->isChecked()) {
+            QProcess runfet;
+            runfet.setProgram(dst_dir.filePath("bin/fet"));
+            runfet.startDetached();
+        }
+        qApp->quit();
+    }
 }
 
-//TODO: call this on error exits
-void Installer::uninstallPartial()
-{
-    // Remove installed files and directories
-    QStringList xdirs; // not uninstalled directories
-    QStringList xfiles; // not uninstalled files
-    // Remove the files in reverse order (starting with the symlinks)
-    for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
-        if ( !dst_dir.remove(*it) ) {
-            xfiles.append(*it);
-        }
+void Installer::removedFile(QString f, bool ok) {
+    if ( ok ) {
+        ui->uninstall->appendPlainText(" - " + dst_dir.filePath(f));
+    } else {
+        xfiles.append(f);
     }
-    // Remove the directories in reverse order (starting at the leaves)
-    for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {
-        if ( !dst_dir.rmdir(*it) ) {
-            xdirs.append(*it);
-        }
+}
+
+void Installer::removedDir(QString f, bool ok) {
+    if ( ok ) {
+        ui->uninstall->appendPlainText(" -/ " + dst_dir.filePath(f));
+    } else {
+        xdirs.append(f);
     }
+}
 
-    // Report the results
-    //TODO
-
+void Installer::removingDone() {
+    for ( const auto& f : std::as_const(xfiles) ) {
+        addBoldLine(ui->uninstall, tr("ERROR, could not remove: %1").arg(dst_dir.filePath(f)));
+    }
+    for ( const auto& f : std::as_const(xdirs) ) {
+        addBoldLine(ui->uninstall, tr("WARNING, could not remove directory: %1/").arg(dst_dir.filePath(f)));
+    }
+    ui->uninstall->appendPlainText("");
+    addBoldLine(
+        ui->uninstall,
+        "–––––>>>");
+    if ( !xfiles.isEmpty() ) {
+        addBoldLine(
+            ui->uninstall,
+            tr("%1 files could not be removed.").arg(xfiles.length()));
+    }
+    if ( !xdirs.isEmpty() ) {
+        addBoldLine(
+            ui->uninstall,
+            tr("%1 folders could not be removed.").arg(xdirs.length()));
+    } else if ( xfiles.isEmpty() ) {
+        ui->uninstall->appendPlainText(tr("Incomplete installation removed."));
+    }
+    installationPartial = false;
+    QApplication::restoreOverrideCursor();
+    ui->buttonBox_4->button(QDialogButtonBox::Ok)->setEnabled(true);
 }

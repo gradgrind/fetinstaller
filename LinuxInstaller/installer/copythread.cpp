@@ -1,12 +1,10 @@
 #include "copythread.h"
 #include <QProcess>
 
-//TODO: If an error occurs, it would be good to remove all installed files.
-
 void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles) {
     /* ... here is the long-running operation ... */
 
-    // StartCopy with the directories, which should be sorted such that parent directories are always
+    // Start by copying the directories, which should be sorted such that parent directories are always
     // before their child directories. Alphabetical sorting should be adequate.
     emit number_of_files(
         iFiles.installationDirs.length()
@@ -54,21 +52,25 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
         }
     }
 
-    QDir home_dir{QDir::home()};
-    QString done_message;
-    if (dstDir.absolutePath() == home_dir.absoluteFilePath(".local")) {
-        // Only perform these operations if installing to "~/.local". For them to work with
-        // other installation locations, the relevant (modified) files would still need to
-        // be placed in "~/.local".
+    emit copying_done();
+}
 
-        done_message = tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database");
 
-        // Update file-type associations
-        QProcess::execute("update-mime-database",
-                          QStringList() << dstDir.absoluteFilePath("share/mime"));
-        QProcess::execute("update-desktop-database",
-                          QStringList() << dstDir.absoluteFilePath("share/applications"));
+void CopyWorker::removePartial(const QDir& dstDir, const QStringList& dirs, const QStringList& files)
+{
+    /* ... here is the long-running operation ... */
+
+    QDir d0{dstDir};
+    // Remove installed files and directories
+    int xdirs{0}; // not uninstalled directories
+    int xfiles{0}; // not uninstalled files
+    // Remove the files in reverse order (starting with the symlinks)
+    for ( auto it = files.rbegin(); it != files.rend(); ++it ) {
+        emit remove_file(*it, d0.remove(*it));
     }
-
-    emit copying_done(done_message, true);
+    // Remove the directories in reverse order (starting at the leaves)
+    for ( auto it = dirs.rbegin(); it != dirs.rend(); ++it ) {
+        emit remove_dir(*it, d0.rmdir(*it));
+    }
+    emit removing_done();
 }

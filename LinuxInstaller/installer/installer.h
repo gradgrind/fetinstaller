@@ -25,10 +25,16 @@ public:
 
 private slots:
     void page_0();
-    void installInvalidClicked(bool checked);
+    void page_1();
+    void page_2();
+    void page_3();
+    void page_4();
+
+    void refreshView();
     void selectDefaultDir();
     void selectInstallDir();
-    void setInstallPath(QString ipath);
+    void setInstallPath(QString ipath = QString{});
+    void uninstallExisting();
     void allowNonEmpty(bool checked);
     void handleNumberOfFiles(int n);
 
@@ -42,23 +48,22 @@ private slots:
     void handleLinkCopied(QPair<QString, QString> filepaths);
     void handleLinkFailed(QPair<QString, QString> filepaths);
 
-    void handleCopyingFinished(QString msg, bool ok);
-    void installationComplete();
+    void handleCopyingFinished();
+
+    void removedFile(QString f, bool ok);
+    void removedDir(QString f, bool ok);
+    void removingDone();
 
 private:
     Ui::Installer *ui;
     void closeEvent(QCloseEvent *event) override;
 
-    void page_1();
-    void page_2();
-    void page_3();
-    void print_3(QString line);
-    void tidyPartial();
-    void error_exit(int cc);
+    void print_3(QString line, bool bold = false);
     void progressOne();
-    void uninstallPartial();
 
+    QDir fet_dir;
     bool bugflag{false};
+    QStringList copyErrors;
     bool scanComplete;
     bool scanOk;
     QString defaultInstallationPath;
@@ -72,10 +77,12 @@ private:
     QDir src_dir;
     QDir dst_dir;
     QString uninstall;
+    QStringList xdirs;
+    QStringList xfiles;
 
 signals:
     void doCopy(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);
-    void exit_cc(int cc);
+    void doRemove(const QDir& dstDir, const QStringList& dirs, const QStringList& files);
 };
 
 #endif // INSTALLER_H

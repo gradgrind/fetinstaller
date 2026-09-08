@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QDir>
-#include <QString>
+#include <QStringList>
 
 struct InstallFiles // relative paths to the files and directories to be copied
 {
@@ -19,6 +19,7 @@ class CopyWorker : public QObject
 
 public slots:
     void copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);
+    void removePartial(const QDir& dstDir, const QStringList& dirs, const QStringList &files);
 
 signals:
     void number_of_files(int count);
@@ -30,7 +31,11 @@ signals:
     void failed_copy(QString filepath);
     void link_copied(QPair<QString, QString> filepaths);
     void failed_link(QPair<QString, QString> filepaths);
-    void copying_done(QString msg, bool ok);
+    void copying_done();
+
+    void remove_file(QString f, bool ok);
+    void remove_dir(QString f, bool ok);
+    void removing_done();
 };
 
 #endif // COPYTHREAD_H
