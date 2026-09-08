@@ -6,13 +6,17 @@
 # This build script uses a standard Qt installation set up by the Qt online
 # installer.
 
-# Place the fetinstaller folder in the root folder of the FET source code.
-# Then run this script in the fetinstaller source (root) directory.
+# Place the "LinuxInstaller" folder in the root folder of the FET source code.
+# Then run this script. It will run in the "LinuxInstaller" directory.
 
 QTVERSION="6.11.2"
 QTDIR="$HOME/Qt"
 
 export PATH=$QTDIR/Tools/CMake/bin:$PATH
+
+SCRIPT=$(readlink -f "$0")
+BASEDIR=$(dirname "$SCRIPT")
+cd $BASEDIR
 
 # Build FET, assuming it is in the parent directory
 cmake -B build/FET -S .. -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/install
