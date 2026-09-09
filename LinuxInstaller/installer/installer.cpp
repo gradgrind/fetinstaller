@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QTimer>
+#include <QStandardPaths>
 
 static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   Please check that your installer has not been corrupted.
@@ -236,33 +237,15 @@ void Installer::page_1()
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
 
     // Seek existing installation
-    QString which_fet;
-    bool which_fet_failed{false};
-    QProcess process;
-    process.start("which", QStringList() << "fet");
-    process.waitForFinished(1000);
-    if ( process.state() == QProcess::NotRunning ) {
-        if (process.exitStatus() == QProcess::NormalExit) {
-            if ( process.exitCode() == 0 ) {
-                which_fet = process.readAllStandardOutput();
-                which_fet = which_fet.trimmed();
-            }
-        } else {
-            which_fet_failed = true;
-        }
-    } else {
-        process.kill();
-        which_fet_failed = true;
-    }
-    if ( which_fet_failed ) {
-        ui->existing_fet->setCurrentIndex(2);
-    } else if ( which_fet.isEmpty() ) {
+    QString which_fet{QStandardPaths::findExecutable("fet")};
+    if ( which_fet.isEmpty() ) {
         ui->existing_fet->setCurrentIndex(0);
     } else {
         ui->existing_fet->setCurrentIndex(1);
         ui->existing_path->setText(which_fet);
 
-        QDir fet_dir{QFileInfo{which_fet}.canonicalPath()};
+        QDir fet_dir{which_fet};
+        fet_dir.cdUp();
         uninstall = fet_dir.filePath("fet_uninstall");
         if (QFileInfo::exists(uninstall)) {
             ui->existingCheckBox->setChecked(true);
