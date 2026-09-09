@@ -1,5 +1,6 @@
 #include "installer.h"
 #include "ui_installer.h"
+#include "appdefs.h"
 #include "copythread.h"
 #include <QDirListing>
 #include <QProcess>
@@ -8,7 +9,7 @@
 #include <QTimer>
 
 static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
-  Please check that your installer has not been corrupted.
+  Please check that your installer has not been corrupted.<br>
   If necessary, contact the distributor.)");
 
 static const char *WARN_EXISTING = QT_TRANSLATE_NOOP("Installer", R"(
@@ -82,8 +83,7 @@ void Installer::page_0()
     // All files, except from root directories starting with "_" (currently just "_bin"), are copied.
     QStringList installationFiles;
     QStringList installationDirs;
-    QList<QPair<QString, QString>> installationLinksRel; // relative symlinks (within the installation)
-    QList<QPair<QString, QString>> installationLinksAbs; // absolute symlinks (outside the installation)
+    QList<QPair<QString, QString>> installationLinks; // symlinks / Windows shortcuts
 
     // Get source path
     src_dir = QFileInfo(QCoreApplication::applicationDirPath()).canonicalFilePath();
@@ -95,10 +95,8 @@ void Installer::page_0()
         src_dir.cdUp();
     }
 
-    // A simple check that the source directory is valid (contains a FET install bundle)
-    if (!QFileInfo::exists(src_dir.filePath("bin/fet"))
-        || !QFileInfo::exists(src_dir.filePath("share/fet"))) {
-
+    // A simple check that the source directory is valid (contains an install bundle for the app)
+    if ( !checkAppDir(src_dir) ) {
         addBoldLine(ui->messages_0, "BUG: installation files not found.");
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
@@ -111,75 +109,40 @@ void Installer::page_0()
     // Recursive search, but don't recurse into symlinked directories.
     int badfiles{0};
     int warnings{0};
-    for (const auto &dirEntry : QDirListing(
-             src_dir.path(),
-             F::Recursive | F::IncludeHidden | F::ExcludeOther | F::ResolveSymlinks | F::IncludeBrokenSymlinks)) {
+    for ( const auto &dirEntry : QDirListing(
+            src_dir.path(),
+            F::Recursive | F::IncludeHidden) ) {
         QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
-        if (rpath.startsWith("_")) {
+        if (rpath.startsWith("_installer_")) {
             continue;
         }
-        const QFileInfo finfo = dirEntry.fileInfo();
-        if (finfo.isSymLink()) {
-            // I need to test whether QFile::link can create links with non-existent targets and
-            // whether directory links work the same as file links.
-            QString linkPath = finfo.readSymLink(); // target path, relative or absolute
-            bool linkTargetExists = finfo.exists();
-            if (QFileInfo(linkPath).isRelative()) {
-                // A relative link within the install package is acceptable, as long as its target exists.
-                // A relative link outside the package is an error.
-                QString lrpath = src_dir.relativeFilePath(finfo.symLinkTarget());
-                if (lrpath.startsWith("..")) {
-                    // outside the package
-                    addBoldLine(
-                        ui->messages_0,
-                        tr("ERROR, relative symlink outside package: %1 -> %2")
-                            .arg(rpath, linkPath));
-                    ui->messages_0->appendPlainText("");
-                    badfiles++;
-                } else {
-                    // within the package
-                    if (linkTargetExists) {
-                        installationLinksRel.append({rpath, linkPath});
-                    } else {
-                        addBoldLine(
-                            ui->messages_0,
-                            tr("ERROR, target missing for relative symlink: %1 -> %2")
-                                .arg(rpath, linkPath));
-                        ui->messages_0->appendPlainText("");
-                        badfiles++;
-                    }
-                }
+
+        linktest slink{testSymLink(rpath)};
+        if ( !slink.message.isEmpty() ) {
+            // link: error or warning
+            if ( slink.link.isEmpty() ) {
+                // error
+                badfiles++;
+                addBoldLine(ui->messages_0, slink.message);
+                ui->messages_0->appendPlainText("");
             } else {
-                // An absolute link within the install package is an error.
-                // An absolute link outside the package will be accepted, but a warning will be issued.
-                if (src_dir.relativeFilePath(linkPath).startsWith("..")) {
-                    // outside the package
-                    QString x;
-                    if ( linkTargetExists ) {
-                        x = tr(" (doesn't exist!)");
-                    }
-                    ui->messages_0->appendPlainText(
-                        tr("WARNING, absolute symlink: %1 -> %2%3")
-                            .arg(rpath, linkPath, x));
-                    warnings++;
-                    ui->messages_0->appendPlainText("");
-                    installationLinksAbs.append({rpath, linkPath});
-                } else {
-                    // inside the package
-                    addBoldLine(
-                        ui->messages_0,
-                        tr("ERROR, absolute symlink within package: %1 -> %2")
-                            .arg(rpath, linkPath));
-                    ui->messages_0->appendPlainText("");
-                    badfiles++;
-                }
+                // warning
+                warnings++;
+                ui->messages_0->appendPlainText(slink.message);
+                ui->messages_0->appendPlainText("");
+                installationLinks.append({slink.link, slink.target});
             }
+        } else if ( !slink.link.isEmpty() ) {
+            // valid link
+            installationLinks.append({slink.link, slink.target});
         } else {
-            // Normal file or directory
+            // Normal file or directory?
+            const QFileInfo finfo = dirEntry.fileInfo();
             if ( finfo.isDir() ) {
+                // directory
                 installationDirs.append(rpath);
-            } else {
-                // Normal file
+            } else if ( finfo.isFile() ){
+                // normal file
                 if ( finfo.isReadable() ) {
                     installationFiles.append(rpath);
                 } else {
@@ -188,6 +151,12 @@ void Installer::page_0()
                         tr("ERROR, file not readable: %1").arg(rpath));
                     badfiles++;
                 }
+            } else {
+                // something else!
+                addBoldLine(
+                    ui->messages_0,
+                    tr("ERROR, invalid 'file': %1").arg(rpath));
+                badfiles++;
             }
         }
     }
@@ -196,8 +165,7 @@ void Installer::page_0()
     // Sort alphabetically, so parent directories always come before their children:
     installationDirs.sort();
     installFiles.installationDirs = installationDirs;
-    installFiles.installationLinksRel = installationLinksRel;
-    installFiles.installationLinksAbs = installationLinksAbs;
+    installFiles.installationLinks = installationLinks;
 
     QApplication::restoreOverrideCursor();
     scanOk = badfiles == 0;
@@ -208,7 +176,7 @@ void Installer::page_0()
         addBoldLine(
             ui->messages_0,
             "–––––>>>");
-        if ( src_dir.exists("_bin/allow_file_errors") ) {
+        if ( src_dir.exists("_installer_/allow_file_errors") ) {
             addBoldLine(
                 ui->messages_0,
                 tr("%1 invalid files – installation is not recommended, rather fix the source!")
@@ -359,14 +327,7 @@ void Installer::setInstallPath(QString ipath)
                     ui->would_overwrite->appendPlainText(dst_dir.filePath(f));
                 }
             }
-            for ( const auto& fpair : std::as_const(installFiles.installationLinksAbs) ) {
-                QFileInfo f{dst_dir.filePath(fpair.first)};
-                if ( f.exists() || !f.readSymLink().isEmpty() ) {
-                    ok = false;
-                    ui->would_overwrite->appendPlainText(f.filePath());
-                }
-            }
-            for ( const auto& fpair : std::as_const(installFiles.installationLinksRel) ) {
+            for ( const auto& fpair : std::as_const(installFiles.installationLinks) ) {
                 QFileInfo f{dst_dir.filePath(fpair.first)};
                 if ( f.exists() || !f.readSymLink().isEmpty() ) {
                     ok = false;
