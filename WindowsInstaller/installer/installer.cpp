@@ -8,6 +8,7 @@
 #include <QFileDialog>
 #include <QTimer>
 #include <QStandardPaths>
+#include <QMessageBox>
 
 static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   Please check that your installer has not been corrupted.<br>
@@ -20,6 +21,11 @@ You must remove this before you can install the new version here.)");
 static const char *WARN_NOT_EMPTY = QT_TRANSLATE_NOOP("Installer", R"(
 The installation directory is not empty.<br>
 Check that you really want to place the installation there.)");
+
+static const char *WARN_DIRNAME = QT_TRANSLATE_NOOP("Installer", R"(
+The installation directory should normally contain the application name, %1.<br>
+Do you really want to install to this directory?<br>
+'%2')");
 
 void Installer::closeEvent(QCloseEvent *event)
 {
@@ -36,6 +42,15 @@ Installer::Installer(QWidget *parent)
 {
     ui->setupUi(this);
     ui->stackedWidget->setCurrentIndex(0);
+
+    // Set application name in GUI
+    ui->label_title->setText(ui->label_title->text().arg(APPNAME, APPLONGNAME));
+    ui->label_page_0->setText(ui->label_page_0->text().arg(APPNAME));
+    ui->label_page_1->setText(ui->label_page_1->text().arg(APPNAME));
+    ui->removeExisting->setText(ui->removeExisting->text().arg(APPNAME));
+    ui->label_foundexec->setText(ui->label_foundexec->text().arg(APPNAME));
+    ui->label_notfound->setText(ui->label_notfound->text().arg(APPNAME));
+    ui->launch->setText(ui->launch->text().arg(APPNAME));
 
     // *** Connect signals ***
 
@@ -202,12 +217,12 @@ void Installer::page_1()
 
     // Default installation path
 #ifdef _WIN32
-    defaultInstallationPath = QDir::home().absoluteFilePath(".local");
+    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(APPNAME);
 #else
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
 #endif
     // Seek existing installation
-    QString which_app{QStandardPaths::findExecutable("fet")}; //TODO: use something like APPEXEC here!
+    QString which_app{QStandardPaths::findExecutable(APPEXEC)};
     if ( which_app.isEmpty() ) {
         ui->existing_fet->setCurrentIndex(0);
     } else {
@@ -245,12 +260,24 @@ void Installer::selectDefaultDir()
 void Installer::selectInstallDir()
 {
     QString p0{ui->installPath->text()};
-    QString dir = QFileDialog::getExistingDirectory(
-        this, tr("Open Directory"),
-        p0 == defaultInstallationPath ? QDir::homePath() : p0,
-        QFileDialog::ShowDirsOnly);
-    if (!dir.isEmpty()) {
+    while ( true ) {
+        QString dir = QFileDialog::getExistingDirectory(
+            this, tr("Open Directory"),
+            p0 == defaultInstallationPath ? QDir::homePath() : p0,
+            QFileDialog::ShowDirsOnly);
+        if (dir.isEmpty())
+            return;
+        if ( !QDir{dir}.dirName().contains("FET", Qt::CaseInsensitive)
+            && QMessageBox::warning(
+                this,
+                tr("Check Path"),
+                tr(WARN_DIRNAME).arg(APPNAME, dir),
+                QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes ) {
+            p0 = dir;
+            continue;
+        }
         setInstallPath(dir);
+        return;
     }
 }
 

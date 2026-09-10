@@ -1,5 +1,9 @@
 #include "appdefs.h"
 
+const QString APPNAME{QStringLiteral("FET")};
+const QString APPEXEC{QStringLiteral("fet")};
+const QString APPLONGNAME{QStringLiteral("Timetable Generator")};
+
 #ifdef _WIN32
 
 bool checkAppDir(QDir d)

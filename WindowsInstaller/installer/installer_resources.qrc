@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/icons">
-        <file>icons/fet.png</file>
+        <file>icons/installer.svg</file>
     </qresource>
 </RCC>
