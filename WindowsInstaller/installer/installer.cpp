@@ -23,9 +23,9 @@ The installation directory is not empty.<br>
 Check that you really want to place the installation there.)");
 
 static const char *WARN_DIRNAME = QT_TRANSLATE_NOOP("Installer", R"(
-The installation directory should normally contain the application name, %1.<br>
+The installation directory should normally contain the application name, '%1'.<br>
 Do you really want to install to this directory?<br>
-'%2')");
+--> '%2')");
 
 void Installer::closeEvent(QCloseEvent *event)
 {
@@ -107,7 +107,7 @@ void Installer::page_0()
         // Accept an "install_source" directory in the same directory as the installer executable
         src_dir.cd("install_source");
     } else {
-        // Assume the application is in the "_bin" directory of the source directory
+        // Assume the installer application is in the "_installer_" directory of the source directory
         src_dir.cdUp();
     }
 
