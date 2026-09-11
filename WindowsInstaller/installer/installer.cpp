@@ -112,7 +112,7 @@ void Installer::page_0()
     }
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
-    if ( !checkAppDir(src_dir) ) {
+    if ( !QFileInfo::exists(src_dir.filePath(EXECDIR + APPEXEC)) ) {
         addBoldLine(ui->messages_0, "BUG: installation files not found.");
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;

@@ -9,20 +9,9 @@ const QString APPLONGNAME{QStringLiteral("Timetable Generator")};
 const QString EXECDIR{QStringLiteral("")};
 const QString APPFILES{QStringLiteral("")};
 
-bool checkAppDir(QDir d)
-{
-    return QFileInfo::exists(d.filePath(APPEXEC));
-}
-
 #else
 
 const QString EXECDIR{QStringLiteral("bin/")};
 const QString APPFILES{QStringLiteral("share/fet/")};
-
-bool checkAppDir(QDir d)
-{
-    return QFileInfo::exists(d.filePath("bin/" + APPEXEC))
-        && QFileInfo::exists(d.filePath(APPFILES));
-}
 
 #endif
