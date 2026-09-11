@@ -15,7 +15,7 @@ static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   If necessary, contact the distributor.)");
 
 static const char *WARN_EXISTING = QT_TRANSLATE_NOOP("Installer", R"(
-There seems to be a FET installation at '%1' already.<br>
+There seems to be an installation of this application at '%1' already.<br>
 You must remove this before you can install the new version here.)");
 
 static const char *WARN_NOT_EMPTY = QT_TRANSLATE_NOOP("Installer", R"(
@@ -96,7 +96,7 @@ void Installer::page_0()
     scanOk = false;
 
     // Collect the files here for copying later: their paths are relative to the source root.
-    // All files, except from root directories starting with "_" (currently just "_bin"), are copied.
+    // All files, except from the "_installer_" directory, are copied.
     QStringList installationFiles;
     QStringList installationDirs;
     QList<QPair<QString, QString>> installationLinks; // symlinks / Windows shortcuts
@@ -132,7 +132,7 @@ void Installer::page_0()
         if (rpath.startsWith("_installer_")) {
             continue;
         }
-        linktest slink{testSymLink(rpath)};
+        linktest slink{testLink(rpath)};
         if ( !slink.message.isEmpty() ) {
             // link: error or warning
             if ( slink.link.isEmpty() ) {
@@ -216,7 +216,7 @@ void Installer::page_1()
     ui->stackedWidget->setCurrentIndex(1);
 
     // Default installation path
-#ifdef _WIN32
+#ifdef Q_OS_WIN
     defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(APPNAME);
 #else
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
@@ -224,14 +224,14 @@ void Installer::page_1()
     // Seek existing installation
     QString which_app{QStandardPaths::findExecutable(APPEXEC)};
     if ( which_app.isEmpty() ) {
-        ui->existing_fet->setCurrentIndex(0);
+        ui->existing_app->setCurrentIndex(0);
     } else {
-        ui->existing_fet->setCurrentIndex(1);
+        ui->existing_app->setCurrentIndex(1);
         ui->existing_path->setText(which_app);
 
-        QDir fet_dir{which_app};
-        fet_dir.cdUp();
-        uninstall = fet_dir.filePath("fet_uninstall");
+        QDir app_dir{which_app};
+        app_dir.cdUp();
+        uninstall = app_dir.filePath("app_uninstall");
         if (QFileInfo::exists(uninstall)) {
             ui->existingCheckBox->setChecked(true);
             ui->existingCheckBox->show();
@@ -267,7 +267,7 @@ void Installer::selectInstallDir()
             QFileDialog::ShowDirsOnly);
         if (dir.isEmpty())
             return;
-        if ( !QDir{dir}.dirName().contains("FET", Qt::CaseInsensitive)
+        if ( !QDir{dir}.dirName().contains(APPNAME, Qt::CaseInsensitive)
             && QMessageBox::warning(
                 this,
                 tr("Check Path"),
@@ -312,11 +312,11 @@ void Installer::setInstallPath(QString ipath)
         addBoldLine(ui->would_overwrite, tr("Destination not writable: %1").arg(ipath));
         return;
     }
-    // Check for FET installation here
-    if ( dst_dir.exists("bin/fet") ) {
+    // Check for app installation here
+    if ( dst_dir.exists(EXECDIR + APPEXEC) ) {
         addBoldLine(ui->would_overwrite, tr(WARN_EXISTING).arg(dst_dir.path()));
-        // Check for FET uninstaller
-        if ( dst_dir.exists("bin/fet_uninstall") ) {
+        // Check for app uninstaller
+        if ( dst_dir.exists(EXECDIR + "app_uninstall") ) {
             ui->removeExisting->show();
         }
         return;
@@ -341,7 +341,7 @@ void Installer::setInstallPath(QString ipath)
             }
             for ( const auto& fpair : std::as_const(installFiles.installationLinks) ) {
                 QFileInfo f{dst_dir.filePath(fpair.first)};
-                if ( f.exists() || !f.readSymLink().isEmpty() ) {
+                if ( f.exists() || !f.symLinkTarget().isEmpty() ) {
                     ok = false;
                     ui->would_overwrite->appendPlainText(f.filePath());
                 }
@@ -355,7 +355,7 @@ void Installer::setInstallPath(QString ipath)
                         ok = false;
                         ui->would_overwrite->appendPlainText(dd.filePath());
                     }
-                } else if ( !dd.readSymLink().isEmpty() ) {
+                } else if ( !dd.symLinkTarget().isEmpty() ) {
                     ok = false;
                     ui->would_overwrite->appendPlainText(dd.filePath());
                 }
@@ -365,9 +365,13 @@ void Installer::setInstallPath(QString ipath)
             if ( ok ) {
                 ui->would_overwrite->clear();
                 // Check for empty installation directory.
-                // In the default installation directory this is to be expected, but
-                // otherwise probably not.
+                // In the default installation directory on Linux this is to be expected,
+                // but otherwise probably not.
+#ifdef Q_OS_LINUX
                 if ( ipath != defaultInstallationPath && !dst_dir.isEmpty() ) {
+#else
+                if ( !dst_dir.isEmpty() ) {
+#endif
                     addBoldLine(
                         ui->would_overwrite,
                         tr(WARN_NOT_EMPTY));
@@ -395,7 +399,7 @@ void Installer::setInstallPath(QString ipath)
         }
     }
     if ( ipath == defaultInstallationPath ) {
-        ui->desktopSetup->show();
+        ui->desktopSetup->show(); // "A desktop-menu entry and file-type association will be set up."
     }
     ui->would_overwrite->appendPlainText(tr("No conflicts."));
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
@@ -404,12 +408,13 @@ void Installer::setInstallPath(QString ipath)
 void Installer::uninstallExisting()
 {
     // Try to remove the installation in dst_dir
-    QProcess::execute(dst_dir.filePath("bin/fet_uninstall"));
+    QProcess::execute(dst_dir.filePath(EXECDIR + "app_uninstall"));
     setInstallPath();
 }
 
 void Installer::refreshView()
 {
+    // Use this after manual changes to destination folder.
     setInstallPath();
 }
 
@@ -551,28 +556,17 @@ void Installer::handleCopyingFinished()
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     if ( copyErrors.isEmpty() ) {
         if ( dst_dir.absolutePath() == defaultInstallationPath ) {
-            // Only perform these operations if installing to "~/.local". For them to work with
-            // other installation locations, the relevant (modified) files would still need to
-            // be placed in "~/.local".
-
-            // Update file-type associations and desktop files
-            print_3("");
-            print_3("update-mime-database");
-            QProcess::execute("update-mime-database",
-                              QStringList() << dst_dir.absoluteFilePath("share/mime"));
-            print_3("update-desktop-database");
-            QProcess::execute("update-desktop-database",
-                              QStringList() << dst_dir.absoluteFilePath("share/applications"));
+            registerApp();
         }
 
         // Open file to record installed files
-        QString filelistpath{"share/fet/installed_files"};
+        QString filelistpath{APPFILES + "installed_files"};
         filelist = dst_dir.absoluteFilePath(filelistpath);
         file_log.setFileName(filelist);
         if (file_log.open(QIODevice::WriteOnly | QIODevice::Text))
         {
             log_stream.setDevice(&file_log);
-            // List the files in reverse order (starting with the symlinks)
+            // List the files in reverse order (starting with the links)
             for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
                 log_stream << *it << "\n";
             }
@@ -625,9 +619,9 @@ void Installer::page_4()
     } else {
         // Installation complete, don't switch to the additional page
         if (ui->launch->isChecked()) {
-            QProcess runfet;
-            runfet.setProgram(dst_dir.filePath("bin/fet"));
-            runfet.startDetached();
+            QProcess runapp;
+            runapp.setProgram(dst_dir.filePath(EXECDIR + APPEXEC));
+            runapp.startDetached();
         }
         qApp->quit();
     }

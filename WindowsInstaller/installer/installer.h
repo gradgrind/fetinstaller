@@ -65,12 +65,12 @@ private:
     Ui::Installer *ui;
     void closeEvent(QCloseEvent *event) override;
 
-    linktest testSymLink(QString rpath);
+    linktest testLink(QString rpath);
 
     void print_3(QString line, bool bold = false);
     void progressOne();
+    void registerApp();
 
-    QDir fet_dir;
     bool bugflag{false};
     QStringList copyErrors;
     bool scanComplete;

@@ -24,15 +24,15 @@ static const char *WINDOWS_SYMLINK = QT_TRANSLATE_NOOP(
     "SYMLINKS",
     "ERROR, Windows symlinks are not supported: %1");
 
-#ifdef _WIN32
+#ifdef Q_OS_WIN
 
 // On Windows there are symlinks and "shortcuts" (.lnk).
-// At present symlinks are not permitted. One difficulty is that they normally
-// need administrator permissions for creation.
+// At present symlinks are not permitted – one difficulty is that
+// they normally need administrator piveleges for creation.
 // Windows shortcuts can be created by QFile::link.
 // It looks like only absolute shortcuts are possible.
 
-linktest Installer::testSymLink(QString rpath)
+linktest Installer::testLink(QString rpath)
 {
     const QFileInfo finfo{src_dir.filePath(rpath)};
     if ( !finfo.isShortcut() ) {
@@ -62,7 +62,7 @@ linktest Installer::testSymLink(QString rpath)
 
 #else
 
-linktest Installer::testSymLink(QString rpath)
+linktest Installer::testLink(QString rpath)
 {
     const QFileInfo finfo{src_dir.filePath(rpath)};
     if ( !finfo.isSymLink() )

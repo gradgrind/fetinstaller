@@ -104,7 +104,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="page_0">
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -184,7 +184,7 @@ Alternatively, %1 may be installed to another folder without registration, which
         </spacer>
        </item>
        <item>
-        <widget class="QStackedWidget" name="existing_fet">
+        <widget class="QStackedWidget" name="existing_app">
          <property name="frameShape">
           <enum>QFrame::Shape::StyledPanel</enum>
          </property>
@@ -194,7 +194,7 @@ Alternatively, %1 may be installed to another folder without registration, which
          <property name="currentIndex">
           <number>1</number>
          </property>
-         <widget class="QWidget" name="existing_fet_0">
+         <widget class="QWidget" name="existing_app_0">
           <layout class="QVBoxLayout" name="verticalLayout_8">
            <item>
             <widget class="QLabel" name="label_notfound">
@@ -205,7 +205,7 @@ Alternatively, %1 may be installed to another folder without registration, which
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="existing_fet_1">
+         <widget class="QWidget" name="existing_app_1">
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
             <widget class="QLabel" name="label_foundexec">

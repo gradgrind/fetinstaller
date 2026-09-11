@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(fet_install LANGUAGES CXX)
+project(app_install LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -17,18 +17,19 @@ find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES de)
 set(CMAKE_AUTORCC ON)
 
-qt_add_executable(fet_install
+qt_add_executable(app_install
     WIN32 MACOSX_BUNDLE
-    fet_install.cpp
+    app_install.cpp
     installer.h installer.cpp installer.ui
     installer_resources.qrc
     copythread.h copythread.cpp
     appdefs.h appdefs.cpp
     symlinks.cpp
+    register.cpp
 )
 
 qt_add_translations(
-    TARGETS fet_install
+    TARGETS app_install
     MERGE_QT_TRANSLATIONS
     TS_FILE_DIR translations
     # Do not embed generated .qm files.
@@ -37,13 +38,13 @@ qt_add_translations(
     LUPDATE_OPTIONS -no-obsolete
 )
 
-target_link_libraries(fet_install
+target_link_libraries(app_install
     PRIVATE
         Qt::Core
         Qt::Widgets
 )
 
-install(TARGETS fet_install
+install(TARGETS app_install
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -51,7 +52,7 @@ install(TARGETS fet_install
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     qt_generate_deploy_app_script(
-        TARGET fet_install
+        TARGET app_install
         OUTPUT_SCRIPT ideploy_script
         NO_TRANSLATIONS
         NO_UNSUPPORTED_PLATFORM_ERROR
@@ -59,7 +60,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     qt_generate_deploy_app_script(
-        TARGET fet_install
+        TARGET app_install
         OUTPUT_SCRIPT ideploy_script
         NO_TRANSLATIONS
         NO_UNSUPPORTED_PLATFORM_ERROR
@@ -68,7 +69,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     )
 else()
     qt_generate_deploy_app_script(
-        TARGET fet_install
+        TARGET app_install
         OUTPUT_SCRIPT ideploy_script
         NO_TRANSLATIONS
         NO_UNSUPPORTED_PLATFORM_ERROR
