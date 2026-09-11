@@ -2,6 +2,14 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="de" sourcelanguage="en">
 <context>
+    <name>AppInfo</name>
+    <message>
+        <location filename="../appinfo.cpp" line="6"/>
+        <source>Timetable Generator</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>Installer</name>
     <message>
         <location filename="../installer.ui" line="14"/>

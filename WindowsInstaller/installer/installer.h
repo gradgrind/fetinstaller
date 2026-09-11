@@ -9,6 +9,7 @@
 #include <QString>
 #include <QFileInfo>
 #include "copythread.h"
+#include "appinfo.h"
 
 namespace Ui {
 class Installer;
@@ -25,6 +26,7 @@ class Installer : public QWidget
     Q_OBJECT
     QThread workerThread;
     CopyWorker* copyWorker;
+    AppInfo appinfo;
 
 public:
     explicit Installer(QWidget *parent = nullptr);

@@ -1,6 +1,5 @@
 #include "installer.h"
 #include "ui_installer.h"
-#include "appdefs.h"
 #include "copythread.h"
 #include <QDirListing>
 #include <QProcess>
@@ -44,13 +43,13 @@ Installer::Installer(QWidget *parent)
     ui->stackedWidget->setCurrentIndex(0);
 
     // Set application name in GUI
-    ui->label_title->setText(ui->label_title->text().arg(APPNAME, APPLONGNAME));
-    ui->label_page_0->setText(ui->label_page_0->text().arg(APPNAME));
-    ui->label_page_1->setText(ui->label_page_1->text().arg(APPNAME));
-    ui->removeExisting->setText(ui->removeExisting->text().arg(APPNAME));
-    ui->label_foundexec->setText(ui->label_foundexec->text().arg(APPNAME));
-    ui->label_notfound->setText(ui->label_notfound->text().arg(APPNAME));
-    ui->launch->setText(ui->launch->text().arg(APPNAME));
+    ui->label_title->setText(ui->label_title->text().arg(appinfo.APPNAME, appinfo.APPLONGNAME));
+    ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.APPNAME));
+    ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.APPNAME));
+    ui->removeExisting->setText(ui->removeExisting->text().arg(appinfo.APPNAME));
+    ui->label_foundexec->setText(ui->label_foundexec->text().arg(appinfo.APPNAME));
+    ui->label_notfound->setText(ui->label_notfound->text().arg(appinfo.APPNAME));
+    ui->launch->setText(ui->launch->text().arg(appinfo.APPNAME));
 
     // *** Connect signals ***
 
@@ -112,7 +111,7 @@ void Installer::page_0()
     }
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
-    if ( !QFileInfo::exists(src_dir.filePath(EXECDIR + APPEXEC)) ) {
+    if ( !QFileInfo::exists(src_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC)) ) {
         addBoldLine(ui->messages_0, "BUG: installation files not found.");
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
@@ -222,7 +221,7 @@ void Installer::page_1()
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
 #endif
     // Seek existing installation
-    QString which_app{QStandardPaths::findExecutable(APPEXEC)};
+    QString which_app{QStandardPaths::findExecutable(appinfo.APPEXEC)};
     if ( which_app.isEmpty() ) {
         ui->existing_app->setCurrentIndex(0);
     } else {
@@ -231,7 +230,7 @@ void Installer::page_1()
 
         QDir app_dir{which_app};
         app_dir.cdUp();
-        uninstall = app_dir.filePath("app_uninstall");
+        uninstall = app_dir.filePath(appinfo.APPEXEC + "_uninstall");
         if (QFileInfo::exists(uninstall)) {
             ui->existingCheckBox->setChecked(true);
             ui->existingCheckBox->show();
@@ -267,11 +266,11 @@ void Installer::selectInstallDir()
             QFileDialog::ShowDirsOnly);
         if (dir.isEmpty())
             return;
-        if ( !QDir{dir}.dirName().contains(APPNAME, Qt::CaseInsensitive)
+        if ( !QDir{dir}.dirName().contains(appinfo.APPNAME, Qt::CaseInsensitive)
             && QMessageBox::warning(
                 this,
                 tr("Check Path"),
-                tr(WARN_DIRNAME).arg(APPNAME, dir),
+                tr(WARN_DIRNAME).arg(appinfo.APPNAME, dir),
                 QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes ) {
             p0 = dir;
             continue;
@@ -313,10 +312,10 @@ void Installer::setInstallPath(QString ipath)
         return;
     }
     // Check for app installation here
-    if ( dst_dir.exists(EXECDIR + APPEXEC) ) {
+    if ( dst_dir.exists(appinfo.EXECDIR + appinfo.APPEXEC) ) {
         addBoldLine(ui->would_overwrite, tr(WARN_EXISTING).arg(dst_dir.path()));
         // Check for app uninstaller
-        if ( dst_dir.exists(EXECDIR + "app_uninstall") ) {
+        if ( dst_dir.exists(appinfo.EXECDIR + appinfo.APPEXEC + "_uninstall") ) {
             ui->removeExisting->show();
         }
         return;
@@ -408,7 +407,7 @@ void Installer::setInstallPath(QString ipath)
 void Installer::uninstallExisting()
 {
     // Try to remove the installation in dst_dir
-    QProcess::execute(dst_dir.filePath(EXECDIR + "app_uninstall"));
+    QProcess::execute(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC + "_uninstall"));
     setInstallPath();
 }
 
@@ -560,7 +559,7 @@ void Installer::handleCopyingFinished()
         }
 
         // Open file to record installed files
-        QString filelistpath{APPFILES + "installed_files"};
+        QString filelistpath{appinfo.APPFILES + "installed_files"};
         filelist = dst_dir.absoluteFilePath(filelistpath);
         file_log.setFileName(filelist);
         if (file_log.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -620,7 +619,7 @@ void Installer::page_4()
         // Installation complete, don't switch to the additional page
         if (ui->launch->isChecked()) {
             QProcess runapp;
-            runapp.setProgram(dst_dir.filePath(EXECDIR + APPEXEC));
+            runapp.setProgram(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
             runapp.startDetached();
         }
         qApp->quit();

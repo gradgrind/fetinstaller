@@ -2,7 +2,7 @@
 #include <QProcess>
 
 // Update file-type associations and desktop files.
-// Windows: add app to registry.
+// Windows: remove app from registry.
 
 #if defined Q_OS_WIN
 
@@ -29,19 +29,18 @@ void Installer::registerApp()
 
 void Uninstaller::unregisterApp()
 {
-    // Only perform these operations if installing to "~/.local". For them to work with
-    // other installation locations, the relevant (modified) files would still need to
-    // be placed in "~/.local".
+    // Only perform these operations if the installation was in  "~/.local".
+    // It is assumed that installations to other locations will not have set up file-type
+    // associations and desktop menu entries.
 
-    /*TODO
-    print_3("");
-    print_3("update-mime-database");
+    print_line("");
+    print_line("update-mime-database");
     QProcess::execute("update-mime-database",
-        QStringList() << dst_dir.absoluteFilePath("share/mime"));
-    print_3("update-desktop-database");
+        QStringList() << basedir.absoluteFilePath("share/mime"));
+    print_line("update-desktop-database");
     QProcess::execute("update-desktop-database",
-        QStringList() << dst_dir.absoluteFilePath("share/applications"));
-    */
+        QStringList() << basedir.absoluteFilePath("share/applications"));
+
 }
 
 #else

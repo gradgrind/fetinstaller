@@ -9,6 +9,7 @@
 #include <QSet>
 #include <QThread>
 #include "deleteworker.h"
+#include "appinfo.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -21,6 +22,7 @@ class Uninstaller : public QWidget
     Q_OBJECT
     QThread workerThread;
     DeleteWorker* worker;
+    AppInfo appinfo;
 
 public:
     explicit Uninstaller(QWidget *parent = nullptr);
@@ -37,6 +39,7 @@ private:
     Ui::Uninstaller *ui;
     QDir basedir;
 
+    QString defaultInstallationPath;
     QStringList filesList;
     QStringList dirsList;
     QStringList linksList;
@@ -44,8 +47,7 @@ private:
     QStringList failed_files;
     QStringList failed_dirs;
 
-    void print_1(QString line);
-    void print_2(QString line);
+    void print_line(QString line);
     void progressOne();
     void unregisterApp();
     bool bugflag{false};

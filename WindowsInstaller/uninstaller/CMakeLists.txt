@@ -3,6 +3,19 @@ project(app_uninstall LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# The environment variable APPEXEC must be set to the simple
+# name of the application's executable.
+set ( app_exec $ENV{APPEXEC} )
+if( "${app_exec}" STREQUAL "" )
+    message( FATAL_ERROR "No APPEXEC environment variable." )
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(CMAKE_INSTALL_BINDIR ".")
+    set(CMAKE_INSTALL_DATADIR ".")
+    set(CMAKE_INSTALL_LIBDIR ".")
+endif()
+
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 
@@ -15,8 +28,11 @@ qt_add_executable(app_uninstall
     uninstaller.h uninstaller.cpp uninstaller.ui
     uninstaller_resources.qrc
     deleteworker.h deleteworker.cpp
-    appdefs.cpp appdefs.h register.cpp
+    register.cpp
+    appinfo.cpp appinfo.h
 )
+
+set_target_properties(app_uninstall PROPERTIES OUTPUT_NAME "${app_exec}_uninstall")
 
 qt_add_translations(
     TARGETS app_uninstall
@@ -24,7 +40,6 @@ qt_add_translations(
     TS_FILE_DIR translations
     # Do not embed generated .qm files.
     #QM_FILES_OUTPUT_VARIABLE qm_files
-    #LUPDATE_TARGET lupdate
     LUPDATE_OPTIONS -no-obsolete
 )
 
@@ -40,11 +55,29 @@ install(TARGETS app_uninstall
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-qt_generate_deploy_app_script(
-    TARGET app_uninstall
-    OUTPUT_SCRIPT udeploy_script
-    NO_TRANSLATIONS
-    NO_UNSUPPORTED_PLATFORM_ERROR
-    INCLUDE_PLUGINS wayland
-)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    qt_generate_deploy_app_script(
+        TARGET app_uninstall
+        OUTPUT_SCRIPT udeploy_script
+        NO_TRANSLATIONS
+        NO_UNSUPPORTED_PLATFORM_ERROR
+        INCLUDE_PLUGINS wayland
+    )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    qt_generate_deploy_app_script(
+        TARGET app_uninstall
+        OUTPUT_SCRIPT udeploy_script
+        NO_TRANSLATIONS
+        NO_UNSUPPORTED_PLATFORM_ERROR
+        EXCLUDE_PLUGINS generic iconengines imageformats networkinformation
+        DEPLOY_TOOL_OPTIONS --no-opengl-sw --no-system-d3d-compiler --no-system-dxc-compiler
+    )
+else()
+    qt_generate_deploy_app_script(
+        TARGET app_uninstall
+        OUTPUT_SCRIPT udeploy_script
+        NO_TRANSLATIONS
+        NO_UNSUPPORTED_PLATFORM_ERROR
+    )
+endif()
 install(SCRIPT ${udeploy_script})

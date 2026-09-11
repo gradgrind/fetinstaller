@@ -1,6 +1,5 @@
 #include "uninstaller.h"
 #include "ui_uninstaller.h"
-#include "appdefs.h"
 
 #include <QFile>
 #include <QPushButton>
@@ -33,8 +32,8 @@ Uninstaller::Uninstaller(QWidget *parent)
     ui->stackedWidget->setCurrentIndex(0);
 
     // Set application name in GUI
-    ui->label_title->setText(ui->label_title->text().arg(APPNAME));
-    ui->label_page_1->setText(ui->label_page_1->text().arg(APPNAME));
+    ui->label_title->setText(ui->label_title->text().arg(appinfo.APPNAME));
+    ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.APPNAME));
 
     // Connect signals
     connect(ui->buttonBox_1, &QDialogButtonBox::accepted, this, &Uninstaller::page_2);
@@ -57,7 +56,7 @@ Uninstaller::~Uninstaller() {
     delete ui;
 }
 
-void Uninstaller::print_1(QString line)
+void Uninstaller::print_line(QString line)
 {
     if ( !bugflag )
         ui->filesReport->appendPlainText(line);
@@ -69,13 +68,20 @@ void Uninstaller::page_1()
     ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(false);
     ui->filesReport->clear();
 
+    // Default installation path
+#ifdef Q_OS_WIN
+    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(APPNAME);
+#else
+    defaultInstallationPath = QDir::home().absoluteFilePath(".local");
+#endif
+
     // Read the list of installed files
-    QString filespath{basedir.filePath(APPFILES + "installed_files")};
+    QString filespath{basedir.filePath(appinfo.APPFILES + "installed_files")};
     QFile textFile{filespath};
-    print_1(tr("Reading file list from: %1").arg(filespath));
-    print_1("");
+    print_line(tr("Reading file list from: %1").arg(filespath));
+    print_line("");
     if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-        print_1(tr("*** CRITICAL ERROR: couldn't read file list ***"));
+        print_line(tr("*** CRITICAL ERROR: couldn't read file list ***"));
         return;
     }
     QTextStream textStream(&textFile);
@@ -94,7 +100,7 @@ void Uninstaller::page_1()
         QFileInfo fr{rpath};
         if ( fr.isAbsolute() || rpath.contains("..") ) {
             // Only allow relative paths without "..", i.e. guaranteed to be within the package.
-            print_1(tr("Invalid line in file list: %1").arg(rpath));
+            print_line(tr("Invalid line in file list: %1").arg(rpath));
             errors++;
             continue;
         }
@@ -107,14 +113,15 @@ void Uninstaller::page_1()
         } else if ( f.exists() ) {
             filesList.append(fpath);
         } else {
-            print_1(tr("File not found: %1").arg(fpath));
+            print_line(tr("File not found: %1").arg(fpath));
             errors++;
         }
     }
     if ( errors == 0 ) {
-        print_1(tr("Press OK to uninstall."));
+        print_line(tr("Press OK to uninstall."));
     } else {
-        print_1(tr(CORRUPT_INSTALLATION));
+        print_line(tr(CORRUPT_INSTALLATION));
+        return;
     }
     // Add the root directory, basedir
     dirsList.append(basedir.path());
@@ -159,7 +166,7 @@ void Uninstaller::page_2()
 void Uninstaller::file_deleted(QString fpath, bool ok)
 {
     if ( ok ) {
-        print_2(" - " + fpath);
+        print_line(" - " + fpath);
     } else {
         failed_files.append(fpath);
     }
@@ -169,7 +176,7 @@ void Uninstaller::file_deleted(QString fpath, bool ok)
 void Uninstaller::dir_removed(QString fpath, bool ok)
 {
     if ( ok ) {
-        print_2(" -/ " + fpath);
+        print_line(" -/ " + fpath);
     } else {
         failed_files.append(fpath);
     }
@@ -183,15 +190,9 @@ void Uninstaller::progressOne()
     if ( p < max ) {
         ui->uninstallProgress->setValue(p + 1);
     } else if ( !bugflag ) {
-        print_2("\nBUG: progress > 100%");
+        print_line("\nBUG: progress > 100%");
         bugflag = true; // suppress further reports
     }
-}
-
-void Uninstaller::print_2(QString line)
-{
-    if ( !bugflag )
-        ui->output->appendPlainText(line);
 }
 
 void Uninstaller::done(bool ok)
@@ -204,24 +205,17 @@ void Uninstaller::done(bool ok)
 
     int fileCount = filesList.length() + linksList.length() - failed_files.length();
     int dirCount = dirsList.length() - failed_dirs.length();
-    print_2("");
-    print_2(tr("%1 files deleted").arg(fileCount));
-    print_2(tr("%1 directories removed").arg(dirCount));
+    print_line("");
+    print_line(tr("%1 files deleted").arg(fileCount));
+    print_line(tr("%1 directories removed").arg(dirCount));
 
-    QDir home_dir{QDir::home()};
-    if ( basedir.path() == home_dir.absoluteFilePath(".local") ) {
-        print_2("");
-        print_2(tr("Run %1 and %2").arg("update-mime-database", "update-desktop-database"));
-        // Update file-type associations
-        QProcess::execute("update-mime-database",
-                          QStringList() << basedir.absoluteFilePath("share/mime"));
-        QProcess::execute("update-desktop-database",
-                          QStringList() << basedir.absoluteFilePath("share/applications"));
+    if ( basedir.path() == defaultInstallationPath ) {
+        unregisterApp();
     } else {
         // Seek remaining directories, test if empty.
         if ( basedir.exists() ) {
-            print_2("");
-            print_2(tr(DIR_NOT_EMPTY).arg(basedir.path()));
+            print_line("");
+            print_line(tr(DIR_NOT_EMPTY).arg(basedir.path()));
         }
     }
 

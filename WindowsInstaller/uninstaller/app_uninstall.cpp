@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 
     auto locale = QLocale::system();
     QTranslator translator;
-    const QString baseName = "fet_uninstall_" + locale.name();
+    const QString baseName = "app_uninstall_" + locale.name();
     if (translator.load(":/i18n/" + baseName)) {
         a.installTranslator(&translator);
     }

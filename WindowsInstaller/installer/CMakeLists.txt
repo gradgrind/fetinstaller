@@ -23,9 +23,9 @@ qt_add_executable(app_install
     installer.h installer.cpp installer.ui
     installer_resources.qrc
     copythread.h copythread.cpp
-    appdefs.h appdefs.cpp
     symlinks.cpp
     register.cpp
+    appinfo.h appinfo.cpp
 )
 
 qt_add_translations(
@@ -34,7 +34,6 @@ qt_add_translations(
     TS_FILE_DIR translations
     # Do not embed generated .qm files.
     #QM_FILES_OUTPUT_VARIABLE qm_files
-    #LUPDATE_TARGET lupdate
     LUPDATE_OPTIONS -no-obsolete
 )
 
