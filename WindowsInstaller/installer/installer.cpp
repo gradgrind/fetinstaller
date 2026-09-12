@@ -111,7 +111,9 @@ void Installer::page_0()
     }
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
-    if ( !QFileInfo::exists(src_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC)) ) {
+    if ( QStandardPaths::findExecutable(
+             appinfo.APPEXEC
+             , QStringList() << src_dir.filePath(appinfo.EXECDIR)).isEmpty() ) {
         addBoldLine(ui->messages_0, "BUG: installation files not found.");
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
@@ -216,7 +218,7 @@ void Installer::page_1()
 
     // Default installation path
 #ifdef Q_OS_WIN
-    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(APPNAME);
+    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(appinfo.APPNAME);
 #else
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
 #endif
@@ -312,10 +314,14 @@ void Installer::setInstallPath(QString ipath)
         return;
     }
     // Check for app installation here
-    if ( dst_dir.exists(appinfo.EXECDIR + appinfo.APPEXEC) ) {
+    if ( !QStandardPaths::findExecutable(
+             appinfo.APPEXEC
+             , QStringList() << dst_dir.filePath(appinfo.EXECDIR)).isEmpty() ) {
         addBoldLine(ui->would_overwrite, tr(WARN_EXISTING).arg(dst_dir.path()));
         // Check for app uninstaller
-        if ( dst_dir.exists(appinfo.EXECDIR + appinfo.APPEXEC + "_uninstall") ) {
+        if ( !QStandardPaths::findExecutable(
+                 appinfo.APPEXEC + "_uninstall"
+                 , QStringList() << dst_dir.filePath(appinfo.EXECDIR)).isEmpty() ) {
             ui->removeExisting->show();
         }
         return;
@@ -618,15 +624,11 @@ void Installer::page_4()
     } else {
         // Installation complete, don't switch to the additional page
         if (ui->launch->isChecked()) {
-            //QProcess runapp;
-            //runapp.setProgram(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
-            //runapp.startDetached();
-            QProcess::startDetached(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
-            // Without the delay there may be a fontconfig error message,
-            // though the launch still works.
-            QTimer::singleShot(100, qApp, &QCoreApplication::quit);
-        } else
-            qApp->quit();
+            QProcess runapp;
+            runapp.setProgram(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
+            runapp.startDetached();
+        }
+        qApp->quit();
     }
 }
 

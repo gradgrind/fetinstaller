@@ -37,9 +37,9 @@ linktest Installer::testLink(QString rpath)
     const QFileInfo finfo{src_dir.filePath(rpath)};
     if ( !finfo.isShortcut() ) {
         if ( finfo.isSymLink() ) {
-            return {tr(WINDOWS_SYMLINK).arg(rpath)}
+            return {tr(WINDOWS_SYMLINK).arg(rpath)};
         }
-        return false;
+        return {};
     }
 
     QString linkPath{finfo.symLinkTarget()}; // target path, absolute only

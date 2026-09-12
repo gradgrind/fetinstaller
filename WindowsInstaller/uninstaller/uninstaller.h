@@ -37,9 +37,7 @@ private slots:
 
 private:
     Ui::Uninstaller *ui;
-    //QDir basedir;
 
-    //QString defaultInstallationPath;
     QStringList filesList;
     QStringList dirsList;
     QStringList linksList;
