@@ -12,7 +12,18 @@ int main(int argc, char *argv[])
     if (translator.load(":/i18n/" + baseName)) {
         a.installTranslator(&translator);
     }
-    Uninstaller w;
+
+    // Initialize paths
+    AppInfo appinfo;
+    if ( !appinfo.init() )
+        return 1;
+
+    // qDebug() << appinfo.basedir.path();
+    // QString apppath_rel{appinfo.basedir.relativeFilePath(QCoreApplication::applicationFilePath())};
+    // qDebug() << "APP:" << apppath_rel;
+    // return 0;
+
+    Uninstaller w(&appinfo);
     w.show();
     return QApplication::exec();
 }

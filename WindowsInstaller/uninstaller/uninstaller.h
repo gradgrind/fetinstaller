@@ -22,10 +22,10 @@ class Uninstaller : public QWidget
     Q_OBJECT
     QThread workerThread;
     DeleteWorker* worker;
-    AppInfo appinfo;
+    AppInfo* appinfo;
 
 public:
-    explicit Uninstaller(QWidget *parent = nullptr);
+    explicit Uninstaller(AppInfo* app_info, QWidget *parent = nullptr);
     ~Uninstaller();
 
 private slots:
@@ -37,9 +37,9 @@ private slots:
 
 private:
     Ui::Uninstaller *ui;
-    QDir basedir;
+    //QDir basedir;
 
-    QString defaultInstallationPath;
+    //QString defaultInstallationPath;
     QStringList filesList;
     QStringList dirsList;
     QStringList linksList;

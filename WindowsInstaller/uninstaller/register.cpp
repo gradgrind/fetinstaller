@@ -36,10 +36,10 @@ void Uninstaller::unregisterApp()
     print_line("");
     print_line("update-mime-database");
     QProcess::execute("update-mime-database",
-        QStringList() << basedir.absoluteFilePath("share/mime"));
+        QStringList() << appinfo->basedir.absoluteFilePath("share/mime"));
     print_line("update-desktop-database");
     QProcess::execute("update-desktop-database",
-        QStringList() << basedir.absoluteFilePath("share/applications"));
+        QStringList() << appinfo->basedir.absoluteFilePath("share/applications"));
 
 }
 
