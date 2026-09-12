@@ -618,11 +618,15 @@ void Installer::page_4()
     } else {
         // Installation complete, don't switch to the additional page
         if (ui->launch->isChecked()) {
-            QProcess runapp;
-            runapp.setProgram(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
-            runapp.startDetached();
-        }
-        qApp->quit();
+            //QProcess runapp;
+            //runapp.setProgram(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
+            //runapp.startDetached();
+            QProcess::startDetached(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
+            // Without the delay there may be a fontconfig error message,
+            // though the launch still works.
+            QTimer::singleShot(100, qApp, &QCoreApplication::quit);
+        } else
+            qApp->quit();
     }
 }
 
