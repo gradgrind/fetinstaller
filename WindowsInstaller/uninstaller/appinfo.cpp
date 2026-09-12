@@ -1,6 +1,8 @@
 #include "appinfo.h"
 #include <QCoreApplication>
 #include <QMessageBox>
+#include <QTemporaryDir>
+#include <QProcess>
 
 static const char* NO_FILE_LIST = QT_TRANSLATE_NOOP("AppInfo", R"(
 Couldn't read list of installed files:
@@ -33,17 +35,38 @@ AppInfo::AppInfo()
 
 bool AppInfo::init()
 {
+    QStringList args = QCoreApplication::arguments();
+
+    //TODO: With no command-line argument, copy a subset of the files to a
+    // QTemporaryDir, and call the copied uninstaller (detach, so that the
+    // first instance can quit.) The command-line argument is the installation
+    // folder.
+
+    // It might be better to do all the copying and forking before starting the GUI.
+    // Messages could perhaps be queued somehow.
+
     // Find the installation's base directory
-    basedir.setPath(QCoreApplication::applicationDirPath());
-    basedir.makeAbsolute();
-    QDir xdir{EXECDIR};
-    while ( true ) {
-        if ( xdir.path() == "." )
-            break;
-        basedir.cdUp();
-        if ( !xdir.cdUp() ) {
-            QMessageBox::critical(nullptr, tr("Critical Error"), tr("Couldn't find installation base folder"));
-            return false;
+    if ( args.length() == 2 ) {
+        // This should be a "reentered" uninstaller in a temporary directory.
+        basedir.setPath(args.at(1));
+    } else if ( args.length() != 1 ) {
+        QMessageBox::critical(
+            nullptr,
+            tr("Critical Error"),
+            tr("Invalid command line:\n  - %1").arg(args.join("\n  - ")));
+        return false;
+    } else {
+        basedir.setPath(QCoreApplication::applicationDirPath());
+        basedir.makeAbsolute();
+        QDir xdir{EXECDIR};
+        while ( true ) {
+            if ( xdir.path() == "." )
+                break;
+            basedir.cdUp();
+            if ( !xdir.cdUp() ) {
+                QMessageBox::critical(nullptr, tr("Critical Error"), tr("Couldn't find installation base folder"));
+                return false;
+            }
         }
     }
 
@@ -81,8 +104,70 @@ bool AppInfo::init()
     }
 
     // On Windows the uninstaller must be run from a temporary folder.
-#if defined Q_OS_WIN
-#endif
+    //TODO
+//#if defined Q_OS_WIN
+
+    if ( args.length() == 1 ) {
+        // Copy the necessary files to a temporary directory and run the uninstaller from there.
+        QTemporaryDir tmpdir;
+
+        //TODO--
+        tmpdir.setAutoRemove(false);
+
+        if ( !tmpdir.isValid() ) {
+            QMessageBox::critical(
+                nullptr,
+                ("Critical Error"),
+                tr("Couldn't create temporary folder for uninstaller"));
+            return false;
+        }
+
+        // dir.path() returns the unique directory path
+
+        // The QTemporaryDir destructor removes the temporary directory
+        // as it goes out of scope.
+
+        QDir tdir{tmpdir.path()};
+        for ( const auto& fpath: std::as_const(installed_files) ) {
+            QFileInfo finfo{fpath};
+            QString fname{finfo.fileName()};
+//TODO: this is actually only for Windows
+//            if ( finfo.suffix() == "dll"
+            if ( fname.contains(".so")
+                     || fname == "qt.conf"
+                     || finfo.baseName().endsWith("_uninstall") ) {
+
+                QString drel{finfo.path()};
+                if ( !tdir.exists(drel) )
+                    tdir.mkpath(drel);
+//(TODO: on Linux one might wish to recreate symlinks, this copies the whole file:)
+                if ( !QFile::copy(basedir.filePath(fpath), tdir.filePath(fpath)) ) {
+                    QMessageBox::critical(
+                        nullptr,
+                        tr("Critical Error"),
+                        (tr("Copying uninstaller to temporary folder failed:")
+                            + "\n  %1 -> %2\n  +++ %3")
+                            .arg(basedir.filePath(fpath), tdir.filePath(fpath), drel));
+                    return false;
+                }
+            }
+        }
+
+        // Restart uninstaller, this time from the temporary directory, passing the base directory
+        QString apppath_rel{basedir.relativeFilePath(QCoreApplication::applicationFilePath())};
+        QString apppath_abs{tmpdir.filePath(apppath_rel)};
+        if ( !QProcess::startDetached(
+                 apppath_abs,
+                 QStringList() << basedir.path()) ) {
+            QMessageBox::critical(
+                nullptr,
+                tr("Critical Error"),
+                tr("Failed to restart uninstaller in temporary folder"));
+        }
+        return false;
+    }
+
+//#endif
 
     return true;
 }

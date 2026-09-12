@@ -18,8 +18,8 @@ public:
     const QString APPFILES;
 
     QDir basedir;
-    QString installed_files_path;
-    QStringList installed_files;
+    QString installed_files_path; // absolute path to "installed_files" file
+    QStringList installed_files; // stripped, non-empty lines from "installed_files" file
     QString defaultInstallationPath;
 };
 
