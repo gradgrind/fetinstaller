@@ -45,6 +45,19 @@ bool AppInfo::init()
     // It might be better to do all the copying and forking before starting the GUI.
     // Messages could perhaps be queued somehow.
 
+    appdir.setPath(QCoreApplication::applicationDirPath());
+    appdir.makeAbsolute();
+    QDir xdir{EXECDIR};
+    while ( true ) {
+        if ( xdir.path() == "." )
+            break;
+        appdir.cdUp();
+        if ( !xdir.cdUp() ) {
+            QMessageBox::critical(nullptr, tr("Critical Error"), tr("Couldn't find uninstaller base folder"));
+            return false;
+        }
+    }
+
     // Find the installation's base directory
     if ( args.length() == 2 ) {
         // This should be a "reentered" uninstaller in a temporary directory.
@@ -56,18 +69,7 @@ bool AppInfo::init()
             tr("Invalid command line:\n  - %1").arg(args.join("\n  - ")));
         return false;
     } else {
-        basedir.setPath(QCoreApplication::applicationDirPath());
-        basedir.makeAbsolute();
-        QDir xdir{EXECDIR};
-        while ( true ) {
-            if ( xdir.path() == "." )
-                break;
-            basedir.cdUp();
-            if ( !xdir.cdUp() ) {
-                QMessageBox::critical(nullptr, tr("Critical Error"), tr("Couldn't find installation base folder"));
-                return false;
-            }
-        }
+        basedir = appdir;
     }
 
     // Default installation path
@@ -76,7 +78,6 @@ bool AppInfo::init()
 #else
     defaultInstallationPath = QDir::home().absoluteFilePath(".local");
 #endif
-
 
     // Read the list of installed files
     installed_files_path = basedir.filePath(APPFILES + "installed_files");
@@ -111,9 +112,8 @@ bool AppInfo::init()
     if ( args.length() == 1 ) {
         // Copy the necessary files to a temporary directory and run the uninstaller from there.
         QTemporaryDir tmpdir;
-
-        //TODO--
-        //tmpdir.setAutoRemove(false); // stops automatic removal of tmpdir as it goes out of scope
+        // Don't remove tmpdir automatically when it goes out of scope
+        tmpdir.setAutoRemove(false);
 
         if ( !tmpdir.isValid() ) {
             QMessageBox::critical(
@@ -122,8 +122,9 @@ bool AppInfo::init()
                 tr("Couldn't create temporary folder for uninstaller"));
             return false;
         }
+        temporaryDir = tmpdir.path();
 
-        QDir tdir{tmpdir.path()};
+        QDir tdir{temporaryDir};
         for ( const auto& fpath: std::as_const(installed_files) ) {
             QFileInfo finfo{fpath};
             QString fname{finfo.fileName()};
@@ -159,11 +160,23 @@ bool AppInfo::init()
                 nullptr,
                 tr("Critical Error"),
                 tr("Failed to restart uninstaller in temporary folder"));
+            return false;
         }
-        return false;
     }
 
 #endif
 
     return true;
 }
+
+void AppInfo::clean()
+{
+    QDir dtmp{temporaryDir};
+    if ( !dtmp.removeRecursively() ) {
+        QMessageBox::warning(
+            nullptr,
+            tr("Warning"),
+            tr("Could not fully remove temporary directory:\n  %1").arg(temporaryDir));
+    }
+}
+

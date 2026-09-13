@@ -6,7 +6,7 @@
 
 #if defined Q_OS_WIN
 
-void Installer::registerApp()
+void Uninstaller::unregisterApp()
 {
     //TODO: Write to regstry
 
