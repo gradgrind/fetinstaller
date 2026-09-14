@@ -5,10 +5,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Place the executables in this non-standard directory as they are not
 # to be installed themselves.
-set(CMAKE_INSTALL_BINDIR "_installer_")
+set(CMAKE_INSTALL_DATADIR "_installer_")
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(CMAKE_INSTALL_DATADIR ".")
-    set(CMAKE_INSTALL_LIBDIR ".")
+    # The executable must be placed in the root directory to be able to
+    # share the libraries with the app to be installed.
+    set(CMAKE_INSTALL_BINDIR ".")
+else()
+    set(CMAKE_INSTALL_BINDIR "_installer_")
 endif()
 
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)

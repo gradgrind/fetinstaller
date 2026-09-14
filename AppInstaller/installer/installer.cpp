@@ -106,8 +106,12 @@ void Installer::page_0()
         // Accept an "install_source" directory in the same directory as the installer executable
         src_dir.cd("install_source");
     } else {
+#if defined Q_OS_WIN
+        // Assume the installer application is in the root directory of the source directory
+#else
         // Assume the installer application is in the "_installer_" directory of the source directory
         src_dir.cdUp();
+#endif
     }
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
@@ -130,9 +134,13 @@ void Installer::page_0()
             src_dir.path(),
             F::Recursive | F::IncludeHidden) ) {
         QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
-        if (rpath.startsWith("_installer_")) {
+        if ( rpath.startsWith("_installer_") )
             continue;
-        }
+#if defined Q_OS_WIN
+        // The installer is in the root directory
+        if ( rpath.startsWith(QCoreApplication::applicationName()) )
+            continue;
+#endif
         linktest slink{testLink(rpath)};
         if ( !slink.message.isEmpty() ) {
             // link: error or warning
