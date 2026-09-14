@@ -1,0 +1,9 @@
+Using the commands from cr.bat produces a packed executable.
+
+It just uses the lzma pack for 7-zip (downloadable from the 7-zip site),
+the 7-zip package itself is not necessary, though it might be useful.
+
+It could be adapted for powershell.
+
+Note that the working directory should be "build", to get the correct paths in the archive (though there may be 7-zip command line switches to adapt).
+

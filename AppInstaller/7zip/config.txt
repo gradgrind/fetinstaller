@@ -1,0 +1,5 @@
+;!@Install@!UTF-8!
+Title="Test 1.00"
+BeginPrompt="Do you want to install Test 1.00?"
+RunProgram="install\app_install.exe"
+;!@InstallEnd@!

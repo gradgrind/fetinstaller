@@ -107,9 +107,9 @@ void Installer::page_0()
         src_dir.cd("install_source");
     } else {
 #if defined Q_OS_WIN
-        // Assume the installer application is in the root directory of the source directory
+        // Assume the installer executable is in the root directory of the source directory
 #else
-        // Assume the installer application is in the "_installer_" directory of the source directory
+        // Assume the installer executable is in the "_installer_" directory of the source directory
         src_dir.cdUp();
 #endif
     }
