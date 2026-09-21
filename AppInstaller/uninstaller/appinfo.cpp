@@ -37,14 +37,13 @@ bool AppInfo::init()
 {
     QStringList args = QCoreApplication::arguments();
 
-    //TODO: With no command-line argument, copy a subset of the files to a
-    // QTemporaryDir, and call the copied uninstaller (detach, so that the
-    // first instance can quit.) The command-line argument is the installation
-    // folder.
+    // Windows: With command-line switch -c, copy a subset of the files to a temporary
+    // directory, passed as command-line argument.
+    // With command-line switch -u, use the path passed as command-line argument
+    // instead of the root path of the uninstall executable as the installation
+    // root.
 
-    // It might be better to do all the copying and forking before starting the GUI.
-    // Messages could perhaps be queued somehow.
-
+    // Determine the installation's base directory
     appdir.setPath(QCoreApplication::applicationDirPath());
     appdir.makeAbsolute();
     QDir xdir{EXECDIR};
@@ -58,18 +57,28 @@ bool AppInfo::init()
         }
     }
 
-    // Find the installation's base directory
-    if ( args.length() == 2 ) {
-        // This should be a "reentered" uninstaller in a temporary directory.
-        basedir.setPath(args.at(1));
-    } else if ( args.length() != 1 ) {
+#if defined Q_OS_WIN
+    if ( args.length() == 3 ) {
+        if ( args.at(1) == "-c" ) {
+            basedir = appdir;
+            appcopy = args.at(2);
+        } else if ( args.at(1) == "-u" ) {
+            basedir.setPath(args.at(2));
+        } else
+            goto err;
+    }
+#else
+    if ( args.length() == 1 ) {
+        basedir = appdir;
+    }
+#endif
+    else {
+err:
         QMessageBox::critical(
             nullptr,
             tr("Critical Error"),
             tr("Invalid command line:\n  - %1").arg(args.join("\n  - ")));
         return false;
-    } else {
-        basedir = appdir;
     }
 
     // Default installation path
@@ -109,22 +118,9 @@ bool AppInfo::init()
 
 #if defined Q_OS_WIN
 
-    if ( args.length() == 1 ) {
+    if ( !appcopy.isEmpty() ) {
         // Copy the necessary files to a temporary directory and run the uninstaller from there.
-        QTemporaryDir tmpdir;
-        // Don't remove tmpdir automatically when it goes out of scope
-        tmpdir.setAutoRemove(false);
-
-        if ( !tmpdir.isValid() ) {
-            QMessageBox::critical(
-                nullptr,
-                ("Critical Error"),
-                tr("Couldn't create temporary folder for uninstaller"));
-            return false;
-        }
-        temporaryDir = tmpdir.path();
-
-        QDir tdir{temporaryDir};
+        QDir tdir{appcopy};
         for ( const auto& fpath: std::as_const(installed_files) ) {
             QFileInfo finfo{fpath};
             QString fname{finfo.fileName()};
@@ -149,34 +145,9 @@ bool AppInfo::init()
                 }
             }
         }
-
-        // Restart uninstaller, this time from the temporary directory, passing the base directory
-        QString apppath_rel{basedir.relativeFilePath(QCoreApplication::applicationFilePath())};
-        QString apppath_abs{tmpdir.filePath(apppath_rel)};
-        if ( !QProcess::startDetached(
-                 apppath_abs,
-                 QStringList() << basedir.path()) ) {
-            QMessageBox::critical(
-                nullptr,
-                tr("Critical Error"),
-                tr("Failed to restart uninstaller in temporary folder"));
-            return false;
-        }
     }
 
 #endif
 
     return true;
 }
-
-void AppInfo::clean()
-{
-    QDir dtmp{temporaryDir};
-    if ( !dtmp.removeRecursively() ) {
-        QMessageBox::warning(
-            nullptr,
-            tr("Warning"),
-            tr("Could not fully remove temporary directory:\n  %1").arg(temporaryDir));
-    }
-}
-

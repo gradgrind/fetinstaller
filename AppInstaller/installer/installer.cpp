@@ -240,13 +240,13 @@ void Installer::page_1()
 
         QDir app_dir{which_app};
         app_dir.cdUp();
-        uninstall = app_dir.filePath(appinfo.APPEXEC + "_uninstall");
-        if (QFileInfo::exists(uninstall)) {
-            ui->existingCheckBox->setChecked(true);
-            ui->existingCheckBox->show();
-        } else {
+        uninstall = QStandardPaths::findExecutable(appinfo.APPEXEC + "_uninstall", QStringList() << app_dir.path());
+        if ( uninstall.isEmpty() ) {
             uninstall.clear();
             ui->existingCheckBox->hide();
+        } else {
+            ui->existingCheckBox->setChecked(true);
+            ui->existingCheckBox->show();
         }
     }
 }
@@ -255,6 +255,10 @@ void Installer::page_2()
 {
     // If a previous installation is to be uninstalled, do it now (if possible)
     if (!uninstall.isEmpty() && ui->existingCheckBox->isChecked()) {
+        //TODO: PROBLEM: With my double bat approach on Windows the bat file called here returns before the
+        // uninstaller has run! What is really needed is a runnable without console window to create the
+        // temporary directory, copy the necessary files, run the uninstaller and finally delete the
+        // temporary directory.
         QProcess::execute(uninstall);
     }
     ui->stackedWidget->setCurrentIndex(2);
