@@ -1,0 +1,67 @@
+Registry access and links
+
+1) Installation to $LOCALAPPDATA\Programs\${APPNAME}
+
+ - ShortCut: $SMPROGRAMS\${APPNAME}.lnk -> $InstDir\${APPEXEC}
+ [QStandardPaths::ApplicationsLocation: C:/Users/<USER>/AppData/Roaming/Microsoft/Windows/Start Menu/Programs]
+ 
+ - !define UNINFO "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
+ - HKEY_CURRENT_USER\$UNINFO ...
+ 
+ - Set HKEY_CURRENT_USER\$UNINFO "DisplayName" "${APPNAME} -- free timetable software"
+ 
+ - Set HKEY_CURRENT_USER\$UNINFO "UninstallString" '"$InstDir\${APPNAME}\uninstall.exe"'
+ 
+ - Set HKEY_CURRENT_USER\$UNINFO "Publisher" "Liviu Lalescu"
+ 
+ - Set HKEY_CURRENT_USER\$UNINFO "UrlInfoAbout" "https://lalescu.ro/liviu/fet/"
+ 
+ - Set HKEY_CURRENT_USER\$UNINFO "DisplayVersion" "${FETVERSION}"
+ 
+ - Set HKEY_CURRENT_USER\$UNINFO "EstimatedSize" "$0" (DWORD)
+ 
+ - Set HKEY_CURRENT_USER\$UNINFO "UninstallLocation" "$InstDir\${APPNAME}"
+ 
+ # File type association: ASSOC_EXT=".fet", ASSOC_PROGID="FET.Main"
+ 
+ - Set HKEY_CURRENT_USER\Software\Classes\${ASSOC_EXT}\OpenWithProgIds" "${ASSOC_PROGID}" ""
+ 
+ - Set HKEY_CURRENT_USER\Software\Classes\${ASSOC_PROGID}\shell\open" "FriendlyAppName" "${APPNAME} ${FETVERSION}"
+ 
+ - Set HKEY_CURRENT_USER\Software\Classes\${ASSOC_PROGID}\shell\open\command" "" '"$InstDir\${APPEXEC}" "%1"'
+ 
+ - Set HKEY_CURRENT_USER\Software\Classes\${ASSOC_PROGID}\DefaultIcon" "" '"$InstDir\${APPEXEC}",0'
+ 
+ # Refresh shell icons
+ 
+ - System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v \
+  (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
+  
+  
+2) Deinstallation
+
+ - Delete HKEY_CURRENT_USER\Software\Classes\${ASSOC_PROGID}\
+ 
+ - If HKEY_CURRENT_USER\Software\Classes\${ASSOC_EXT} "" == "${ASSOC_PROGID}":
+     Delete HKEY_CURRENT_USER\Software\Classes\${ASSOC_EXT} ""
+     
+     ???
+     
+         ClearErrors
+    DeleteRegValue ShCtx "Software\Classes\${ASSOC_EXT}\OpenWithProgIds" "${ASSOC_PROGID}"
+    ${IfNot} ${Errors}
+        DeleteRegKey /IfEmpty ShCtx "Software\Classes\${ASSOC_EXT}\OpenWithProgIds\"
+        ${IfNot} ${Errors}
+            DeleteRegKey /IfEmpty ShCtx "Software\Classes\${ASSOC_EXT}\"
+        ${EndIf}
+    ${EndIf}
+
+    ; Remove Start Menu and Desktop launchers
+    Delete "$SMPROGRAMS\${APPNAME}.lnk"
+    Delete "$DESKTOP\${APPNAME}.lnk"
+
+    ; Remove uninstaller information from the registry
+    DeleteRegKey ShCtx "${UNINFO}\"
+
+    # Refresh shell icons (see above)
+

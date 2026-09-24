@@ -1,0 +1,15 @@
+# Where to install to?
+
+In many ways the neatest way to install a program is to put all its files in a dedicated folder. Uninstalling would just delete the folder.
+
+However, there is also the question of registering the program with the desktop, etc. including mime types, icons and desktop-menu entries. And then there are configuration files.
+
+On Linux the "normal" location for single-user programs is "~/.local". This has some conveniences:
+
+ - "~/.local/bin" is usually in the PATH, so executables are available with no additional effort;
+ - Desktop files, mime types and icons are also saved here so they can be installed directly.
+
+An inconvenience is that there are no dedicated programm directories, the files are scattered in various subfolders. This could even lead to clashes with other programs if care is not taken – especially for installation packages that bring their own libraries.
+
+Using ~/bin might also be worth considering, but that is perhaps best left for fully manually managed software. ~/.local is hidden, which might be an advantage for this more "packaged" software. Perhaps a special folder within ~/.local should be considered, rather like I am considering for Windows. It could be called "apps" or "programs". The executable(s) could be symlinked from ~/.local/bin. That could be a part of a full "installation", together with mime-type, file association, icon, desktop file...
+
