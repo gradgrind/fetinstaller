@@ -8,13 +8,15 @@ class DeleteWorker : public QObject
 {
     Q_OBJECT
 
+    bool removeDirectory(const QString &dirPath);
+
 public slots:
-    void deleteFiles(const QStringList links, const QStringList files, const QStringList dirs);
+    void deleteFiles(const QString basePath);
 
 signals:
     void deletedFile(QString fpath, bool ok);
     void removedDir(QString fpath, bool ok);
-    void finished(bool ok);
+    void done(bool ok);
 };
 
 #endif // DELETEWORKER_H

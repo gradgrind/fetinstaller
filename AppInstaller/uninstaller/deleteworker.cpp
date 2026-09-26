@@ -3,36 +3,28 @@
 #include <QFile>
 #include <QDir>
 
-void DeleteWorker::deleteFiles(const QStringList links, const QStringList files, const QStringList dirs)
-{
-    // Delete the links
-    for (const auto& fpath : links) {
-        emit deletedFile(fpath, QFile::remove(fpath));
-    }
-    // Delete the files
-    for (const auto& fpath : files) {
-        emit deletedFile(fpath, QFile::remove(fpath));
-    }
-    // Delete the directories. These should already be sorted correctly (children first), but
-    // collect failures in case the list was sorted wrongly, to then try again afterwards.
-    QStringList dirfails;
-    QDir d0;
-    for (const auto& fpath : dirs) {
-        if ( d0.rmdir(fpath) ) {
-            emit removedDir(fpath, true);
+bool DeleteWorker::removeDirectory(const QString &dirPath) {
+    // Loop through the directory contents
+    for ( const auto &dirEntry : QDirListing(dirPath, QDirListing::IteratorFlag::IncludeHidden) ) {
+        QString fpath{dirEntry.absoluteFilePath()};
+        if (dirEntry.isDir()) {
+            removeDirectory(fpath);
         } else {
-            dirfails.append(fpath);
-        }
-    }
-    if ( !dirfails.isEmpty() ) {
-        // First sort the list.
-        dirfails.sort();
-        // Do a reverse iteration, to get the child directories first.
-        // List the directories in reverse order (starting at the leaves)
-        for (auto it = dirfails.rbegin(); it != dirfails.rend(); ++it) {
-            emit removedDir(*it, d0.rmdir(*it));
+            emit deletedFile(fpath, QFile::remove(fpath));
         }
     }
 
-    emit finished(true);
+    // After all contents are removed, delete the directory itself
+    if ( QDir().rmdir(dirPath) ) {
+        emit removedDir(dirPath, true);
+        return true;
+    } else {
+        emit removedDir(dirPath, false);
+        return false;
+    }
+}
+
+void DeleteWorker::deleteFiles(const QString basePath)
+{
+    emit done(removeDirectory(basePath));
 }

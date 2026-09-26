@@ -8,7 +8,7 @@
 
 void Uninstaller::unregisterApp()
 {
-    //TODO: Write to regstry
+    //TODO: Write to registry
 
     /*TODO
     ; The RefreshShellIcons functions allow the association of the
@@ -29,11 +29,22 @@ void Uninstaller::unregisterApp()
 
 void Uninstaller::unregisterApp()
 {
-    // Only perform these operations if the installation was in  "~/.local".
+    // Only perform these operations if the installation is at the default location.
     // It is assumed that installations to other locations will not have set up file-type
     // associations and desktop menu entries.
 
     print_line("");
+
+    //TODO: Remove files from ~/.local, remove symlinks
+
+    QFile::remove(QDir::home().absoluteFilePath(".local/bin/" + appinfo->APPEXEC));
+    QFile::remove(QDir::home().absoluteFilePath(".local/share/applications/" + appinfo->APPEXEC + ".desktop")); // ???
+    QProcess::execute("xdg-icon-resource",
+                      QStringList() << "uninstall" << appinfo->APPEXEC << "--size" << "128" << "--context" << "apps");
+    // ???
+    QProcess::execute("xdg-icon-resource",
+                      QStringList() << "uninstall" << appinfo->APPEXEC << "--size" << "128" << "--context" << "mimetypes");
+
     print_line("update-mime-database");
     QProcess::execute("update-mime-database",
         QStringList() << appinfo->basedir.absoluteFilePath("share/mime"));

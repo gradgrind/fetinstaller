@@ -19,10 +19,9 @@ public:
 
     QDir appdir;
     QDir basedir;
-    QString installed_files_path; // absolute path to "installed_files" file
-    QStringList installed_files; // stripped, non-empty lines from "installed_files" file
     QString defaultInstallationPath;
     QString appcopy;
+    bool registered;
 };
 
 #endif // APPINFO_H

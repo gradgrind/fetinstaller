@@ -6,22 +6,20 @@
 #include <QTimer>
 #include <QProcess>
 
-static const char* CORRUPT_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", R"(
-It looks like the installation has been corrupted.
-
-Continuing to uninstall might not produce the desired results. Consider carefully
-whether you want to proceed.
+static const char* REGISTERED_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", R"(
+This will unregister the application and remove it from the desktop.
 )");
 
-//TODO: Consider allowing certain files to be ignored when checking for emptiness.
-// This would allow, say, configuration files to be retained when updating an
-// installation.
+static const char* UNREGISTERED_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", R"(
+This installation is not registered – only the installation directory will be removed.
+)");
+
 static const char* DIR_NOT_EMPTY = QT_TRANSLATE_NOOP("Uninstaller", R"(
 The installation directory is not empty:
   %1
 
-Please check its contents and delete manually, if they are no longer required.
-A renewed installation prefers an empty folder.
+Please check its contents and delete manually.
+A renewed installation will only be possible if the folder does not exist.
 )");
 
 Uninstaller::Uninstaller(AppInfo* app_info, QWidget *parent)
@@ -56,52 +54,18 @@ Uninstaller::~Uninstaller() {
 void Uninstaller::print_line(QString line)
 {
     if ( !bugflag )
-        ui->filesReport->appendPlainText(line);
+        ui->text_2->appendPlainText(line);
 }
 
 void Uninstaller::page_1()
 {
     ui->stackedWidget->setCurrentIndex(0);
-    ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(false);
-    ui->filesReport->clear();
-
-    // Check the list of installed files
-    print_line(tr("Reading file list from: %1").arg(appinfo->installed_files_path));
-    print_line("");
-    filesList.clear();
-    dirsList.clear();
-    linksList.clear();
-    int errors{0};
-    for ( const auto& rpath : appinfo->installed_files ) {
-        QFileInfo fr{rpath};
-        if ( fr.isAbsolute() || rpath.contains("..") ) {
-            // Only allow relative paths without "..", i.e. guaranteed to be within the package.
-            print_line(tr("Invalid line in file list: %1").arg(rpath));
-            errors++;
-            continue;
-        }
-        QString fpath{appinfo->basedir.absoluteFilePath(rpath)};
-        QFileInfo f{fpath};
-        if ( f.isSymLink() ) {
-            linksList.append(fpath);
-        } else if ( f.isDir() ) {
-            dirsList.append(fpath);
-        } else if ( f.exists() ) {
-            filesList.append(fpath);
-        } else {
-            print_line(tr("File not found: %1").arg(fpath));
-            errors++;
-        }
-    }
-    if ( errors == 0 ) {
-        print_line(tr("Press OK to uninstall."));
+    ui->text_1->clear();
+    if ( appinfo->registered ) {
+        ui->text_1->appendPlainText(tr(REGISTERED_INSTALLATION));
     } else {
-        print_line(tr(CORRUPT_INSTALLATION));
-        return;
+        ui->text_1->appendPlainText(tr(UNREGISTERED_INSTALLATION));
     }
-    // Add the root directory, basedir
-    dirsList.append(appinfo->basedir.path());
-    ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
 
 void Uninstaller::page_2()
@@ -112,8 +76,18 @@ void Uninstaller::page_2()
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
 
     // Initialize progress bar
+
+    // Loop through the directory contents
+    int count{0};
+    for ( const auto &dirEntry : QDirListing(
+             appinfo->basedir.path(),
+             QDirListing::IteratorFlag::IncludeHidden | QDirListing::IteratorFlag::Recursive) ) {
+        count++;
+    }
+
+
     ui->uninstallProgress->setMinimum(0);
-    ui->uninstallProgress->setMaximum(linksList.length() + filesList.length() + dirsList.size());
+    ui->uninstallProgress->setMaximum(count + 1); // include base directory
     ui->uninstallProgress->setValue(0);
 
     // Use background thread to perform deletions
@@ -126,17 +100,17 @@ void Uninstaller::page_2()
 
     connect(worker, &DeleteWorker::deletedFile, this, &Uninstaller::file_deleted);
     connect(worker, &DeleteWorker::removedDir, this, &Uninstaller::dir_removed);
-    connect(worker, &DeleteWorker::finished, this, &Uninstaller::done);
+    connect(worker, &DeleteWorker::done, this, &Uninstaller::done);
 
     workerThread.start();
 
      // Start deleting.
     failed_files.clear();
     failed_dirs.clear();
-    ui->output->clear();
+    ui->text_2->clear();
     // The directories should already be sorted correctly (longest first), so that
     // leaf directories will come before parent directories.
-    emit deleteFiles(linksList, filesList, dirsList);
+    emit deleteFiles(appinfo->basedir.path());
 }
 
 void Uninstaller::file_deleted(QString fpath, bool ok)
@@ -179,20 +153,17 @@ void Uninstaller::done(bool ok)
         return;
     }
 
-    int fileCount = filesList.length() + linksList.length() - failed_files.length();
-    int dirCount = dirsList.length() - failed_dirs.length();
     print_line("");
-    print_line(tr("%1 files deleted").arg(fileCount));
-    print_line(tr("%1 directories removed").arg(dirCount));
+    print_line(tr("%1 files could not be deleted").arg(failed_files.length()));
+    print_line(tr("%1 directories removed").arg(failed_dirs.length()));
 
-    if ( appinfo->basedir.path() == appinfo->defaultInstallationPath ) {
+    if ( appinfo->registered ) {
         unregisterApp();
-    } else {
-        // Seek remaining directories, test if empty.
-        if ( appinfo->basedir.exists() ) {
-            print_line("");
-            print_line(tr(DIR_NOT_EMPTY).arg(appinfo->basedir.path()));
-        }
+    }
+    // Seek remaining directories, test if empty.
+    if ( appinfo->basedir.exists() ) {
+        print_line("");
+        print_line(tr(DIR_NOT_EMPTY).arg(appinfo->basedir.path()));
     }
 
     // Enable ok button

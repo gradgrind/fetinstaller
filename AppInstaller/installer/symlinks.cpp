@@ -28,7 +28,7 @@ static const char *WINDOWS_SYMLINK = QT_TRANSLATE_NOOP(
 
 // On Windows there are symlinks and "shortcuts" (.lnk).
 // At present symlinks are not permitted – one difficulty is that
-// they normally need administrator piveleges for creation.
+// they normally need administrator privileges for creation.
 // Windows shortcuts can be created by QFile::link.
 // It looks like only absolute shortcuts are possible.
 

@@ -81,73 +81,44 @@ err:
         return false;
     }
 
-    // Default installation path
 #if defined Q_OS_WIN
-    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(APPNAME);
-#else
-    defaultInstallationPath = QDir::home().absoluteFilePath(".local");
-#endif
-
-    // Read the list of installed files
-    installed_files_path = basedir.filePath(APPFILES + "installed_files");
-    QFile textFile{installed_files_path};
-    //print_line(tr("Reading file list from: %1").arg(filespath));
-    //print_line("");
-    if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-        QMessageBox::critical(
-            nullptr,
-            tr("Critical Error"),
-            tr(NO_FILE_LIST).arg(basedir.path(), installed_files_path));
-        return false;
-    }
-    // Read file line by line
-    QTextStream textStream(&textFile);
-    installed_files.clear();
-    while ( true )
-    {
-        QString line = textStream.readLine();
-        if ( line.isNull() )
-            break;    // end of file
-        QString rpath{line.trimmed()};
-        if ( !rpath.isEmpty() )
-            installed_files.append(rpath);
-    }
 
     // On Windows the uninstaller must be run from a temporary folder because it can't delete
     // the files belonging to the running process.
 
-#if defined Q_OS_WIN
-
     if ( !appcopy.isEmpty() ) {
-        // Copy the necessary files to a temporary directory and run the uninstaller from there.
+        // Copy the necessary files to a temporary directory so that the uninstaller can be run from there.
         QDir tdir{appcopy};
-        for ( const auto& fpath: std::as_const(installed_files) ) {
-            QFileInfo finfo{fpath};
-            QString fname{finfo.fileName()};
-            if ( finfo.suffix() == "dll"             // specifically for Windows
-                     || fname == "qt.conf"
-                     || finfo.baseName().endsWith("_uninstall") ) {
-
-                QString drel{finfo.path()};
-                if ( !tdir.exists(drel) )
-                    tdir.mkpath(drel);
+        for ( const auto &dirEntry : QDirListing(basedir.path(), QDirListing::IteratorFlag::FilesOnly) ) {
+            // (faster than using name filters)
+            const QString fileName = dirEntry.fileName();
+            if ( fileName.endsWith(".dll") || fileName == "qt.conf" || fileName == "app_uninstall.exe") ) {
                 // In the case of a link this copies the target file, on Windows there are unlikely
-                // to be links among the files copied here (on Linux there would almost ceretainly
+                // to be links among the files copied here (on Linux there would almost certainly
                 // be links):
-                if ( !QFile::copy(basedir.filePath(fpath), tdir.filePath(fpath)) ) {
+                if ( !QFile::copy(dirEntry.filePath(), tdir.filePath(fileName)) ) {
                     QMessageBox::critical(
                         nullptr,
                         tr("Critical Error"),
                         (tr("Copying uninstaller to temporary folder failed:")
-                            + "\n  %1 -> %2\n  +++ %3")
-                            .arg(basedir.filePath(fpath), tdir.filePath(fpath), drel));
+                         + "\n  %1 -> %2")
+                            .arg(dirEntry.filePath(), tdir.filePath(fileName)));
                     return false;
                 }
             }
         }
     }
 
+    // Default installation path (Windows)
+    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(APPNAME);
+
+#elif defined Q_OS_LINUX
+
+    // Default installation path (Linux)
+    defaultInstallationPath = QDir::home().absoluteFilePath(".local/apps/%1").arg(APPNAME);
+
 #endif
 
+    registered = ( basedir == defaultInstallationPath );
     return true;
 }

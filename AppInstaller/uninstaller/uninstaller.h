@@ -38,10 +38,6 @@ private slots:
 private:
     Ui::Uninstaller *ui;
 
-    QStringList filesList;
-    QStringList dirsList;
-    QStringList linksList;
-
     QStringList failed_files;
     QStringList failed_dirs;
 
@@ -49,11 +45,9 @@ private:
     void progressOne();
     void unregisterApp();
     bool bugflag{false};
-    void warning(QString msg);
-    void fatalError(QString msg);
 
 signals:
-    void deleteFiles(const QStringList links, const QStringList files, const QStringList dirs);
+    void deleteFiles(const QString basePath);
 };
 
 extern void fatalError(QString msg);
