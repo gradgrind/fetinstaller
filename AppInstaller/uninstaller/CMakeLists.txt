@@ -3,13 +3,6 @@ project(app_uninstall LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# The environment variable APPEXEC must be set to the simple
-# name of the application's executable.
-set ( app_exec $ENV{APPEXEC} )
-if( "${app_exec}" STREQUAL "" )
-    message( FATAL_ERROR "No APPEXEC environment variable." )
-endif()
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_INSTALL_BINDIR ".")
     set(CMAKE_INSTALL_DATADIR ".")

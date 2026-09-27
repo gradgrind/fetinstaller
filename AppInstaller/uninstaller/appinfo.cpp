@@ -17,7 +17,8 @@ base directory: %1
 
 AppInfo::AppInfo()
     : APPNAME{"FET"}
-    , APPEXEC{"fet"}
+    , APPEXEC{"fet.exe"}
+    , APPFILENAME{"fet"}
     , EXECDIR{""}
     , APPFILES{""}
     {}
@@ -27,8 +28,9 @@ AppInfo::AppInfo()
 AppInfo::AppInfo()
     : APPNAME{"FET"}
     , APPEXEC{"fet"}
+    , APPFILENAME{"fet"}
     , EXECDIR{"bin/"}
-    , APPFILES{"share/" + APPEXEC + "/"}
+    , APPFILES{"share/fet/"}
 {}
 
 #endif
