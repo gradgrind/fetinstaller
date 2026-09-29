@@ -21,7 +21,7 @@ qt_add_executable(app_uninstall
     uninstaller.h uninstaller.cpp uninstaller.ui
     uninstaller_resources.qrc
     deleteworker.h deleteworker.cpp
-    register.cpp
+    unregister.cpp
     appinfo.cpp appinfo.h
 )
 

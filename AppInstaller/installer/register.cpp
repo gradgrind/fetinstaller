@@ -31,13 +31,22 @@ void Installer::registerApp()
 
 bool Installer::registerApp()
 {
+    //TODO: The uninstaller can't easily manage multiple copies. Symlinks can be traced back to
+    // the installation directory, but copies can't.
+    // Perhaps there should be a list of copied files (absolute paths), perhaps it would help to
+    // include the links too?
+
+    // Only perform these operations if installing to the "standard" location, an application
+    // directory in "~/.local/apps".
+    if ( dst_dir.absolutePath() != defaultInstallationPath ) {
+        return true;
+    }
+
     bool ok{true};
     // Add files to ~/.local
     QString mylocal{QDir::home().absoluteFilePath(".local")};
 
     print_line("");
-    // Only perform these operations if installing to the "standard" location, an application
-    // directory in "~/.local/apps".
 
     //+++ Install .desktop link(s) (for "Start" menu entry), checking they don't already exist.
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
@@ -107,12 +116,13 @@ bool Installer::registerApp()
     // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
     // show the icon even if it is only in "apps".
     // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
-    auto elist = linkDirectoryHierarchy(
+    const auto elist = linkDirectoryHierarchy(
         dst_dir.filePath("share/icons"),
         shareDir.absoluteFilePath("icons"));
     if ( elist.isEmpty() ) {
         print_line(tr("Icons linked"));
     } else {
+        ok = false;
         for ( const auto& e : elist ) {
             print_line(e, true);
         }

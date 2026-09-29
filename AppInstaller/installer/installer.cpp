@@ -560,15 +560,20 @@ void Installer::handleCopyingFinished()
 {
     ui->launch->setChecked(false);
     ui->launch->hide();
-    // This seems to run quickly. If it should turn out to block the GUI for too long,
+    //TODO??? This seems to run quickly. If it should turn out to block the GUI for too long,
     // it should perhaps be moved to a background thread.
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     if ( copyErrors.isEmpty() ) {
-        installationPartial = false;
-        if ( dst_dir.absolutePath() == defaultInstallationPath ) {
-            registerApp();
-            //TODO: If this was not fully successful, run uninstaller? Silently?
+        if ( !registerApp() ) {
+            /*TODO: If this was not fully successful, run uninstaller? Silently?
+             * Windows would need further parameters, "-u", "path"
+             * Perhaps the Linux version with path parameter?
+            if ( QProcess::execute("uninstaller", QStringList{"-s"}) != 0 ) {
+
+            }
+            */
         }
+        installationPartial = false;
     } else {
         print_line("");
         for ( const auto& e : std::as_const(copyErrors) ) {
@@ -576,7 +581,7 @@ void Installer::handleCopyingFinished()
         }
         print_line("");
         print_line("–––––>>>", true);
-        print_line(tr("%1 copying errors").arg(copyErrors.length()), true);
+        print_line(tr("%1 installation errors").arg(copyErrors.length()), true);
     }
     QApplication::restoreOverrideCursor();
     ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
