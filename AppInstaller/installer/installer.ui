@@ -361,12 +361,12 @@ Alternatively, %1 may be installed to another folder without registration, which
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="installNonEmpty">
+           <widget class="QCheckBox" name="installDesktopLink">
             <property name="styleSheet">
              <string notr="true"/>
             </property>
             <property name="text">
-             <string>Install to non-empty destination directory</string>
+             <string>Install a desktop link</string>
             </property>
            </widget>
           </item>

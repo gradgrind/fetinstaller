@@ -13,14 +13,6 @@ static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   Please check that your installer has not been corrupted.<br>
   If necessary, contact the distributor.)");
 
-static const char *WARN_EXISTING = QT_TRANSLATE_NOOP("Installer", R"(
-There seems to be an installation of this application at '%1' already.<br>
-You must remove this before you can install the new version here.)");
-
-static const char *WARN_NOT_EMPTY = QT_TRANSLATE_NOOP("Installer", R"(
-The installation directory is not empty.<br>
-Check that you really want to place the installation there.)");
-
 static const char *WARN_DIRNAME = QT_TRANSLATE_NOOP("Installer", R"(
 The installation directory should normally contain the application name, '%1'.<br>
 Do you really want to install to this directory?<br>
@@ -68,7 +60,7 @@ Installer::Installer(QWidget *parent)
     connect(ui->setDefaultPath, &QPushButton::clicked, this, &Installer::selectDefaultDir);
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
     connect(ui->removeExisting, &QPushButton::clicked, this, &Installer::uninstallExisting);
-    connect(ui->installNonEmpty, &QCheckBox::clicked, this, &Installer::allowNonEmpty);
+    connect(ui->installDesktopLink, &QCheckBox::clicked, this, &Installer::allowNonEmpty);
 
     //NOTE: If the time is too short, a blank window might get shown at first ...
     QTimer::singleShot(100, this, &Installer::page_0);
@@ -228,7 +220,7 @@ void Installer::page_1()
 #ifdef Q_OS_WIN
     defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(appinfo.APPNAME);
 #else
-    defaultInstallationPath = QDir::home().absoluteFilePath(".local");
+    defaultInstallationPath = QDir::home().absoluteFilePath(".local/apps/%1").arg(appinfo.APPNAME);
 #endif
     // Seek existing installation
     QString which_app{QStandardPaths::findExecutable(appinfo.APPEXEC)};
@@ -240,7 +232,9 @@ void Installer::page_1()
 
         QDir app_dir{which_app};
         app_dir.cdUp();
-        uninstall = QStandardPaths::findExecutable(appinfo.APPEXEC + "_uninstall", QStringList() << app_dir.path());
+
+        //TODO: This will need adapting for Windows (powershell script ...)
+        uninstall = QStandardPaths::findExecutable(appinfo.APPFILENAME + "_uninstall", QStringList() << app_dir.path());
         if ( uninstall.isEmpty() ) {
             uninstall.clear();
             ui->existingCheckBox->hide();
@@ -255,11 +249,7 @@ void Installer::page_2()
 {
     // If a previous installation is to be uninstalled, do it now (if possible)
     if (!uninstall.isEmpty() && ui->existingCheckBox->isChecked()) {
-        //TODO: PROBLEM: With my double bat approach on Windows the bat file called here returns before the
-        // uninstaller has run! What is really needed is a runnable without console window to create the
-        // temporary directory, copy the necessary files, run the uninstaller and finally delete the
-        // temporary directory.
-        QProcess::execute(uninstall);
+        QProcess::execute(uninstall); // must wait for completion before returning!
     }
     ui->stackedWidget->setCurrentIndex(2);
     setInstallPath(defaultInstallationPath);
@@ -305,17 +295,17 @@ void Installer::setInstallPath(QString ipath)
     if ( ipath.isEmpty() ) {
         // Reentering setInstallpath, use existing path
         ipath = dst_dir.absolutePath();
-        if ( !dst_dir.exists() ) {
-            dst_dir.mkdir(ipath);
-        }
     } else {
         ui->installPath->setText(ipath);
         dst_dir = ipath;
     }
+    if ( !dst_dir.exists() ) {
+        dst_dir.mkpath(ipath);
+    }
     ui->setDefaultPath->setEnabled(ipath != defaultInstallationPath);
     ui->desktopSetup->hide();
-    ui->installNonEmpty->setChecked(false);
-    ui->installNonEmpty->hide();
+    ui->installDesktopLink->setChecked(false);
+    ui->installDesktopLink->hide();
 
     // Check destination
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
@@ -325,19 +315,19 @@ void Installer::setInstallPath(QString ipath)
         addBoldLine(ui->would_overwrite, tr("Destination not writable: %1").arg(ipath));
         return;
     }
-    // Check for app installation here
-    if ( !QStandardPaths::findExecutable(
-             appinfo.APPEXEC
-             , QStringList() << dst_dir.filePath(appinfo.EXECDIR)).isEmpty() ) {
-        addBoldLine(ui->would_overwrite, tr(WARN_EXISTING).arg(dst_dir.path()));
+    // Check that the destination directory is empty
+    if ( !dst_dir.isEmpty() ) {
+        addBoldLine(ui->would_overwrite, tr("Destination not empty: %1").arg(dst_dir.path()));
         // Check for app uninstaller
         if ( !QStandardPaths::findExecutable(
-                 appinfo.APPEXEC + "_uninstall"
+                 appinfo.APPFILENAME + "_uninstall"
                  , QStringList() << dst_dir.filePath(appinfo.EXECDIR)).isEmpty() ) {
             ui->removeExisting->show();
         }
         return;
     }
+
+    /*
     // Check for overwrites
     if ( dst_dir.exists() ) {
         if ( !dst_dir.isEmpty() ) {
@@ -364,7 +354,7 @@ void Installer::setInstallPath(QString ipath)
                 }
             }
 
-            // Check any existing directories are valid directories and writable
+             // Check any existing directories are valid directories and writable
             for ( const auto& d : std::as_const(installFiles.installationDirs) ) {
                 QFileInfo dd{dst_dir.filePath(d)};
                 if ( dd.exists() ) {
@@ -391,8 +381,8 @@ void Installer::setInstallPath(QString ipath)
 #endif
                     addBoldLine(
                         ui->would_overwrite,
-                        tr(WARN_NOT_EMPTY));
-                    ui->installNonEmpty->show();
+                        tr(ERROR_NOT_EMPTY));
+                    ui->installDesktopLink->show();
                     return;
                 }
             } else {
@@ -415,17 +405,19 @@ void Installer::setInstallPath(QString ipath)
             return;
         }
     }
+    */
+
     if ( ipath == defaultInstallationPath ) {
         ui->desktopSetup->show(); // "A desktop-menu entry and file-type association will be set up."
+        ui->installDesktopLink->show();
     }
-    ui->would_overwrite->appendPlainText(tr("No conflicts."));
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
 
 void Installer::uninstallExisting()
 {
     // Try to remove the installation in dst_dir
-    QProcess::execute(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC + "_uninstall"));
+    QProcess::execute(dst_dir.filePath(appinfo.EXECDIR + appinfo.APPFILENAME + "_uninstall"));
     setInstallPath();
 }
 
@@ -495,14 +487,14 @@ void Installer::handleDirWritten(QString filepath)
 {
     dstDirectories.append(filepath);
     progressOne();
-    print_3("+ " + dst_dir.filePath(filepath) + "/");
+    print_line("+ " + dst_dir.filePath(filepath) + "/");
 }
 
 void Installer::handleDirNotCopied(QString filepath)
 {
     dstDirectories.append(filepath);
     progressOne();
-    print_3("(+) " + dst_dir.filePath(filepath) + "/");
+    print_line("(+) " + dst_dir.filePath(filepath) + "/");
 }
 
 void Installer::handleDirWriteFailed(QString filepath)
@@ -515,7 +507,7 @@ void Installer::handleDirOverwriteFailed(QString filepath)
     copyErrors.append(tr("ERROR, existing item is not writable directory: %1").arg(dst_dir.filePath(filepath)));
 }
 
-void Installer::print_3(QString line, bool bold)
+void Installer::print_line(QString line, bool bold)
 {
     if ( !bugflag ) {
         if ( bold )
@@ -532,7 +524,7 @@ void Installer::progressOne()
     if ( p < max ) {
         ui->installProgress->setValue(p + 1);
     } else if ( !bugflag ) {
-        print_3("\nBUG: progress > 100%", true);
+        print_line("\nBUG: progress > 100%", true);
         bugflag = true; // suppress further reports
     }
 }
@@ -541,7 +533,7 @@ void Installer::handleFileCopied(QString filepath)
 {
     dstFiles.append(filepath);
     progressOne();
-    print_3("+ " + dst_dir.filePath(filepath));
+    print_line("+ " + dst_dir.filePath(filepath));
 }
 
 void Installer::handleCopyFailed(QString filepath)
@@ -553,7 +545,7 @@ void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
 {
     dstFiles.append(filepaths.first);
     progressOne();
-    print_3("+ " + dst_dir.filePath(filepaths.second));
+    print_line("+ " + dst_dir.filePath(filepaths.second));
 }
 
 void Installer::handleLinkFailed(QPair<QString, QString> filepaths)
@@ -572,44 +564,19 @@ void Installer::handleCopyingFinished()
     // it should perhaps be moved to a background thread.
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     if ( copyErrors.isEmpty() ) {
+        installationPartial = false;
         if ( dst_dir.absolutePath() == defaultInstallationPath ) {
             registerApp();
-        }
-
-        // Open file to record installed files
-        QString filelistpath{appinfo.APPFILES + "installed_files"};
-        filelist = dst_dir.absoluteFilePath(filelistpath);
-        file_log.setFileName(filelist);
-        if (file_log.open(QIODevice::WriteOnly | QIODevice::Text))
-        {
-            log_stream.setDevice(&file_log);
-            // List the files in reverse order (starting with the links)
-            for (auto it = dstFiles.rbegin(); it != dstFiles.rend(); ++it) {
-                log_stream << *it << "\n";
-            }
-            // Add the installed-files list.
-            log_stream << filelistpath << "\n";
-            // List the directories in reverse order (starting at the leaves)
-            for (auto it = dstDirectories.rbegin(); it != dstDirectories.rend(); ++it) {
-                log_stream << *it << "/\n"; // suffix "/"
-            }
-            file_log.close();
-            ui->launch->setChecked(true);
-            ui->launch->show();
-            installationPartial = false;
-        } else {
-            print_3("");
-            print_3("–––––>>>", true);
-            print_3(tr("ERROR, could not create the installed-files list"), true);
+            //TODO: If this was not fully successful, run uninstaller? Silently?
         }
     } else {
-        print_3("");
+        print_line("");
         for ( const auto& e : std::as_const(copyErrors) ) {
-            print_3(e, true);
+            print_line(e, true);
         }
-        print_3("");
-        print_3("–––––>>>", true);
-        print_3(tr("%1 copying errors").arg(copyErrors.length()), true);
+        print_line("");
+        print_line("–––––>>>", true);
+        print_line(tr("%1 copying errors").arg(copyErrors.length()), true);
     }
     QApplication::restoreOverrideCursor();
     ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
@@ -624,7 +591,18 @@ void Installer::page_4()
 
         // Remove installed files and directories
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        if ( dst_dir.removeRecursively() ) {
+            ui->uninstall->appendPlainText(tr("Partial installation removed successfully"));
+        } else {
+            ui->uninstall->appendPlainText(
+                tr("Partial installation could not be fully removed: '%1'").arg(dst_dir.absolutePath()));
+        }
 
+        QApplication::restoreOverrideCursor();
+        ui->buttonBox_4->button(QDialogButtonBox::Ok)->setEnabled(true);
+        installationPartial = false;
+
+        /* TODO: remove all thread code for removal?
         connect(this, &Installer::doRemove, copyWorker, &CopyWorker::removePartial);
         connect(copyWorker, &CopyWorker::remove_file, this, &Installer::removedFile);
         connect(copyWorker, &CopyWorker::remove_dir, this, &Installer::removedDir);
@@ -633,6 +611,8 @@ void Installer::page_4()
         xdirs.clear(); // not uninstalled directories
         xfiles.clear(); // not uninstalled files
         emit doRemove(dst_dir, dstDirectories, dstFiles);
+        */
+
     } else {
         // Installation complete, don't switch to the additional page
         if (ui->launch->isChecked()) {

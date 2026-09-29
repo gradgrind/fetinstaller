@@ -69,9 +69,10 @@ private:
 
     linktest testLink(QString rpath);
 
-    void print_3(QString line, bool bold = false);
+    void print_line(QString line, bool bold = false);
     void progressOne();
-    void registerApp();
+    bool registerApp();
+    QStringList linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath);
 
     bool bugflag{false};
     QStringList copyErrors;

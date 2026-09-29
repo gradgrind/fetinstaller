@@ -14,8 +14,8 @@ static const char* UNREGISTERED_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", 
 This installation is not registered – only the installation directory will be removed.
 )");
 
-static const char* DIR_NOT_EMPTY = QT_TRANSLATE_NOOP("Uninstaller", R"(
-The installation directory is not empty:
+static const char* UNINSTALL_INCOMPLETE = QT_TRANSLATE_NOOP("Uninstaller", R"(
+The installation folder could not be deleted:
   %1
 
 Please check its contents and delete manually.
@@ -75,6 +75,10 @@ void Uninstaller::page_2()
     // Disable ok button
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
 
+    if ( appinfo->registered ) {
+        unregisterApp();
+    }
+
     // Initialize progress bar
 
     // Loop through the directory contents
@@ -84,7 +88,6 @@ void Uninstaller::page_2()
              QDirListing::IteratorFlag::IncludeHidden | QDirListing::IteratorFlag::Recursive) ) {
         count++;
     }
-
 
     ui->uninstallProgress->setMinimum(0);
     ui->uninstallProgress->setMaximum(count + 1); // include base directory
@@ -155,15 +158,12 @@ void Uninstaller::done(bool ok)
 
     print_line("");
     print_line(tr("%1 files could not be deleted").arg(failed_files.length()));
-    print_line(tr("%1 directories removed").arg(failed_dirs.length()));
+    print_line(tr("%1 directories not removed").arg(failed_dirs.length()));
 
-    if ( appinfo->registered ) {
-        unregisterApp();
-    }
     // Seek remaining directories, test if empty.
     if ( appinfo->basedir.exists() ) {
         print_line("");
-        print_line(tr(DIR_NOT_EMPTY).arg(appinfo->basedir.path()));
+        print_line(tr(UNINSTALL_INCOMPLETE).arg(appinfo->basedir.path()));
     }
 
     // Enable ok button

@@ -4,7 +4,8 @@
 
 AppInfo::AppInfo()
     : APPNAME{"FET"}
-    , APPEXEC{"fet"}
+    , APPEXEC{"fet.exe"}
+    , APPFILENAME{"fet"}
     , APPLONGNAME{tr("Timetable Generator")}
     , EXECDIR{""}
     , APPFILES{""}
@@ -15,9 +16,10 @@ AppInfo::AppInfo()
 AppInfo::AppInfo()
     : APPNAME{"FET"}
     , APPEXEC{"fet"}
+    , APPFILENAME{"fet"}
     , APPLONGNAME{tr("Timetable Generator")}
     , EXECDIR{"bin/"}
-    , APPFILES{"share/" + APPEXEC + "/"}
+    , APPFILES{"share/fet/"}
 {}
 
 #endif

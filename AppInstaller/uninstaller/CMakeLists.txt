@@ -28,7 +28,7 @@ qt_add_executable(app_uninstall
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # Change the executable name so that multiple uninstallers can – if necessary – be placed in
     # one directory.
-    set_target_properties(app_uninstall PROPERTIES OUTPUT_NAME "${app_exec}_uninstall")
+    #set_target_properties(app_uninstall PROPERTIES OUTPUT_NAME "${app_exec}_uninstall")
 endif()
 
 qt_add_translations(

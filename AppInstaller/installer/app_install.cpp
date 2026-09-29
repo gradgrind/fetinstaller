@@ -2,6 +2,7 @@
 
 #include <QLocale>
 #include <QMessageBox>
+#include <QSettings>
 
 int main(int argc, char *argv[])
 {
@@ -14,10 +15,12 @@ int main(int argc, char *argv[])
         a.installTranslator(&translator);
     }
 
-    if (qgetenv("USER") == "root") {
+    // Test for admin privileges
+    QSettings settings(QSettings::SystemScope, "gradgrind", "app_installer");
+    if ( settings.isWritable() ) {
         QMessageBox::critical(
             nullptr,
-            QCoreApplication::translate("main", "'root' user"),
+            QCoreApplication::translate("main", "ADMIN user"),
             QCoreApplication::translate("main", "The installer must be run as a normal user."));
         return 1;
     }

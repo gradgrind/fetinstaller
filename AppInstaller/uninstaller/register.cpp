@@ -1,8 +1,13 @@
 #include "uninstaller.h"
 #include <QProcess>
+#include <QStandardPaths>
 
 // Update file-type associations and desktop files.
 // Windows: remove app from registry.
+// unregisterApp() will only be called if the installation was "registered", which the
+// installer only does if the installation is to the default location.
+// It is assumed that installations to other locations will not have set up file-type
+// associations and desktop menu entries.
 
 #if defined Q_OS_WIN
 
@@ -29,10 +34,6 @@ void Uninstaller::unregisterApp()
 
 void Uninstaller::unregisterApp()
 {
-    // Only perform these operations if the installation is at the default location.
-    // It is assumed that installations to other locations will not have set up file-type
-    // associations and desktop menu entries.
-
     print_line("");
 
     // Remove files from ~/.local
@@ -50,46 +51,58 @@ void Uninstaller::unregisterApp()
         }
     }
 
-    // In case a desktop link is present:
-    QProcess::execute(
-        "xdg-desktop-icon",
-        QStringList() << "uninstall" << appinfo->APPFILENAME + ".desktop");
-    // alternative: use QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)
+    //+++ In case a desktop link is present:
+    // "xdg" version:
+    //QProcess::execute(
+    //    "xdg-desktop-icon",
+    //    QStringList() << "uninstall" << appinfo->APPFILENAME + ".desktop");
+    if ( QFile::remove(
+            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)
+            + "/" + appinfo->APPFILENAME + ".desktop") ) {
+        print_line(tr("Remove desktop link"));
+    }
 
-    // Remove from "start" menu
-    QProcess::execute(
-        "xdg-desktop-menu",
-        QStringList() << "uninstall" << appinfo->APPFILENAME + ".desktop");
-    // alternative: use QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
+    //+++ Remove from "start" menu
+    // "xdg" version:
+    //QProcess::execute(
+    //    "xdg-desktop-menu",
+    //    QStringList() << "uninstall" << appinfo->APPFILENAME + ".desktop");
+    QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
+    if ( QFile::remove(appsDir.filePath(appinfo->APPFILENAME + ".desktop")) ) {
+        print_line(tr("Remove from \"Start\" menu"));
+    }
 
-    // Remove mime-type
-    QProcess::execute(
-        "xdg-mime",
-        QStringList() << "uninstall" << mylocal + "/share/mime/packages/" + appinfo->APPFILENAME + ".xml");
-    // alternative: use QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/mime/packages/"
+    QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
+    //+++ Remove mime-type
+    // "xdg" version:
+    //QProcess::execute(
+    //    "xdg-mime",
+    //    QStringList() << "uninstall" << mylocal + "/share/mime/packages/" + appinfo->APPFILENAME + ".xml");
+    QFile::remove(shareDir.filePath("mime/packages/" + appinfo->APPFILENAME + ".xml"));
 
-    // Remove icon(s) ... ???
-    QProcess::execute("xdg-icon-resource",
-                      QStringList() << "uninstall" << appinfo->APPFILENAME << "--size" << "128" << "--context" << "apps");
-    // ??? It's not clear that the "mimetypes" icons are at all necessary ... what do they do?
-    // On Cinnamon apparently nothing, on GNOME the "apps" icons are enough for the .fet files to get the fet icon
-    // in the file browser.
-    QProcess::execute("xdg-icon-resource",
-                      QStringList() << "uninstall" << appinfo->APPFILENAME << "--size" << "128" << "--context" << "mimetypes");
-    // Maybe copy the svg and 1 png (just in case ...) to the apps folders?
-    // alternative: use QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/icons/hicolor/scalable/"
-    //                  and/or + "/icons/hicolor/s128x128/" (for example)
-    // Then do "xdg-icon-resource forceupdate".
+    //+++ Remove icon(s)
+    // Here just "apps" icons are removed. Also "mimetypes" icons are possible, but I haven't found any
+    // use for them. The documentation says "Icons to be used as file icons should use mimetypes as context",
+    // but the file managers in at least GNOME, KDE and XFCE show the icon even if it is only saved in "apps".
+    // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
+    // "xdg" version:
+    //QProcess::execute("xdg-icon-resource",
+    //                  QStringList() << "uninstall" << appinfo->APPFILENAME << "--size" << "128" << "--context" << "apps");
+    // xdg-icon-resource can't handle svg files ...
+    QFile::remove(shareDir.filePath("icons/hicolor/scalable/apps" + appinfo->APPFILENAME + ".svg"));
+    // In case there are png images:
+    for ( const auto &dirEntry : QDirListing(
+             shareDir.filePath("icons/hicolor"),
+             QDirListing::IteratorFlag::DirsOnly) ) {
+        QFile::remove(dirEntry.filePath() + "/apps/" + appinfo->APPFILENAME + ".png");
+    }
 
-
-
-    print_line("update-mime-database");
-    QProcess::execute("update-mime-database",
-        QStringList() << appinfo->basedir.absoluteFilePath("share/mime"));
-    print_line("update-desktop-database");
-    QProcess::execute("update-desktop-database",
-        QStringList() << appinfo->basedir.absoluteFilePath("share/applications"));
-
+    print_line(tr("Update icon cache"));
+    QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
+    print_line(tr("Update mime database"));
+    QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
+    print_line(tr("Update desktop database"));
+    QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
 }
 
 #else

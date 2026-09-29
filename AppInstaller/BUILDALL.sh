@@ -12,7 +12,7 @@
 QTVERSION="6.11.2"
 QTDIR="$HOME/Qt"
 
-export APPEXEC="fet"
+#export APPEXEC="fet"
 
 export PATH=$QTDIR/Tools/CMake/bin:$PATH
 

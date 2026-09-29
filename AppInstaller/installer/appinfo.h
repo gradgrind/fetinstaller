@@ -11,6 +11,7 @@ public:
 
     const QString APPNAME;
     const QString APPEXEC;
+    const QString APPFILENAME;
     const QString APPLONGNAME;
     const QString EXECDIR;
     const QString APPFILES;
