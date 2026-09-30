@@ -31,22 +31,29 @@ void Installer::registerApp()
 
 bool Installer::registerApp()
 {
-    //TODO: The uninstaller can't easily manage multiple copies. Symlinks can be traced back to
-    // the installation directory, but copies can't.
-    // Perhaps there should be a list of copied files (absolute paths), perhaps it would help to
-    // include the links too?
-
     // Only perform these operations if installing to the "standard" location, an application
     // directory in "~/.local/apps".
     if ( dst_dir.absolutePath() != defaultInstallationPath ) {
         return true;
     }
 
+    print_line("");
+
+    // Open file to record files installed outside the installation directory.
+    xfilepath = dst_dir.absoluteFilePath("system_files");
+    file_log.setFileName(xfilepath);
+    if (file_log.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        log_stream.setDevice(&file_log);
+    } else {
+        print_line("–––––>>>", true);
+        print_line(tr("ERROR, could not create the 'system_files' list"), true);
+        return false;
+    }
+
     bool ok{true};
     // Add files to ~/.local
     QString mylocal{QDir::home().absoluteFilePath(".local")};
-
-    print_line("");
 
     //+++ Install .desktop link(s) (for "Start" menu entry), checking they don't already exist.
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
@@ -62,15 +69,21 @@ bool Installer::registerApp()
         if ( fpath.endsWith(".desktop") ) {
             QString fname{dirEntry.fileName()};
             // Start menu entry.
-            print_line(tr("Install \"Start\" menu entry '%1'").arg(fname));
-            if ( !QFile::link(fpath, appsDir.filePath(fname)) ) {
+            QString ipath{appsDir.filePath(fname)};
+            if ( QFile::link(fpath, ipath) ) {
+                print_line(tr("Install \"Start\" menu entry '%1'").arg(fname));
+                log_stream << ipath << "\n";
+            } else {
                 print_line(tr("Couldn't install \"Start\" menu entry '%1'").arg(fname), true);
                 ok = false;
             }
             // Desktop starter.
             if ( ui->installDesktopLink->isChecked() ) {
-                print_line(tr("Install desktop starter '%1'").arg(fname));
-                if ( !QFile::copy(fpath, desktop.filePath(fname)) ) {
+                QString ipath{desktop.filePath(fname)};
+                if ( QFile::copy(fpath, ipath) ) {
+                    print_line(tr("Install desktop starter '%1'").arg(fname));
+                    log_stream << ipath << "\n";
+                } else {
                     print_line(tr("Couldn't install desktop starter '%1'").arg(fname), true);
                     ok = false;
                 }
@@ -87,11 +100,13 @@ bool Installer::registerApp()
         if ( dirEntry.isExecutable() ) {
             if ( dirEntry.baseName().endsWith("_uninstall") )
                 continue;
-            print_line(tr("Add executable '%1' to PATH").arg(dirEntry.fileName()));
-            if ( !QFile::link(
-                    dirEntry.absoluteFilePath(),
-                    binDir.filePath(dirEntry.fileName())) ) {
-                print_line(tr("Couldn't link executable '%1'").arg(dirEntry.fileName()), true);
+            QString fname{dirEntry.fileName()};
+            QString ipath{binDir.filePath(fname)};
+            if ( QFile::link(dirEntry.absoluteFilePath(), ipath) ) {
+                print_line(tr("Add executable '%1' to PATH").arg(fname));
+                log_stream << ipath << "\n";
+            } else {
+                print_line(tr("Couldn't link executable '%1'").arg(fname), true);
                 ok = false;
             }
         }
@@ -102,9 +117,11 @@ bool Installer::registerApp()
     for ( const auto &dirEntry : QDirListing(
              dst_dir.absoluteFilePath("share/mime/packages"),
              QDirListing::IteratorFlag::FilesOnly) ) {
-        if ( !QFile::copy(
-                dirEntry.absoluteFilePath(),
-                shareDir.absoluteFilePath("mime/packages/") + dirEntry.fileName()) ) {
+        QString ipath{shareDir.absoluteFilePath("mime/packages/") + dirEntry.fileName()};
+        if ( QFile::copy(dirEntry.absoluteFilePath(), ipath) ) {
+            print_line(tr("Install mime file '%1'").arg(dirEntry.fileName()), true);
+            log_stream << ipath << "\n";
+        } else {
             print_line(tr("Couldn't install mime file '%1'").arg(dirEntry.fileName()), true);
             ok = false;
         }
@@ -116,17 +133,10 @@ bool Installer::registerApp()
     // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
     // show the icon even if it is only in "apps".
     // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
-    const auto elist = linkDirectoryHierarchy(
-        dst_dir.filePath("share/icons"),
-        shareDir.absoluteFilePath("icons"));
-    if ( elist.isEmpty() ) {
-        print_line(tr("Icons linked"));
-    } else {
+    if ( !linkDirectoryHierarchy(
+            dst_dir.filePath("share/icons"),
+            shareDir.absoluteFilePath("icons")) )
         ok = false;
-        for ( const auto& e : elist ) {
-            print_line(e, true);
-        }
-    }
 
     print_line(tr("Update icon cache"));
     QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
@@ -135,6 +145,7 @@ bool Installer::registerApp()
     print_line(tr("Update desktop database"));
     QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
 
+    file_log.close();
     return ok;
 }
 
@@ -144,26 +155,32 @@ bool Installer::registerApp()
 
 #endif
 
-QStringList Installer::linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath) {
+bool Installer::linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath)
+{
     // Loop through the directory contents, creating destination directories if necessary.
     // Files are symlinked.
-    QStringList errors;
     QDir src{srcPath};
     QDir dst{dstPath};
+    bool ok {true};
     for ( const auto &dirEntry : QDirListing(srcPath) ) {
         QString rpath{src.relativeFilePath(dirEntry.absoluteFilePath())};
         QString fpath{dst.absoluteFilePath(rpath)};
         if (dirEntry.isDir()) {
             // Create dir if necessary, copy contents
             dst.mkpath(fpath);
-            errors += linkDirectoryHierarchy(dirEntry.absoluteFilePath(), fpath);
+            if ( !linkDirectoryHierarchy(dirEntry.absoluteFilePath(), fpath) )
+                ok = false;
         } else {
             // Link file
-            if ( !QFile::link(dirEntry.absoluteFilePath(), fpath) ) {
-                errors.append(tr("Couldn't create icon link '%1'").arg(fpath));
+            if ( QFile::link(dirEntry.absoluteFilePath(), fpath) ) {
+                print_line(tr("Create icon link '%1'").arg(fpath));
+                log_stream << fpath << "\n";
+            } else {
+                print_line(tr("Couldn't create icon link '%1'").arg(fpath));
+                ok = false;
             }
         }
     }
-    return errors;
+    return ok;
 }
 

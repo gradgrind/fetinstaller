@@ -72,7 +72,7 @@ private:
     void print_line(QString line, bool bold = false);
     void progressOne();
     bool registerApp();
-    QStringList linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath);
+    bool linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath);
 
     bool bugflag{false};
     QStringList copyErrors;
@@ -83,7 +83,7 @@ private:
     InstallFiles installFiles; // files and directories to be installed
     QStringList dstDirectories; // collect the directories in the installation
     QStringList dstFiles; // collect the files in the installation
-    QString filelist; // path to file containing installed file list
+    QString xfilepath; // path to file containing installed file list
     QFile file_log;
     QTextStream log_stream;
     QDir src_dir;
