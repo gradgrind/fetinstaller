@@ -51,10 +51,14 @@ Uninstaller::~Uninstaller() {
     delete ui;
 }
 
-void Uninstaller::print_line(QString line)
+void Uninstaller::print_line(QString line, bool bold)
 {
-    if ( !bugflag )
-        ui->text_2->appendPlainText(line);
+    if ( !bugflag ) {
+        if ( bold )
+            ui->text_2->appendHtml("<b>" + line + "</b");
+        else
+            ui->text_2->appendPlainText(line);
+    }
 }
 
 void Uninstaller::page_1()

@@ -41,7 +41,7 @@ private:
     QStringList failed_files;
     QStringList failed_dirs;
 
-    void print_line(QString line);
+    void print_line(QString line, bool bold = false);
     void progressOne();
     void unregisterApp();
     bool bugflag{false};

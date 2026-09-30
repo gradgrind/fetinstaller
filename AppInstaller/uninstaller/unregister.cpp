@@ -36,67 +36,33 @@ void Uninstaller::unregisterApp()
 {
     print_line("");
 
-    // Remove files from ~/.local
-    QString mylocal{QDir::home().absoluteFilePath(".local")};
-
-    // Remove relevant symlinks in ~/.local/bin
-    for ( const auto &dirEntry : QDirListing(
-             mylocal + "/bin",
-             QDirListing::IteratorFlag::IncludeHidden) ) {
-        if ( dirEntry.isSymLink() ) {
-            if ( !appinfo->basedir.relativeFilePath(dirEntry.canonicalFilePath()).startsWith("..") ) {
-                // a link to a file within the installation
-                QFile::remove(dirEntry.filePath());
+    // Remove system files from ~/.local.
+    // Read the list of installed files
+    QString installed_files_path{appinfo->basedir.filePath("system_files")};
+    QFile textFile{installed_files_path};
+    if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
+        print_line(tr("App installed no system files"));
+        return;
+    }
+    // Read file line by line
+    QTextStream textStream(&textFile);
+    while ( true )
+    {
+        QString line = textStream.readLine();
+        if ( line.isNull() )
+            break;    // end of file
+        QString fpath{line.trimmed()};
+        if ( !fpath.isEmpty() ) {
+            if ( QFile::remove(fpath) ) {
+                print_line(tr("Removed %1").arg(fpath));
+            } else {
+                print_line(tr("Couldn't remove %1").arg(fpath), true);
             }
         }
     }
 
-    //+++ In case a desktop link is present:
-    // "xdg" version:
-    //QProcess::execute(
-    //    "xdg-desktop-icon",
-    //    QStringList() << "uninstall" << appinfo->APPFILENAME + ".desktop");
-    if ( QFile::remove(
-            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)
-            + "/" + appinfo->APPFILENAME + ".desktop") ) {
-        print_line(tr("Remove desktop link"));
-    }
-
-    //+++ Remove from "start" menu
-    // "xdg" version:
-    //QProcess::execute(
-    //    "xdg-desktop-menu",
-    //    QStringList() << "uninstall" << appinfo->APPFILENAME + ".desktop");
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
-    if ( QFile::remove(appsDir.filePath(appinfo->APPFILENAME + ".desktop")) ) {
-        print_line(tr("Remove from \"Start\" menu"));
-    }
-
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
-    //+++ Remove mime-type
-    // "xdg" version:
-    //QProcess::execute(
-    //    "xdg-mime",
-    //    QStringList() << "uninstall" << mylocal + "/share/mime/packages/" + appinfo->APPFILENAME + ".xml");
-    QFile::remove(shareDir.filePath("mime/packages/" + appinfo->APPFILENAME + ".xml"));
-
-    //+++ Remove icon(s)
-    // Here just "apps" icons are removed. Also "mimetypes" icons are possible, but I haven't found any
-    // use for them. The documentation says "Icons to be used as file icons should use mimetypes as context",
-    // but the file managers in at least GNOME, KDE and XFCE show the icon even if it is only saved in "apps".
-    // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
-    // "xdg" version:
-    //QProcess::execute("xdg-icon-resource",
-    //                  QStringList() << "uninstall" << appinfo->APPFILENAME << "--size" << "128" << "--context" << "apps");
-    // xdg-icon-resource can't handle svg files ...
-    QFile::remove(shareDir.filePath("icons/hicolor/scalable/apps" + appinfo->APPFILENAME + ".svg"));
-    // In case there are png images:
-    for ( const auto &dirEntry : QDirListing(
-             shareDir.filePath("icons/hicolor"),
-             QDirListing::IteratorFlag::DirsOnly) ) {
-        QFile::remove(dirEntry.filePath() + "/apps/" + appinfo->APPFILENAME + ".png");
-    }
-
     print_line(tr("Update icon cache"));
     QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
     print_line(tr("Update mime database"));
