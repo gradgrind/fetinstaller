@@ -46,6 +46,7 @@ void Uninstaller::unregisterApp()
     }
     // Read file line by line
     QTextStream textStream(&textFile);
+    bool ok{true};
     while ( true )
     {
         QString line = textStream.readLine();
@@ -56,7 +57,7 @@ void Uninstaller::unregisterApp()
             if ( QFile::remove(fpath) ) {
                 print_line(tr("Removed %1").arg(fpath));
             } else {
-                print_line(tr("Couldn't remove %1").arg(fpath), true);
+                unregister_failed.append(fpath);
             }
         }
     }

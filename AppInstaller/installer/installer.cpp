@@ -540,22 +540,14 @@ void Installer::handleCopyingFinished()
 {
     ui->launch->setChecked(false);
     ui->launch->hide();
-    //TODO??? This seems to run quickly. If it should turn out to block the GUI for too long,
-    // it should perhaps be moved to a background thread.
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    print_line("");
     if ( copyErrors.isEmpty() ) {
-        if ( !registerApp() ) {
-            /*TODO: If this was not fully successful, run uninstaller? Silently?
-             * Windows would need further parameters, "-u", "path"
-             * Perhaps the Linux version with path parameter?
-            if ( QProcess::execute("uninstaller", QStringList{"-s"}) != 0 ) {
-
-            }
-            */
+        if ( registerApp() ) {
+            installationPartial = false; // for page_4 handler
+            print_line(tr("Installation successful!"));
         }
-        installationPartial = false;
     } else {
-        print_line("");
         for ( const auto& e : std::as_const(copyErrors) ) {
             print_line(e, true);
         }

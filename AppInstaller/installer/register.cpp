@@ -39,22 +39,9 @@ bool Installer::registerApp()
 
     print_line("");
 
-    // Open file to record files installed outside the installation directory.
-    xfilepath = dst_dir.absoluteFilePath("system_files");
-    file_log.setFileName(xfilepath);
-    if (file_log.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        log_stream.setDevice(&file_log);
-    } else {
-        print_line("–––––>>>", true);
-        print_line(tr("ERROR, could not create the 'system_files' list"), true);
-        return false;
-    }
-
     bool ok{true};
     // Add files to ~/.local
-    QString mylocal{QDir::home().absoluteFilePath(".local")};
-
+    localfiles.clear();
     //+++ Install .desktop link(s) (for "Start" menu entry), checking they don't already exist.
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
     appsDir.mkpath(appsDir.path());
@@ -72,7 +59,7 @@ bool Installer::registerApp()
             QString ipath{appsDir.filePath(fname)};
             if ( QFile::link(fpath, ipath) ) {
                 print_line(tr("Install \"Start\" menu entry '%1'").arg(fname));
-                log_stream << ipath << "\n";
+                localfiles.append(ipath);
             } else {
                 print_line(tr("Couldn't install \"Start\" menu entry '%1'").arg(fname), true);
                 ok = false;
@@ -82,7 +69,7 @@ bool Installer::registerApp()
                 QString ipath{desktop.filePath(fname)};
                 if ( QFile::copy(fpath, ipath) ) {
                     print_line(tr("Install desktop starter '%1'").arg(fname));
-                    log_stream << ipath << "\n";
+                    localfiles.append(ipath);
                 } else {
                     print_line(tr("Couldn't install desktop starter '%1'").arg(fname), true);
                     ok = false;
@@ -92,7 +79,7 @@ bool Installer::registerApp()
     }
 
     //+++ Add relevant symlinks in ~/.local/bin
-    QDir binDir{mylocal + "/bin"};
+    QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
     binDir.mkdir(binDir.path());
     for ( const auto &dirEntry : QDirListing(
             dst_dir.absoluteFilePath("bin"),
@@ -104,7 +91,7 @@ bool Installer::registerApp()
             QString ipath{binDir.filePath(fname)};
             if ( QFile::link(dirEntry.absoluteFilePath(), ipath) ) {
                 print_line(tr("Add executable '%1' to PATH").arg(fname));
-                log_stream << ipath << "\n";
+                localfiles.append(ipath);
             } else {
                 print_line(tr("Couldn't link executable '%1'").arg(fname), true);
                 ok = false;
@@ -119,8 +106,8 @@ bool Installer::registerApp()
              QDirListing::IteratorFlag::FilesOnly) ) {
         QString ipath{shareDir.absoluteFilePath("mime/packages/") + dirEntry.fileName()};
         if ( QFile::copy(dirEntry.absoluteFilePath(), ipath) ) {
-            print_line(tr("Install mime file '%1'").arg(dirEntry.fileName()), true);
-            log_stream << ipath << "\n";
+            print_line(tr("Install mime file '%1'").arg(dirEntry.fileName()));
+            localfiles.append(ipath);
         } else {
             print_line(tr("Couldn't install mime file '%1'").arg(dirEntry.fileName()), true);
             ok = false;
@@ -135,18 +122,40 @@ bool Installer::registerApp()
     // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
     if ( !linkDirectoryHierarchy(
             dst_dir.filePath("share/icons"),
-            shareDir.absoluteFilePath("icons")) )
+            shareDir.absoluteFilePath("icons")) ) {
         ok = false;
+    }
 
-    print_line(tr("Update icon cache"));
-    QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
-    print_line(tr("Update mime database"));
-    QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
-    print_line(tr("Update desktop database"));
-    QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
+    if ( ok ) {
+        // Open file to record files installed outside the installation directory.
+        xfilepath = dst_dir.absoluteFilePath("system_files");
+        file_log.setFileName(xfilepath);
+        if ( file_log.open(QIODevice::WriteOnly | QIODevice::Text) ) {
+            QTextStream log_stream(&file_log);
+            for ( const auto& f : std:: as_const(localfiles) ) {
+                log_stream << f << "\n";
+            }
+            file_log.close();
 
-    file_log.close();
-    return ok;
+            print_line(tr("Update icon cache"));
+            QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
+            print_line(tr("Update mime database"));
+            QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
+            print_line(tr("Update desktop database"));
+            QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
+            return true;
+        } else {
+            print_line("–––––>>>", true);
+            print_line(tr("ERROR, could not create the 'system_files' list"), true);
+        }
+    }
+    print_line(tr("App registration failed."), true);
+    for ( const auto& f : std:: as_const(localfiles) ) {
+        if ( !QFile::remove(f) ) {
+            print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
+        }
+    }
+    return false;
 }
 
 #else
@@ -174,7 +183,7 @@ bool Installer::linkDirectoryHierarchy(const QString &srcPath, const QString &ds
             // Link file
             if ( QFile::link(dirEntry.absoluteFilePath(), fpath) ) {
                 print_line(tr("Create icon link '%1'").arg(fpath));
-                log_stream << fpath << "\n";
+                localfiles.append(fpath);
             } else {
                 print_line(tr("Couldn't create icon link '%1'").arg(fpath));
                 ok = false;

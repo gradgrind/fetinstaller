@@ -112,8 +112,6 @@ void Uninstaller::page_2()
     workerThread.start();
 
      // Start deleting.
-    failed_files.clear();
-    failed_dirs.clear();
     ui->text_2->clear();
     // The directories should already be sorted correctly (longest first), so that
     // leaf directories will come before parent directories.
@@ -125,7 +123,7 @@ void Uninstaller::file_deleted(QString fpath, bool ok)
     if ( ok ) {
         print_line(" - " + fpath);
     } else {
-        failed_files.append(fpath);
+        print_line("!X! " + fpath, true);
     }
     progressOne();
 }
@@ -135,7 +133,7 @@ void Uninstaller::dir_removed(QString fpath, bool ok)
     if ( ok ) {
         print_line(" -/ " + fpath);
     } else {
-        failed_files.append(fpath);
+        print_line("!X! / " + fpath, true);
     }
     progressOne();
 }
@@ -154,22 +152,23 @@ void Uninstaller::progressOne()
 
 void Uninstaller::done(bool ok)
 {
-    if ( !ok ) {
-        // Enable ok button
-        ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
-        return;
-    }
-
-    print_line("");
-    print_line(tr("%1 files could not be deleted").arg(failed_files.length()));
-    print_line(tr("%1 directories not removed").arg(failed_dirs.length()));
-
-    // Seek remaining directories, test if empty.
-    if ( appinfo->basedir.exists() ) {
+    if ( ok ) {
         print_line("");
-        print_line(tr(UNINSTALL_INCOMPLETE).arg(appinfo->basedir.path()));
+        // Test if the app installation directory still exists.
+        if ( appinfo->basedir.exists() ) {
+            print_line("");
+            print_line(tr(UNINSTALL_INCOMPLETE).arg(appinfo->basedir.path()));
+        } else {
+            if ( unregister_failed.isEmpty() )
+                print_line(tr("App successfully uninstalled."));
+            else {
+                print_line(tr("System files not uninstalled:"), true);
+                for ( const auto& f : std::as_const(unregister_failed) ) {
+                    print_line(tr(" - Couldn't remove %1").arg(f), true);
+                }
+            }
+        }
     }
-
     // Enable ok button
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
 }

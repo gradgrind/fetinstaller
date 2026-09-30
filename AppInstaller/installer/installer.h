@@ -77,7 +77,7 @@ private:
     InstallFiles installFiles; // files and directories to be installed
     QString xfilepath; // path to file containing installed file list
     QFile file_log;
-    QTextStream log_stream;
+    QStringList localfiles;
     QDir src_dir;
     QDir dst_dir;
     QString uninstall;

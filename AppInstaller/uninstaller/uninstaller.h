@@ -38,12 +38,10 @@ private slots:
 private:
     Ui::Uninstaller *ui;
 
-    QStringList failed_files;
-    QStringList failed_dirs;
-
     void print_line(QString line, bool bold = false);
     void progressOne();
     void unregisterApp();
+    QStringList unregister_failed;
     bool bugflag{false};
 
 signals:
