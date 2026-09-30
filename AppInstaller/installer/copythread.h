@@ -21,23 +21,17 @@ class CopyWorker : public QObject
 
 public slots:
     void copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);
-    void removePartial(const QDir& dstDir, const QStringList& dirs, const QStringList &files);
 
 signals:
     void number_of_files(int count);
-    void dir_nocopy(QString filepath);
+    void dir_exists(QString filepath);
     void dir_written(QString filepath);
     void dir_failed_write(QString filepath);
-    void dir_failed_overwrite(QString filepath);
     void file_copied(QString filepath);
     void failed_copy(QString filepath);
     void link_copied(QPair<QString, QString> filepaths);
     void failed_link(QPair<QString, QString> filepaths);
     void copying_done();
-
-    void remove_file(QString f, bool ok);
-    void remove_dir(QString f, bool ok);
-    void removing_done();
 };
 
 #endif // COPYTHREAD_H

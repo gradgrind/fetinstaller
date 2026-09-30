@@ -13,12 +13,7 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
 
     for ( const auto& d : iFiles.installationDirs ) {
         if ( dstDir.exists(d) ) {
-            QFileInfo dd{dstDir.filePath(d)};
-            if ( dd.isDir() && dd.isWritable() ) {
-                emit dir_nocopy(d);
-            } else {
-                emit dir_failed_overwrite(d);
-            }
+            emit dir_exists(d);
         } else if ( dstDir.mkdir(d) ) {
             emit dir_written(d);
         } else {
@@ -45,24 +40,4 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
     }
 
     emit copying_done();
-}
-
-
-void CopyWorker::removePartial(const QDir& dstDir, const QStringList& dirs, const QStringList& files)
-{
-    /* ... here is the long-running operation ... */
-
-    QDir d0{dstDir};
-    // Remove installed files and directories
-    int xdirs{0}; // not uninstalled directories
-    int xfiles{0}; // not uninstalled files
-    // Remove the files in reverse order (starting with the symlinks)
-    for ( auto it = files.rbegin(); it != files.rend(); ++it ) {
-        emit remove_file(*it, d0.remove(*it));
-    }
-    // Remove the directories in reverse order (starting at the leaves)
-    for ( auto it = dirs.rbegin(); it != dirs.rend(); ++it ) {
-        emit remove_dir(*it, d0.rmdir(*it));
-    }
-    emit removing_done();
 }

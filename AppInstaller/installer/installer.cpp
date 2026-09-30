@@ -60,7 +60,6 @@ Installer::Installer(QWidget *parent)
     connect(ui->setDefaultPath, &QPushButton::clicked, this, &Installer::selectDefaultDir);
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
     connect(ui->removeExisting, &QPushButton::clicked, this, &Installer::uninstallExisting);
-    connect(ui->installDesktopLink, &QCheckBox::clicked, this, &Installer::allowNonEmpty);
 
     //NOTE: If the time is too short, a blank window might get shown at first ...
     QTimer::singleShot(100, this, &Installer::page_0);
@@ -284,11 +283,6 @@ void Installer::selectInstallDir()
     }
 }
 
-void Installer::allowNonEmpty(bool checked)
-{
-    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(checked);
-}
-
 void Installer::setInstallPath(QString ipath)
 {
     ui->removeExisting->hide();
@@ -438,9 +432,6 @@ void Installer::page_3()
 
     installationPartial = true;
 
-    dstDirectories.clear(); // collect the directories in the installation
-    dstFiles.clear(); // collect the files in the installation
-
     // Use background thread to perform copying
 
     copyWorker = new CopyWorker;
@@ -457,10 +448,9 @@ void Installer::page_3()
 
     connect(copyWorker, &CopyWorker::number_of_files, this, &Installer::handleNumberOfFiles);
 
-    connect(copyWorker, &CopyWorker::dir_nocopy, this, &Installer::handleDirNotCopied);
+    connect(copyWorker, &CopyWorker::dir_exists, this, &Installer::handleDirExists);
     connect(copyWorker, &CopyWorker::dir_written, this, &Installer::handleDirWritten);
     connect(copyWorker, &CopyWorker::dir_failed_write, this, &Installer::handleDirWriteFailed);
-    connect(copyWorker, &CopyWorker::dir_failed_overwrite, this, &Installer::handleDirOverwriteFailed);
 
     connect(copyWorker, &CopyWorker::file_copied, this, &Installer::handleFileCopied);
     connect(copyWorker, &CopyWorker::failed_copy, this, &Installer::handleCopyFailed);
@@ -485,26 +475,18 @@ void Installer::handleNumberOfFiles(int n)
 
 void Installer::handleDirWritten(QString filepath)
 {
-    dstDirectories.append(filepath);
     progressOne();
     print_line("+ " + dst_dir.filePath(filepath) + "/");
 }
 
-void Installer::handleDirNotCopied(QString filepath)
+void Installer::handleDirExists(QString filepath)
 {
-    dstDirectories.append(filepath);
-    progressOne();
-    print_line("(+) " + dst_dir.filePath(filepath) + "/");
+    copyErrors.append(tr("ERROR, directory exists already: %1").arg(dst_dir.filePath(filepath)));
 }
 
 void Installer::handleDirWriteFailed(QString filepath)
 {
     copyErrors.append(tr("ERROR, could not create directory: %1").arg(dst_dir.filePath(filepath)));
-}
-
-void Installer::handleDirOverwriteFailed(QString filepath)
-{
-    copyErrors.append(tr("ERROR, existing item is not writable directory: %1").arg(dst_dir.filePath(filepath)));
 }
 
 void Installer::print_line(QString line, bool bold)
@@ -531,7 +513,6 @@ void Installer::progressOne()
 
 void Installer::handleFileCopied(QString filepath)
 {
-    dstFiles.append(filepath);
     progressOne();
     print_line("+ " + dst_dir.filePath(filepath));
 }
@@ -543,7 +524,6 @@ void Installer::handleCopyFailed(QString filepath)
 
 void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
 {
-    dstFiles.append(filepaths.first);
     progressOne();
     print_line("+ " + dst_dir.filePath(filepaths.second));
 }
@@ -606,18 +586,6 @@ void Installer::page_4()
         QApplication::restoreOverrideCursor();
         ui->buttonBox_4->button(QDialogButtonBox::Ok)->setEnabled(true);
         installationPartial = false;
-
-        /* TODO: remove all thread code for removal?
-        connect(this, &Installer::doRemove, copyWorker, &CopyWorker::removePartial);
-        connect(copyWorker, &CopyWorker::remove_file, this, &Installer::removedFile);
-        connect(copyWorker, &CopyWorker::remove_dir, this, &Installer::removedDir);
-        connect(copyWorker, &CopyWorker::removing_done, this, &Installer::removingDone);
-
-        xdirs.clear(); // not uninstalled directories
-        xfiles.clear(); // not uninstalled files
-        emit doRemove(dst_dir, dstDirectories, dstFiles);
-        */
-
     } else {
         // Installation complete, don't switch to the additional page
         if (ui->launch->isChecked()) {
@@ -627,48 +595,4 @@ void Installer::page_4()
         }
         qApp->quit();
     }
-}
-
-void Installer::removedFile(QString f, bool ok) {
-    if ( ok ) {
-        ui->uninstall->appendPlainText(" - " + dst_dir.filePath(f));
-    } else {
-        xfiles.append(f);
-    }
-}
-
-void Installer::removedDir(QString f, bool ok) {
-    if ( ok ) {
-        ui->uninstall->appendPlainText(" -/ " + dst_dir.filePath(f));
-    } else {
-        xdirs.append(f);
-    }
-}
-
-void Installer::removingDone() {
-    for ( const auto& f : std::as_const(xfiles) ) {
-        addBoldLine(ui->uninstall, tr("ERROR, could not remove: %1").arg(dst_dir.filePath(f)));
-    }
-    for ( const auto& f : std::as_const(xdirs) ) {
-        addBoldLine(ui->uninstall, tr("WARNING, could not remove directory: %1/").arg(dst_dir.filePath(f)));
-    }
-    ui->uninstall->appendPlainText("");
-    addBoldLine(
-        ui->uninstall,
-        "–––––>>>");
-    if ( !xfiles.isEmpty() ) {
-        addBoldLine(
-            ui->uninstall,
-            tr("%1 files could not be removed.").arg(xfiles.length()));
-    }
-    if ( !xdirs.isEmpty() ) {
-        addBoldLine(
-            ui->uninstall,
-            tr("%1 folders could not be removed.").arg(xdirs.length()));
-    } else if ( xfiles.isEmpty() ) {
-        ui->uninstall->appendPlainText(tr("Incomplete installation removed."));
-    }
-    installationPartial = false;
-    QApplication::restoreOverrideCursor();
-    ui->buttonBox_4->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
