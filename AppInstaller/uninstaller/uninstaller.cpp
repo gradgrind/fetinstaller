@@ -111,10 +111,9 @@ void Uninstaller::page_2()
 
     workerThread.start();
 
-     // Start deleting.
-    ui->text_2->clear();
-    // The directories should already be sorted correctly (longest first), so that
-    // leaf directories will come before parent directories.
+    // Start deleting.
+    print_line(tr("*** Remove installation files ***"));
+    print_line("");
     emit deleteFiles(appinfo->basedir.path());
 }
 
@@ -131,9 +130,9 @@ void Uninstaller::file_deleted(QString fpath, bool ok)
 void Uninstaller::dir_removed(QString fpath, bool ok)
 {
     if ( ok ) {
-        print_line(" -/ " + fpath);
+        print_line(" -- " + fpath + "/");
     } else {
-        print_line("!X! / " + fpath, true);
+        print_line("!X/! " + fpath + "/", true);
     }
     progressOne();
 }

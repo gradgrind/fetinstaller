@@ -33,21 +33,21 @@ bool Installer::registerApp()
 {
     // Only perform these operations if installing to the "standard" location, an application
     // directory in "~/.local/apps".
-    if ( dst_dir.absolutePath() != defaultInstallationPath ) {
+    if ( !registered ) {
         return true;
     }
+
+    //TODO: Add more links (man, doc, ...?)
 
     print_line("");
 
     bool ok{true};
     // Add files to ~/.local
     localfiles.clear();
-    //+++ Install .desktop link(s) (for "Start" menu entry), checking they don't already exist.
+    //+++ Install .desktop file(s) (for "Start" menu entry), checking they don't already exist.
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
     appsDir.mkpath(appsDir.path());
-    //+++ If requested, install desktop "link(s)" (actually a copy of the .desktop file).
-    // Don't use a link here, because editing is quite easy and in the case of a link
-    // that would change the installation file.
+    //+++ If requested, install desktop "link(s)".
     QDir desktop{QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)};
     for ( const auto &dirEntry : QDirListing(
             dst_dir.absoluteFilePath("share/applications"),
@@ -55,25 +55,39 @@ bool Installer::registerApp()
         QString fpath{dirEntry.absoluteFilePath()};
         if ( fpath.endsWith(".desktop") ) {
             QString fname{dirEntry.fileName()};
-            // Start menu entry.
+            // Start menu entry. As a file (rather than a link) it can be edited without affecting
+            // the app installation files.
             QString ipath{appsDir.filePath(fname)};
-            if ( QFile::link(fpath, ipath) ) {
+            if ( QFile::copy(fpath, ipath) ) {
                 print_line(tr("Install \"Start\" menu entry '%1'").arg(fname));
                 localfiles.append(ipath);
+
+                // Desktop starter, only if start-menu entry successful.
+                // The link points to the start-menu entry so that it counts as "trustworthy".
+                if ( ui->installDesktopLink->isChecked() ) {
+                    QString dlpath{desktop.filePath(fname)};
+                    if ( QFile::link(ipath, dlpath) ) {
+                        print_line(tr("Install desktop starter '%1'").arg(fname));
+                        localfiles.append(dlpath);
+                        // Make link executable
+                        QFile file(dlpath);
+                        if (file.exists()) {
+                            QFile::Permissions currentPermissions = file.permissions();
+                            // Add write permission for the owner
+                            QFile::Permissions newPermissions = currentPermissions
+                                | QFileDevice::ExeOwner | QFileDevice::ExeGroup | QFileDevice::ExeOther;
+                            if ( !file.setPermissions(newPermissions) ) {
+                                print_line(tr("Failed to make desktop starter executable: '%1'").arg(fname), true);
+                            }
+                        }
+                    } else {
+                        print_line(tr("Couldn't install desktop starter '%1'").arg(fname), true);
+                        //ok = false; // Don't let this cause the whole installation to fail!
+                    }
+                }
             } else {
                 print_line(tr("Couldn't install \"Start\" menu entry '%1'").arg(fname), true);
                 ok = false;
-            }
-            // Desktop starter.
-            if ( ui->installDesktopLink->isChecked() ) {
-                QString ipath{desktop.filePath(fname)};
-                if ( QFile::copy(fpath, ipath) ) {
-                    print_line(tr("Install desktop starter '%1'").arg(fname));
-                    localfiles.append(ipath);
-                } else {
-                    print_line(tr("Couldn't install desktop starter '%1'").arg(fname), true);
-                    ok = false;
-                }
             }
         }
     }

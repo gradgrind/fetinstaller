@@ -34,8 +34,6 @@ void Uninstaller::unregisterApp()
 
 void Uninstaller::unregisterApp()
 {
-    print_line("");
-
     // Remove system files from ~/.local.
     // Read the list of installed files
     QString installed_files_path{appinfo->basedir.filePath("system_files")};
@@ -70,6 +68,8 @@ void Uninstaller::unregisterApp()
     QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
     print_line(tr("Update desktop database"));
     QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
+
+    print_line("");
 }
 
 #else

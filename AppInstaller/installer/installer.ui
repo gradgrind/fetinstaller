@@ -344,7 +344,7 @@ Alternatively, %1 may be installed to another folder without registration, which
            <number>3</number>
           </property>
           <item>
-           <widget class="QPlainTextEdit" name="would_overwrite">
+           <widget class="QPlainTextEdit" name="check_destination">
             <property name="styleSheet">
              <string notr="true"/>
             </property>
@@ -357,16 +357,6 @@ Alternatively, %1 may be installed to another folder without registration, which
            <widget class="Line" name="line_2">
             <property name="orientation">
              <enum>Qt::Orientation::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="installDesktopLink">
-            <property name="styleSheet">
-             <string notr="true"/>
-            </property>
-            <property name="text">
-             <string>Install a desktop link</string>
             </property>
            </widget>
           </item>
@@ -395,6 +385,13 @@ Alternatively, %1 may be installed to another folder without registration, which
          </property>
          <property name="wordWrap">
           <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="installDesktopLink">
+         <property name="text">
+          <string>Install desktop link(s)</string>
          </property>
         </widget>
        </item>

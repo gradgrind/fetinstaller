@@ -69,6 +69,7 @@ private:
     bool linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath);
 
     bool bugflag{false};
+    bool registered;
     QStringList copyErrors;
     bool scanComplete;
     bool scanOk;
