@@ -1,16 +1,75 @@
 #include "installer.h"
-#include <ui_installer.h>
+#include "ui_installer.h"
 #include <QProcess>
 #include <QStandardPaths>
+#include <QSettings>
 
 // Update file-type associations and desktop files.
 // Windows: add app to registry.
 
 #if defined Q_OS_WIN
 
-void Installer::registerApp()
+bool Installer::registerApp()
 {
-    //TODO: Write to regstry
+    // Only perform these operations if installing to the "standard" location, an application
+    // directory in "~/.local/apps".
+    if ( !registered ) {
+        return true;
+    }
+
+    //TODO: Write to registry
+
+    // The app version is needed here ... copy the VERSION file to the installation directory?
+    QString versionfile{dst_dir.absoluteFilePath("VERSION")};
+    QFile textFile{versionfile};
+    if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
+        print_line(tr("Couldn't open VERSION file: '%1'").arg(versionfile), true);
+        return false;
+    }
+    // Read whole file, which should contain only the version number.
+    QTextStream textStream(&textFile);
+    QString APPVERSION{textStream.readAll().trimmed()};
+    textFile.close();
+    if ( APPVERSION.isEmpty() ) {
+        print_line(tr("VERSION file empty: '%1'").arg(versionfile), true);
+        return false;
+    }
+
+    //TODO
+    QString ASSOC_EXT{".fet"}; // -> appinfo?
+    QString ASSOC_PROGID{"FET.Main"}; // -> appinfo?
+
+    QString ShCtxt{"HKEY_CURRENT_USER"};
+    QString UNINFO{ShCtxt + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + appinfo.APPNAME};
+    QSettings settings1(UNINFO, QSettings::NativeFormat);
+    // Consider using versioned app folders ...
+    QString LOCALAPPDATA{QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation))};
+    QString InstDir{LOCALAPPDATA + "\\Programs\\" + appinfo.APPNAME + "-" + APPVERSION};
+
+    settings1.setValue("DisplayName", appinfo.APPNAME);
+    settings1.setValue("UninstallString", "\"" + InstDir + "\\app_uninstall.exe\""); //???
+    //settings1.setValue("Publisher", "Liviu Lalescu");
+    //settings1.setValue("UrlInfoAbout", "https://lalescu.ro/liviu/fet/");
+    settings1.setValue("DisplayVersion", APPVERSION);
+
+    // Installation size
+    qint64 size{0};
+    for ( const auto &dirEntry : QDirListing(
+             dst_dir.path(),
+             QDirListing::IteratorFlag::FilesOnly
+             | QDirListing::IteratorFlag::Recursive
+             | QDirListing::IteratorFlag::IncludeHidden) ) { //TODO: IncludeHidden?
+        size += dirEntry.size();
+    }
+    settings1.setValue("EstimatedSize", size / 1024); // Windows uses KiB (1024 bytes)
+    settings1.setValue("UninstallLocation", InstDir);
+
+    QSettings settings2(ShCtxt + "\\Software\\Classes", QSettings::NativeFormat);
+    settings2.setValue(ASSOC_EXT + "/OpenWithProgIds/" + ASSOC_PROGID, "");
+    settings2.setValue(ASSOC_PROGID + "/shell/open/FriendlyAppName", appinfo.APPNAME + " " + APPVERSION);
+    QString AppPath{"\"" + InstDir + "\\" + appinfo.APPEXEC + "\""};
+    settings2.setValue(ASSOC_PROGID + "/shell/open/command/.", AppPath + " \"%1\"");
+    settings2.setValue(ASSOC_PROGID + "/DefaultIcon/.", AppPath + ",0");
 
     /*TODO
     ; The RefreshShellIcons functions allow the association of the

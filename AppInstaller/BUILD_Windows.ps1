@@ -26,6 +26,9 @@ if ( !$? )
     exit 1
 }
 
+# Copy the VERSION file
+Copy-Item "..\VERSION" -Destination "build\install"
+
 # Build the installer
 cmake -B build\installer -S installer -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" -DCMAKE_GENERATOR="MinGW Makefiles" -DCMAKE_INSTALL_PREFIX=build\install
 
