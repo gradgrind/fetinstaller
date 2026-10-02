@@ -11,10 +11,14 @@ public:
 
     const QString APPNAME;
     const QString APPEXEC;
-    const QString APPFILENAME;
+    //const QString APPFILENAME;
     const QString APPLONGNAME;
     const QString EXECDIR;
-    const QString APPFILES;
+    //const QString APPFILES;
+#if defined Q_OS_WIN
+    const QString ASSOC_EXT;
+    const QString ASSOC_PROGID;
+#endif
 };
 
 #endif // APPINFO_H

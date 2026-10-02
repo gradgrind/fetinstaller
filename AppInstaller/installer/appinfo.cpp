@@ -5,10 +5,12 @@
 AppInfo::AppInfo()
     : APPNAME{"FET"}
     , APPEXEC{"fet.exe"}
-    , APPFILENAME{"fet"}
+    //, APPFILENAME{"fet"}
     , APPLONGNAME{tr("Timetable Generator")}
     , EXECDIR{""}
-    , APPFILES{""}
+    //, APPFILES{""}
+    , ASSOC_EXT{".fet"}
+    , ASSOC_PROGID{"FET.Main"}
 {}
 
 #else
@@ -16,10 +18,10 @@ AppInfo::AppInfo()
 AppInfo::AppInfo()
     : APPNAME{"FET"}
     , APPEXEC{"fet"}
-    , APPFILENAME{"fet"}
+    //, APPFILENAME{"fet"}
     , APPLONGNAME{tr("Timetable Generator")}
     , EXECDIR{"bin/"}
-    , APPFILES{"share/fet/"}
+    //, APPFILES{"share/fet/"}
 {}
 
 #endif

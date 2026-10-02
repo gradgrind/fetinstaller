@@ -8,6 +8,8 @@
 // Windows: add app to registry.
 
 #if defined Q_OS_WIN
+#include <windows.h>
+#include <shlobj.h>
 
 bool Installer::registerApp()
 {
@@ -17,7 +19,12 @@ bool Installer::registerApp()
         return true;
     }
 
-    //TODO: Write to registry
+    // Write to registry ...
+
+    //TODO: As an alternative to copying the VERSION file, versioned application directories
+    // could be used, "build/install" -> "build/APPNAME-APPVERSION". The start-script would need
+    // adapting (in the installer binary), but the version could be read from the name of the
+    // application directory (no "-" in the version number, or clear naming rules for APPNAME).
 
     // The app version is needed here ... copy the VERSION file to the installation directory?
     QString versionfile{dst_dir.absoluteFilePath("VERSION")};
@@ -34,10 +41,6 @@ bool Installer::registerApp()
         print_line(tr("VERSION file empty: '%1'").arg(versionfile), true);
         return false;
     }
-
-    //TODO
-    QString ASSOC_EXT{".fet"}; // -> appinfo?
-    QString ASSOC_PROGID{"FET.Main"}; // -> appinfo?
 
     QString ShCtxt{"HKEY_CURRENT_USER"};
     QString UNINFO{ShCtxt + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + appinfo.APPNAME};
@@ -71,7 +74,7 @@ bool Installer::registerApp()
     settings2.setValue(ASSOC_PROGID + "/shell/open/command/.", AppPath + " \"%1\"");
     settings2.setValue(ASSOC_PROGID + "/DefaultIcon/.", AppPath + ",0");
 
-    /*TODO
+    /*TODO--
     ; The RefreshShellIcons functions allow the association of the
         ; icons with the file type to be changed immediately.
 
@@ -84,6 +87,14 @@ bool Installer::registerApp()
             (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
         FunctionEnd
     */
+
+    SHChangeNotify(
+        SHCNE_ASSOCCHANGED,     // Event ID
+        SHCNF_IDLIST,           // Flags
+        NULL,                   // Item that changed
+        NULL                    // Not used
+        );
+
 }
 
 #elif defined Q_OS_LINUX
