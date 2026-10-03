@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>560</width>
-    <height>500</height>
+    <height>470</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -156,11 +156,11 @@
 
 ####
 
-This will install %1 for the current user, by default in a local applications folder.
+This will install %1 for the current user, by default in a local applications folder, but the installation location can be changed.
 
-If the default installation is selected, the application can be registered so that a file-type association and file-type icon are set up.
+The application is normally registered as &quot;%1&quot;, but it can also be installed in a &quot;versioned&quot; form parallel to other installations of the application with different versions.
 
-Alternatively, %1 may be installed to another folder without registration, which would allow multiple installations.</string>
+A further possibility is to just unpack the installation directory without registering it in the desktop,</string>
          </property>
          <property name="textFormat">
           <enum>Qt::TextFormat::MarkdownText</enum>
@@ -182,62 +182,6 @@ Alternatively, %1 may be installed to another folder without registration, which
           </size>
          </property>
         </spacer>
-       </item>
-       <item>
-        <widget class="QStackedWidget" name="existing_app">
-         <property name="frameShape">
-          <enum>QFrame::Shape::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Shadow::Raised</enum>
-         </property>
-         <property name="currentIndex">
-          <number>1</number>
-         </property>
-         <widget class="QWidget" name="existing_app_0">
-          <layout class="QVBoxLayout" name="verticalLayout_8">
-           <item>
-            <widget class="QLabel" name="label_notfound">
-             <property name="text">
-              <string>No existing %1 installation was found.</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="existing_app_1">
-          <layout class="QVBoxLayout" name="verticalLayout_5">
-           <item>
-            <widget class="QLabel" name="label_foundexec">
-             <property name="text">
-              <string>An existing %1 executable has been found at:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="existing_path">
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="existingSuggestRemove">
-             <property name="text">
-              <string>Removing the existing installation is highly recommended.</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="existingCheckBox">
-             <property name="text">
-              <string>Remove the existing installation</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
        </item>
        <item>
         <widget class="QDialogButtonBox" name="buttonBox_1">
@@ -364,27 +308,16 @@ Alternatively, %1 may be installed to another folder without registration, which
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="desktopSetup">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::Shape::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Shadow::Sunken</enum>
-         </property>
+        <widget class="QCheckBox" name="unpack_only">
          <property name="text">
-          <string>A desktop-menu entry and file-type association will be set up.</string>
+          <string>Unpack only</string>
          </property>
-         <property name="textFormat">
-          <enum>Qt::TextFormat::MarkdownText</enum>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="versioned">
+         <property name="text">
+          <string>&quot;Versioned&quot; installation</string>
          </property>
         </widget>
        </item>
@@ -484,5 +417,38 @@ Alternatively, %1 may be installed to another folder without registration, which
  <resources>
   <include location="installer_resources.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>unpack_only</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>versioned</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>95</x>
+     <y>338</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>106</x>
+     <y>378</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unpack_only</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>installDesktopLink</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>248</x>
+     <y>410</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

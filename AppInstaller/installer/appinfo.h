@@ -15,6 +15,7 @@ public:
     const QString APPLONGNAME;
     const QString EXECDIR;
     //const QString APPFILES;
+    QString APPVERSION;
 #if defined Q_OS_WIN
     const QString ASSOC_EXT;
     const QString ASSOC_PROGID;

@@ -69,7 +69,7 @@ private:
     bool linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath);
 
     bool bugflag{false};
-    bool registered;
+    //bool registered;
     QStringList copyErrors;
     bool scanComplete;
     bool scanOk;
@@ -81,7 +81,8 @@ private:
     QStringList localfiles;
     QDir src_dir;
     QDir dst_dir;
-    QString uninstall;
+    QDir app_dir; // within dst_dir, the actual installation directory
+    QString uninstall_exe;
 
 signals:
     void doCopy(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);

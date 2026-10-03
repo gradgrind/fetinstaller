@@ -21,44 +21,23 @@ bool Installer::registerApp()
 
     // Write to registry ...
 
-    //TODO: As an alternative to copying the VERSION file, versioned application directories
-    // could be used, "build/install" -> "build/APPNAME-APPVERSION". The start-script would need
-    // adapting (in the installer binary), but the version could be read from the name of the
-    // application directory (no "-" in the version number, or clear naming rules for APPNAME).
-
-    // The app version is needed here ... copy the VERSION file to the installation directory?
-    QString versionfile{dst_dir.absoluteFilePath("VERSION")};
-    QFile textFile{versionfile};
-    if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-        print_line(tr("Couldn't open VERSION file: '%1'").arg(versionfile), true);
-        return false;
-    }
-    // Read whole file, which should contain only the version number.
-    QTextStream textStream(&textFile);
-    QString APPVERSION{textStream.readAll().trimmed()};
-    textFile.close();
-    if ( APPVERSION.isEmpty() ) {
-        print_line(tr("VERSION file empty: '%1'").arg(versionfile), true);
-        return false;
-    }
-
     QString ShCtxt{"HKEY_CURRENT_USER"};
     QString UNINFO{ShCtxt + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + appinfo.APPNAME};
     QSettings settings1(UNINFO, QSettings::NativeFormat);
     // Consider using versioned app folders ...
     QString LOCALAPPDATA{QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation))};
-    QString InstDir{LOCALAPPDATA + "\\Programs\\" + appinfo.APPNAME + "-" + APPVERSION};
+    QString InstDir{LOCALAPPDATA + "\\Programs\\" + appinfo.APPNAME + "-" + appinfo.APPVERSION};
 
     settings1.setValue("DisplayName", appinfo.APPNAME);
     settings1.setValue("UninstallString", "\"" + InstDir + "\\app_uninstall.exe\""); //???
     //settings1.setValue("Publisher", "Liviu Lalescu");
     //settings1.setValue("UrlInfoAbout", "https://lalescu.ro/liviu/fet/");
-    settings1.setValue("DisplayVersion", APPVERSION);
+    settings1.setValue("DisplayVersion", appinfo.APPVERSION);
 
     // Installation size
     qint64 size{0};
     for ( const auto &dirEntry : QDirListing(
-             dst_dir.path(),
+             app_dir.path(),
              QDirListing::IteratorFlag::FilesOnly
              | QDirListing::IteratorFlag::Recursive
              | QDirListing::IteratorFlag::IncludeHidden) ) { //TODO: IncludeHidden?
@@ -69,7 +48,7 @@ bool Installer::registerApp()
 
     QSettings settings2(ShCtxt + "\\Software\\Classes", QSettings::NativeFormat);
     settings2.setValue(ASSOC_EXT + "/OpenWithProgIds/" + ASSOC_PROGID, "");
-    settings2.setValue(ASSOC_PROGID + "/shell/open/FriendlyAppName", appinfo.APPNAME + " " + APPVERSION);
+    settings2.setValue(ASSOC_PROGID + "/shell/open/FriendlyAppName", appinfo.APPNAME + " " + appinfo.APPVERSION);
     QString AppPath{"\"" + InstDir + "\\" + appinfo.APPEXEC + "\""};
     settings2.setValue(ASSOC_PROGID + "/shell/open/command/.", AppPath + " \"%1\"");
     settings2.setValue(ASSOC_PROGID + "/DefaultIcon/.", AppPath + ",0");
@@ -101,9 +80,8 @@ bool Installer::registerApp()
 
 bool Installer::registerApp()
 {
-    // Only perform these operations if installing to the "standard" location, an application
-    // directory in "~/.local/apps".
-    if ( !registered ) {
+    if ( ui->unpack_only->isChecked() ) {
+        // no "registration" of any sort
         return true;
     }
 
@@ -112,6 +90,14 @@ bool Installer::registerApp()
     print_line("");
 
     bool ok{true};
+
+    //TODO ...
+    if ( ui->versioned->isChecked() ) {
+
+    }
+
+
+
     // Add files to ~/.local
     localfiles.clear();
     //+++ Install .desktop file(s) (for "Start" menu entry), checking they don't already exist.
@@ -120,7 +106,7 @@ bool Installer::registerApp()
     //+++ If requested, install desktop "link(s)".
     QDir desktop{QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)};
     for ( const auto &dirEntry : QDirListing(
-            dst_dir.absoluteFilePath("share/applications"),
+            app_dir.absoluteFilePath("share/applications"),
             QDirListing::IteratorFlag::FilesOnly) ) {
         QString fpath{dirEntry.absoluteFilePath()};
         if ( fpath.endsWith(".desktop") ) {
@@ -166,7 +152,7 @@ bool Installer::registerApp()
     QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
     binDir.mkdir(binDir.path());
     for ( const auto &dirEntry : QDirListing(
-            dst_dir.absoluteFilePath("bin"),
+            app_dir.absoluteFilePath("bin"),
             QDirListing::IteratorFlag::FilesOnly) ) {
         if ( dirEntry.isExecutable() ) {
             if ( dirEntry.baseName().endsWith("_uninstall") )
@@ -186,7 +172,7 @@ bool Installer::registerApp()
     //+++ Add mime-type(s)
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
     for ( const auto &dirEntry : QDirListing(
-             dst_dir.absoluteFilePath("share/mime/packages"),
+             app_dir.absoluteFilePath("share/mime/packages"),
              QDirListing::IteratorFlag::FilesOnly) ) {
         QString ipath{shareDir.absoluteFilePath("mime/packages/") + dirEntry.fileName()};
         if ( QFile::copy(dirEntry.absoluteFilePath(), ipath) ) {
@@ -205,14 +191,14 @@ bool Installer::registerApp()
     // show the icon even if it is only in "apps".
     // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
     if ( !linkDirectoryHierarchy(
-            dst_dir.filePath("share/icons"),
+            app_dir.filePath("share/icons"),
             shareDir.absoluteFilePath("icons")) ) {
         ok = false;
     }
 
     if ( ok ) {
         // Open file to record files installed outside the installation directory.
-        xfilepath = dst_dir.absoluteFilePath("system_files");
+        xfilepath = app_dir.absoluteFilePath("system_files");
         file_log.setFileName(xfilepath);
         if ( file_log.open(QIODevice::WriteOnly | QIODevice::Text) ) {
             QTextStream log_stream(&file_log);

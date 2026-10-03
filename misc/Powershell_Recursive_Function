@@ -1,0 +1,17 @@
+function Get-SubfoldersRecursively {
+    param(
+        [string]$Path,
+        [int]$Depth = 0
+    )
+
+    $indent = "  " * $Depth
+    Write-Host "$indent$Path"
+
+    $subfolders = Get-ChildItem -Path $Path -Directory -ErrorAction SilentlyContinue
+
+    foreach ($folder in $subfolders) {
+        Get-SubfoldersRecursively -Path $folder.FullName -Depth ($Depth + 1)
+    }
+}
+
+Get-SubfoldersRecursively -Path "C:\Projects"
