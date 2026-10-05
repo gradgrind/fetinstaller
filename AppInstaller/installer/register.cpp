@@ -91,65 +91,87 @@ bool Installer::registerApp()
 
     bool ok{true};
 
-    //TODO ...
-    if ( ui->versioned->isChecked() ) {
-
-    }
-
-
     //TODO: Best to deal with the .desktop file – and links – for just the main executable.
     // Anything else may need special treatment, or no handling at all.
 
     // Add files to ~/.local
     localfiles.clear();
-    //+++ Install .desktop file(s) (for "Start" menu entry), checking they don't already exist.
+    //+++ Install .desktop file (for "Start" menu entry), checking they don't already exist.
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
     appsDir.mkpath(appsDir.path());
-    //+++ If requested, install desktop "link(s)".
+    //+++ If requested, install desktop "link".
     QDir desktop{QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)};
-    for ( const auto &dirEntry : QDirListing(
-            app_dir.absoluteFilePath("share/applications"),
-            QDirListing::IteratorFlag::FilesOnly) ) {
-        QString fpath{dirEntry.absoluteFilePath()};
-        if ( fpath.endsWith(".desktop") ) {
-            QString fname{dirEntry.fileName()};
-            // Start menu entry. As a file (rather than a link) it can be edited without affecting
-            // the app installation files.
-            QString ipath{appsDir.filePath(fname)};
-            if ( QFile::copy(fpath, ipath) ) {
-                print_line(tr("Install \"Start\" menu entry '%1'").arg(fname));
-                localfiles.append(ipath);
+    QString desktopfile{app_dir.absoluteFilePath("share/applications/" + appinfo.APPLICATION + ".desktop")};
+    if ( !QFileInfo{desktopfile}.isFile() ) {
+        //TODO: error message, fail
+    }
+    QString execfile{app_dir.absoluteFilePath(appinfo.EXECDIR + appinfo.APPEXEC)};
+    if ( !QFileInfo{execfile}.isExecutable() ) {
+        //TODO: error message, fail
+    }
+    //TODO: If "versioned", tweak file name and exec line
+    if ( ui->versioned->isChecked() ) {
+        //TODO: rather use an absolute path in the desktop file?
+        // OR even better, link from bin/app-version to the original file!
 
-                // Desktop starter, only if start-menu entry successful.
-                // The link points to the start-menu entry so that it counts as "trustworthy".
-                if ( ui->installDesktopLink->isChecked() ) {
-                    QString dlpath{desktop.filePath(fname)};
-                    if ( QFile::link(ipath, dlpath) ) {
-                        print_line(tr("Install desktop starter '%1'").arg(fname));
-                        localfiles.append(dlpath);
-                        // Make link executable
-                        QFile file(dlpath);
-                        if (file.exists()) {
-                            QFile::Permissions currentPermissions = file.permissions();
-                            // Add write permission for the owner
-                            QFile::Permissions newPermissions = currentPermissions
-                                | QFileDevice::ExeOwner | QFileDevice::ExeGroup | QFileDevice::ExeOther;
-                            if ( !file.setPermissions(newPermissions) ) {
-                                print_line(tr("Failed to make desktop starter executable: '%1'").arg(fname), true);
-                            }
-                        }
-                    } else {
-                        print_line(tr("Couldn't install desktop starter '%1'").arg(fname), true);
-                        //ok = false; // Don't let this cause the whole installation to fail!
+        //QString execfileV{execfile + "-" + appinfo.APPVERSION};
+        //if ( !QFile::rename(execfile, execfileV) ) {
+            //TODO: error
+        //}
+        //execfile = execfileV;
+        QString appexec{appinfo.APPEXEC + "-" + appinfo.APPVERSION};
+        //TODO ...
+
+        //TODO: edit desktop file ... actually the file can perhaps stay,
+        // it's the COPY that needs renaming!
+
+        QString desktopfileV{desktopfile + "-" + appinfo.APPVERSION};
+        if ( !QFile::rename(desktopfile, desktopfileV) ) {
+            //TODO: error
+        }
+        desktopfile = desktopfileV;
+    }
+
+    // Note that there will be no mime type or icons if there is no unversioned installation!
+
+
+
+    QString fname{QFileInfo{desktopfile}.fileName()};
+    // Start menu entry.
+    QString ipath{appsDir.filePath(fname)};
+    if ( QFile::copy(desktopfile, ipath) ) {
+        print_line(tr("Install \"Start\" menu entry '%1'").arg(fname));
+        localfiles.append(ipath);
+
+        // Desktop starter, only if start-menu entry successful.
+        // The link points to the start-menu entry so that it counts as "trustworthy".
+        if ( ui->installDesktopLink->isChecked() ) {
+            QString dlpath{desktop.filePath(fname)};
+            if ( QFile::link(ipath, dlpath) ) {
+                print_line(tr("Install desktop starter '%1'").arg(fname));
+                localfiles.append(dlpath);
+                // Make link executable
+                QFile file(dlpath);
+                if (file.exists()) {
+                    QFile::Permissions currentPermissions = file.permissions();
+                    // Add write permission for the owner
+                    QFile::Permissions newPermissions = currentPermissions
+                        | QFileDevice::ExeOwner | QFileDevice::ExeGroup | QFileDevice::ExeOther;
+                    if ( !file.setPermissions(newPermissions) ) {
+                        print_line(tr("Failed to make desktop starter executable: '%1'").arg(fname), true);
                     }
                 }
             } else {
-                print_line(tr("Couldn't install \"Start\" menu entry '%1'").arg(fname), true);
-                ok = false;
+                print_line(tr("Couldn't install desktop starter '%1'").arg(fname), true);
+                //ok = false; // Don't let this cause the whole installation to fail!
             }
         }
+    } else {
+        print_line(tr("Couldn't install \"Start\" menu entry '%1'").arg(fname), true);
+        ok = false;
     }
 
+    //TODO ...
     //+++ Add relevant symlinks in ~/.local/bin
     QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
     binDir.mkdir(binDir.path());

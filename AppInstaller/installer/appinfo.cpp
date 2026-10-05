@@ -5,21 +5,6 @@
 #include <QSettings>
 #include <QMessageBox>
 
-#if defined Q_OS_WIN
-
-AppInfo::AppInfo()
-    : APPNAME{"FET"}
-    , APPEXEC{"fet.exe"}
-    //, APPFILENAME{"fet"}
-    , APPLONGNAME{tr("Timetable Generator")}
-    , EXECDIR{""}
-    //, APPFILES{""}
-    , ASSOC_EXT{".fet"}
-    , ASSOC_PROGID{"FET.Main"}
-{}
-
-#else
-
 AppInfo::AppInfo()
 {
     // Get source path
@@ -74,12 +59,6 @@ bool AppInfo::init(QLocale locale)
     }
 
     appsettings = new QSettings(SOURCE_DIR.filePath("app.conf"), QSettings::IniFormat);
-    //appsettings.beginGroup("Linux");
-    //appsettings.setValue("APPNAME", "FET");
-    //appsettings.setValue("EXECDIR", "bin/");
-    //for (const auto& k : appsettings.allKeys()) {
-    //    qDebug() << "§++" << k;
-    //}
 
     if ( !read(APPNAME, "APPNAME", true) )
         return false;
@@ -90,11 +69,12 @@ bool AppInfo::init(QLocale locale)
     if ( !read(APPVERSION, "VERSION", true) )
         return false;
 
+    //Copied lines from the desktop file!
+    //TODO: Perhaps if Name=APPNAME, the GenericName (or even Comment) should be used?
+
     auto l = locale.name();
-    //qDebug() << "$$1" << l;
     if ( !read(APPLONGNAME, "Name[" + l + "]") ) {
         l = QLocale::languageToCode(locale.language());
-        //qDebug() << "$$2" << l;
         if ( !read(APPLONGNAME, "Name[" + l + "]") ) {
             read(APPLONGNAME, "Name");
         }
@@ -106,10 +86,21 @@ bool AppInfo::init(QLocale locale)
     if ( !read(APPEXEC, "APPEXEC") ) {
         APPEXEC = APPLICATION;
     }
-
+    if ( !read(APPMIME, "APPMIME") ) {
+        APPMIME = APPLICATION;
+    }
+    if ( !read(APPICON, "APPICON") ) {
+        APPICON = APPLICATION;
+    }
+#if defined Q_OS_WIN
+    if ( !read(ASSOC_EXT, "ASSOC_EXT") ) {
+        //ASSOC_EXT = ???;
+    }
+    if ( !read(ASSOC_PROGID, "ASSOC_PROGID") ) {
+        //ASSOC_PROGID = ???;
+    }
+#endif
     delete appsettings;
     appsettings = nullptr;
     return true;
 }
-
-#endif

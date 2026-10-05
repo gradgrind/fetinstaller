@@ -28,6 +28,7 @@ public:
     QString APPLICATION; // possibly the same as APPNAME, but might be lower case
     QString APPEXEC;     // probably the same as APPLICATION
     QString APPMIME;     // probably the same as APPLICATION
+    QString APPICON;     // probably the same as APPLICATION
     QString EXECDIR;
     QString APPVERSION;
 #if defined Q_OS_WIN

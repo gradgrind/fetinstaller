@@ -90,9 +90,7 @@ void Installer::page_0()
     QStringList installationDirs;
     QList<QPair<QString, QString>> installationLinks; // symlinks / Windows shortcuts
 
-    qDebug() << "§§1" << appinfo.SOURCE_DIR;
     src_dir = appinfo.SOURCE_DIR;
-    qDebug() << "§§2" << src_dir.filePath(appinfo.EXECDIR) << "///" << appinfo.APPEXEC;
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
     if ( QStandardPaths::findExecutable(
