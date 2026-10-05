@@ -26,6 +26,31 @@ another version installed, the mime information would no longer be available
 for it. Perhaps the uninstaller should have a "Remove file-type association"
 check-box when appropriate?
 
+Another possibility is that only an unversioned install sets up a file-type
+association with icons. In that case, if there is only a versioned install
+there would be no file-type association, which is perhaps a bit strange,
+but bear in mind that versioned installs are intended to be a bit of a
+special thing, just to offer alternatives.
+
+Perhaps the same should go for PATH-accessible executable links. It would
+be possible to have versioned links, but in the case of "auxiliary" binaries
+it might be difficult to decide whether they should be versioned, or even
+what that version should be. And if the main program depends on them it
+might not find them easily.
+
+Perhaps ideally (whatever that means!) different versions could also share
+libraries, but that might not always work out. An old (unversioned) install
+could be left as a versioned install, perhaps even using the new libraries?
+I can't see how that could work easily on Windows, though, as the libraries
+must be in the same folder as the binaries.
+
+Perhaps ALL installations could be versioned, there being an option to set
+it up (also) as an unversioned one? On the other hand, an unversioned install
+would then get two menu entries (etc.). Using versioned folders for all installs
+might be sensible (it should prevent a double install of a particular version,
+one versioned and one not), but for an unversioned install all the "external"
+stuff should be without the version.
+
 The various "extra" bits are:
 
  - Register app and uninstaller (Windows only?)

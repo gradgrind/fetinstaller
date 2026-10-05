@@ -97,6 +97,8 @@ bool Installer::registerApp()
     }
 
 
+    //TODO: Best to deal with the .desktop file – and links – for just the main executable.
+    // Anything else may need special treatment, or no handling at all.
 
     // Add files to ~/.local
     localfiles.clear();
@@ -190,6 +192,9 @@ bool Installer::registerApp()
     // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
     // show the icon even if it is only in "apps".
     // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
+    // However, it does work in Cinnamon if the fet.xml file in share/mime/packages gets the
+    // additional line:
+    //    <generic-icon name="fet"/> (after the line: <icon name="fet"/>)
     if ( !linkDirectoryHierarchy(
             app_dir.filePath("share/icons"),
             shareDir.absoluteFilePath("icons")) ) {

@@ -29,8 +29,10 @@ class Installer : public QWidget
     AppInfo appinfo;
 
 public:
-    explicit Installer(QWidget *parent = nullptr);
+    explicit Installer(QLocale locale, QWidget *parent = nullptr);
     ~Installer();
+
+    bool app_initialized{false};
 
 private slots:
     void page_0();

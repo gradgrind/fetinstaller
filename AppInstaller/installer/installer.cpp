@@ -13,11 +13,6 @@ static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   Please check that your installer has not been corrupted.<br>
   If necessary, contact the distributor.)");
 
-static const char *WARN_DIRNAME = QT_TRANSLATE_NOOP("Installer", R"(
-The installation directory should normally contain the application name, '%1'.<br>
-Do you really want to install to this directory?<br>
---> '%2')");
-
 void Installer::closeEvent(QCloseEvent *event)
 {
     if ( installationPartial ) { // set to true during file copying, etc.
@@ -27,12 +22,17 @@ void Installer::closeEvent(QCloseEvent *event)
     }
 }
 
-Installer::Installer(QWidget *parent)
+Installer::Installer(QLocale locale, QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Installer)
 {
     ui->setupUi(this);
     ui->stackedWidget->setCurrentIndex(0);
+
+    if ( !appinfo.init(locale) ) {
+        return;
+    }
+    app_initialized = true;
 
     // Set application name in GUI
     ui->label_title->setText(ui->label_title->text().arg(appinfo.APPNAME, appinfo.APPLONGNAME));
@@ -78,7 +78,7 @@ void addBoldLine(QPlainTextEdit* e, QString line)
 void Installer::page_0()
 {
     // This runs quickly enough not to be run in a background thread. It sets a busy cursor,
-    // but the processing should be so quick that this will not be visible.
+    // but the processing should be so quick that this is not be visible.
 
     ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(false);
     scanComplete =false;
@@ -90,19 +90,9 @@ void Installer::page_0()
     QStringList installationDirs;
     QList<QPair<QString, QString>> installationLinks; // symlinks / Windows shortcuts
 
-    // Get source path
-    src_dir = QFileInfo(QCoreApplication::applicationDirPath()).canonicalFilePath();
-    if (QFileInfo::exists(src_dir.filePath("install_source"))) {
-        // Accept an "install_source" directory in the same directory as the installer executable
-        src_dir.cd("install_source");
-    } else {
-#if defined Q_OS_WIN
-        // Assume the installer executable is in the root directory of the source directory
-#else
-        // Assume the installer executable is in the "_installer_" directory of the source directory
-        src_dir.cdUp();
-#endif
-    }
+    qDebug() << "§§1" << appinfo.SOURCE_DIR;
+    src_dir = appinfo.SOURCE_DIR;
+    qDebug() << "§§2" << src_dir.filePath(appinfo.EXECDIR) << "///" << appinfo.APPEXEC;
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
     if ( QStandardPaths::findExecutable(
@@ -112,15 +102,6 @@ void Installer::page_0()
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
     }
-
-    QString appdirname{src_dir.dirName()}; // this should be APPNAME-APPVERSION
-    QString appprefix{appinfo.APPNAME + "-"};
-    if ( !appdirname.startsWith(appprefix) ) {
-        addBoldLine(ui->messages_0, QString{"BUG: installer internal source directory invalid: '%1'"}.arg(appdirname));
-        addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
-        return;
-    }
-    appinfo.APPVERSION = appdirname.last(appdirname.length() - appprefix.length());
 
     // Collect files to be installed
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -295,7 +276,7 @@ void Installer::setInstallPath(QString ipath)
         app_dstdir = dst_dir.absoluteFilePath(appinfo.APPNAME + "-" + appinfo.APPVERSION);
     else
         app_dstdir = dst_dir.absoluteFilePath(appinfo.APPNAME);
-    if ( QFileInfo{app_dstdir}.exists() ) {
+    if ( QFileInfo::exists(app_dstdir) ) {
         if ( !QFileInfo{app_dstdir}.isDir() ) {
             addBoldLine(ui->check_destination, tr("Destination not a folder: %1").arg(app_dstdir));
             return;

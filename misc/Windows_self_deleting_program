@@ -1,0 +1,24 @@
+I couldn't find any solutions anywhere else so I'll post my fix here.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(int argc, char* argv[])
+{
+    char* process_name = argv[0];
+    char command[256] = "start /min cmd /c del ";
+    strcat(command, process_name);
+
+    printf("Attempting to delete self...\n");
+
+    system(command);
+    return 0;
+}
+
+Normally, trying to use system to call the command prompt to delete an executable would not work because the command prompt that is spawned is a child process that system executes and waits for a return status.
+
+This method calls the system to start a command prompt process on its own thread.
+
+The /min argument starts the process as "hidden".
+The /c argument supplies arguments to the spawned command prompt.

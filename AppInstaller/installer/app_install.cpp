@@ -1,3 +1,4 @@
+#include "appinfo.h"
 #include "installer.h"
 
 #include <QLocale>
@@ -15,6 +16,9 @@ int main(int argc, char *argv[])
         a.installTranslator(&translator);
     }
 
+    //qDebug() << "&&&1" << locale.name();
+    //qDebug() << "&&&2" << QLocale::languageToCode(locale.language());
+
     // Test for admin privileges
     QSettings settings(QSettings::SystemScope, "gradgrind", "app_installer");
     if ( settings.isWritable() ) {
@@ -24,7 +28,10 @@ int main(int argc, char *argv[])
             QCoreApplication::translate("main", "The installer must be run as a normal user."));
         return 1;
     }
-    Installer w;
-    w.show();
-    return QApplication::exec();
+    Installer w(locale);
+    if ( w.app_initialized ) {
+        w.show();
+        return QApplication::exec();
+    }
+    return 1;
 }
