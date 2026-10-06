@@ -52,13 +52,13 @@ bool AppInfo::read(QString& var, QString key, bool critical)
 
 bool AppInfo::init(QLocale locale)
 {
-    appconf = SOURCE_DIR.filePath("app.conf");
+    appconf = SOURCE_DIR.filePath("_installer_/app.conf");
     if ( !QFileInfo{appconf}.isFile() ) {
         QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no application configuration: %1").arg(appconf));
         return false;
     }
 
-    appsettings = new QSettings(SOURCE_DIR.filePath("app.conf"), QSettings::IniFormat);
+    appsettings = new QSettings(appconf, QSettings::IniFormat);
 
     if ( !read(APPNAME, "APPNAME", true) )
         return false;
@@ -71,6 +71,7 @@ bool AppInfo::init(QLocale locale)
 
     //Copied lines from the desktop file!
     //TODO: Perhaps if Name=APPNAME, the GenericName (or even Comment) should be used?
+    // Perhaps USE the desktop file?
 
     auto l = locale.name();
     if ( !read(APPLONGNAME, "Name[" + l + "]") ) {
@@ -93,6 +94,7 @@ bool AppInfo::init(QLocale locale)
         APPICON = APPLICATION;
     }
 #if defined Q_OS_WIN
+    //TODO
     if ( !read(ASSOC_EXT, "ASSOC_EXT") ) {
         //ASSOC_EXT = ???;
     }

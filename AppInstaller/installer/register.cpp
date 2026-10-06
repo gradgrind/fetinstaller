@@ -1,6 +1,7 @@
 #include "installer.h"
 #include "ui_installer.h"
 #include <QProcess>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QSettings>
 
@@ -85,173 +86,203 @@ bool Installer::registerApp()
         return true;
     }
 
-    //TODO: Add more links (man, doc, ...?)
+    //TODO: Add more links (man, doc, ...)?
 
     print_line("");
 
-    bool ok{true};
-
-    //TODO: Best to deal with the .desktop file – and links – for just the main executable.
+    // It is possible that the installation bundle contains more than one executable and
+    // '.desktop' file. Only deal with those for the main executable.
     // Anything else may need special treatment, or no handling at all.
 
     // Add files to ~/.local
     localfiles.clear();
-    //+++ Install .desktop file (for "Start" menu entry), checking they don't already exist.
+
+    // For ".desktop" file (start menu, etc.)
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
+    QString appsrpath{"share/applications/" + appinfo.APPLICATION + ".desktop"};
+    QString appsfile{app_dir.absoluteFilePath(appsrpath)};
+    if ( !QFileInfo{appsfile}.isFile() ) {
+        print_line(tr("'Desktop' file missing in installation bundle: '%1'").arg(appsrpath), true);
+        return false;
+    }
     appsDir.mkpath(appsDir.path());
-    //+++ If requested, install desktop "link".
-    QDir desktop{QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)};
-    QString desktopfile{app_dir.absoluteFilePath("share/applications/" + appinfo.APPLICATION + ".desktop")};
-    if ( !QFileInfo{desktopfile}.isFile() ) {
-        //TODO: error message, fail
-    }
-    QString execfile{app_dir.absoluteFilePath(appinfo.EXECDIR + appinfo.APPEXEC)};
-    if ( !QFileInfo{execfile}.isExecutable() ) {
-        //TODO: error message, fail
-    }
-    //TODO: If "versioned", tweak file name and exec line
-    if ( ui->versioned->isChecked() ) {
-        //TODO: rather use an absolute path in the desktop file?
-        // OR even better, link from bin/app-version to the original file!
 
-        //QString execfileV{execfile + "-" + appinfo.APPVERSION};
-        //if ( !QFile::rename(execfile, execfileV) ) {
-            //TODO: error
-        //}
-        //execfile = execfileV;
-        QString appexec{appinfo.APPEXEC + "-" + appinfo.APPVERSION};
-        //TODO ...
-
-        //TODO: edit desktop file ... actually the file can perhaps stay,
-        // it's the COPY that needs renaming!
-
-        QString desktopfileV{desktopfile + "-" + appinfo.APPVERSION};
-        if ( !QFile::rename(desktopfile, desktopfileV) ) {
-            //TODO: error
-        }
-        desktopfile = desktopfileV;
-    }
-
-    // Note that there will be no mime type or icons if there is no unversioned installation!
-
-
-
-    QString fname{QFileInfo{desktopfile}.fileName()};
-    // Start menu entry.
-    QString ipath{appsDir.filePath(fname)};
-    if ( QFile::copy(desktopfile, ipath) ) {
-        print_line(tr("Install \"Start\" menu entry '%1'").arg(fname));
-        localfiles.append(ipath);
-
-        // Desktop starter, only if start-menu entry successful.
-        // The link points to the start-menu entry so that it counts as "trustworthy".
-        if ( ui->installDesktopLink->isChecked() ) {
-            QString dlpath{desktop.filePath(fname)};
-            if ( QFile::link(ipath, dlpath) ) {
-                print_line(tr("Install desktop starter '%1'").arg(fname));
-                localfiles.append(dlpath);
-                // Make link executable
-                QFile file(dlpath);
-                if (file.exists()) {
-                    QFile::Permissions currentPermissions = file.permissions();
-                    // Add write permission for the owner
-                    QFile::Permissions newPermissions = currentPermissions
-                        | QFileDevice::ExeOwner | QFileDevice::ExeGroup | QFileDevice::ExeOther;
-                    if ( !file.setPermissions(newPermissions) ) {
-                        print_line(tr("Failed to make desktop starter executable: '%1'").arg(fname), true);
-                    }
-                }
-            } else {
-                print_line(tr("Couldn't install desktop starter '%1'").arg(fname), true);
-                //ok = false; // Don't let this cause the whole installation to fail!
-            }
-        }
-    } else {
-        print_line(tr("Couldn't install \"Start\" menu entry '%1'").arg(fname), true);
-        ok = false;
-    }
-
-    //TODO ...
-    //+++ Add relevant symlinks in ~/.local/bin
+    // For executable link in PATH
     QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
-    binDir.mkdir(binDir.path());
-    for ( const auto &dirEntry : QDirListing(
-            app_dir.absoluteFilePath("bin"),
-            QDirListing::IteratorFlag::FilesOnly) ) {
-        if ( dirEntry.isExecutable() ) {
-            if ( dirEntry.baseName().endsWith("_uninstall") )
-                continue;
-            QString fname{dirEntry.fileName()};
-            QString ipath{binDir.filePath(fname)};
-            if ( QFile::link(dirEntry.absoluteFilePath(), ipath) ) {
-                print_line(tr("Add executable '%1' to PATH").arg(fname));
+    binDir.mkpath(binDir.path());
+    QString execrpath{appinfo.EXECDIR + appinfo.APPEXEC};
+    QString execfile{app_dir.absoluteFilePath(execrpath)};
+    if ( !QFileInfo{execfile}.isExecutable() ) {
+        print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
+        return false;
+    }
+
+    // If "versioned", add version to executable and desktop file, which then needs editing.
+    QString appsdname; // name of ".desktop" file in .local/share/applications
+    QString appspath; // full path to ".desktop" file in .local/share/applications
+    bool mimefiles{false}; // flag for cache updating
+    QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
+    if ( ui->versioned->isChecked() ) {
+        // Add versioned link to executable.
+        // Note that there will be no mime type or icons if there is no unversioned installation!
+        QString appexecV{appinfo.APPEXEC + "-" + appinfo.APPVERSION};
+        QString appexecpathV{binDir.filePath(appexecV)};
+        if ( !QFile::link(execfile, appexecpathV) ) {
+            print_line(tr("Couldn't add executable link to PATH: '%1'").arg(execfile), true);
+            return false;
+        }
+        print_line(tr("Add executable to PATH: '%1'").arg(appexecpathV));
+        localfiles.append(appexecpathV);
+
+        // Add versioned .desktop file (for "Start" menu entry).
+        // The "Exec" field needs editing.
+        QFile f(appsfile);
+        if ( f.open(QFile::ReadOnly | QFile::Text) ) {
+            QTextStream in(&f);
+
+            QStringList newlines;
+            bool ok{false};
+            while (!in.atEnd())
+            {
+                QString line = in.readLine();
+                if ( line.startsWith("Exec=") ) {
+                    QStringList newline;
+                    line.slice(5); // strip off the prefix
+                    for ( const auto &w : line.split(' ') ) {
+                        if ( w == appinfo.APPEXEC ) {
+                            newline.append(appexecV);
+                        } else {
+                            newline.append(w);
+                        }
+                    }
+                    newlines.append("Exec=" + newline.join(' '));
+                } else if ( line.startsWith("Name=") ) {
+                    newlines.append("Name=" + appinfo.APPNAME + "-" + appinfo.APPVERSION);
+
+                    //TODO: If the Name line isn't APPNAME, I could use the original file
+                    // and replace all Name lines by GenericName lines,
+                    // delete all GenericName lines and add a single Name line ... but it would probably
+                    // be better to change the original!
+                } else {
+                    newlines.append(line);
+                }
+            }
+            f.close();
+            // Write new, versioned, .desktop file
+            appsdname = appinfo.APPLICATION + "-" + appinfo.APPVERSION + ".desktop";
+            appspath  = appsDir.absoluteFilePath(appsdname);
+            QFile fw(appspath);
+            if ( fw.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
+                QTextStream out(&fw);
+                out << newlines.join("\n") << "\n";
+                fw.close();
+            } else {
+                print_line(tr("Couldn't add versioned 'Start' menu entry: '%1'").arg(appspath), true);
+                return false;
+            }
+        } else {
+            print_line(tr("Couldn't read 'desktop' file: '%1'").arg(appsfile), true);
+            return false;
+        }
+        print_line(tr("Add 'Start' menu entry: '%1'").arg(appspath));
+        localfiles.append(appspath);
+    } else {
+        // Add "unversioned" files and links.
+        QString appexecpath{binDir.filePath(appinfo.APPEXEC)};
+        if ( !QFile::link(execfile, appexecpath) ) {
+            print_line(tr("Couldn't add executable link to PATH: '%1'").arg(execfile), true);
+            return false;
+        }
+        print_line(tr("Add executable to PATH: '%1'").arg(appexecpath));
+        localfiles.append(appexecpath);
+
+        appsdname = appinfo.APPLICATION + ".desktop";
+        appspath  = appsDir.absoluteFilePath(appsdname);
+        if ( !QFile::copy(appsfile, appspath) ) {
+            print_line(tr("Couldn't add 'Start' menu entry: '%1'").arg(appspath), true);
+            return false;
+        }
+        print_line(tr("Add 'Start' menu entry: '%1'").arg(appspath));
+        localfiles.append(appspath);
+
+        // Add mime-type and icons, if present
+        QString mfile{app_dir.absoluteFilePath("share/mime/packages/" + appinfo.APPLICATION + ".xml")};
+        if ( QFileInfo{mfile}.isFile() ) {
+            QString ipath{shareDir.absoluteFilePath("mime/packages/" + appinfo.APPLICATION + ".xml")};
+            if ( QFile::copy(mfile, ipath) ) {
+                print_line(tr("Install mime file: '%1'").arg(ipath));
                 localfiles.append(ipath);
             } else {
-                print_line(tr("Couldn't link executable '%1'").arg(fname), true);
-                ok = false;
+                print_line(tr("Couldn't install mime file: '%1'").arg(ipath), true);
+                return false;
             }
+
+            // Add icon(s)
+            // In principle there can be "apps" icons and "mimetypes" icons, but I haven't found any
+            // use for the "mimetypes" icons. The documentation says "Icons to be used as file icons
+            // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
+            // show the icon even if it is only in "apps".
+            // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
+            // However, it does work in Cinnamon if the app's .xml file in share/mime/packages gets the
+            // additional line:
+            //    <generic-icon name="$APPLICATION"/> (after the line: <icon name="$APPLICATION"/>)
+            if ( !linkDirectoryHierarchy(
+                    app_dir.filePath("share/icons"),
+                    shareDir.absoluteFilePath("icons")) ) {
+                return false;
+            }
+
+            mimefiles = true;
         }
     }
 
-    //+++ Add mime-type(s)
-    QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
-    for ( const auto &dirEntry : QDirListing(
-             app_dir.absoluteFilePath("share/mime/packages"),
-             QDirListing::IteratorFlag::FilesOnly) ) {
-        QString ipath{shareDir.absoluteFilePath("mime/packages/") + dirEntry.fileName()};
-        if ( QFile::copy(dirEntry.absoluteFilePath(), ipath) ) {
-            print_line(tr("Install mime file '%1'").arg(dirEntry.fileName()));
-            localfiles.append(ipath);
+    // Desktop starter, if requested.
+    // The link points to the start-menu entry so that it counts as "trustworthy".
+    if ( ui->installDesktopLink->isChecked() ) {
+        QDir desktop{QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)};
+        QString dlpath{desktop.filePath(appsdname)};
+        if ( QFile::link(appspath, dlpath) ) {
+            print_line(tr("Install desktop starter '%1'").arg(appsdname));
+            localfiles.append(dlpath);
+            // Make link executable
+            QFile file(dlpath);
+            if ( file.exists() ) {
+                QFile::Permissions currentPermissions = file.permissions();
+                // Add write permission for the owner
+                QFile::Permissions newPermissions =
+                    currentPermissions | QFileDevice::ExeOwner | QFileDevice::ExeGroup | QFileDevice::ExeOther;
+                if ( !file.setPermissions(newPermissions) ) {
+                    print_line(tr("Failed to make desktop starter executable: '%1'").arg(dlpath), true);
+                }
+            }
         } else {
-            print_line(tr("Couldn't install mime file '%1'").arg(dirEntry.fileName()), true);
-            ok = false;
+            print_line(tr("Couldn't install desktop starter '%1'").arg(dlpath), true);
         }
     }
 
-    //+++ Add icon(s)
-    // In principle there can be "apps" icons and "mimetypes" icons, but I haven't found any
-    // use for the "mimetypes" icons. The documentation says "Icons to be used as file icons
-    // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
-    // show the icon even if it is only in "apps".
-    // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
-    // However, it does work in Cinnamon if the fet.xml file in share/mime/packages gets the
-    // additional line:
-    //    <generic-icon name="fet"/> (after the line: <icon name="fet"/>)
-    if ( !linkDirectoryHierarchy(
-            app_dir.filePath("share/icons"),
-            shareDir.absoluteFilePath("icons")) ) {
-        ok = false;
-    }
+    // Open file to record files installed outside the installation directory.
+    xfilepath = app_dir.absoluteFilePath("system_files");
+    file_log.setFileName(xfilepath);
+    if ( file_log.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
+        QTextStream log_stream(&file_log);
+        for ( const auto& f : std:: as_const(localfiles) ) {
+            log_stream << f << "\n";
+        }
+        file_log.close();
 
-    if ( ok ) {
-        // Open file to record files installed outside the installation directory.
-        xfilepath = app_dir.absoluteFilePath("system_files");
-        file_log.setFileName(xfilepath);
-        if ( file_log.open(QIODevice::WriteOnly | QIODevice::Text) ) {
-            QTextStream log_stream(&file_log);
-            for ( const auto& f : std:: as_const(localfiles) ) {
-                log_stream << f << "\n";
-            }
-            file_log.close();
-
+        if ( mimefiles ) {
             print_line(tr("Update icon cache"));
             QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
             print_line(tr("Update mime database"));
             QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
-            print_line(tr("Update desktop database"));
-            QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
-            return true;
-        } else {
-            print_line("–––––>>>", true);
-            print_line(tr("ERROR, could not create the 'system_files' list"), true);
         }
+        print_line(tr("Update desktop database"));
+        QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
+        return true;
     }
-    print_line(tr("App registration failed."), true);
-    for ( const auto& f : std:: as_const(localfiles) ) {
-        if ( !QFile::remove(f) ) {
-            print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
-        }
-    }
+
+    print_line("–––––>>>", true);
+    print_line(tr("ERROR, could not create the 'system_files' list"), true);
     return false;
 }
 

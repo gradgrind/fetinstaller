@@ -324,7 +324,7 @@ A further possibility is to just unpack the installation directory without regis
        <item>
         <widget class="QCheckBox" name="installDesktopLink">
          <property name="text">
-          <string>Install desktop link(s)</string>
+          <string>Install desktop link</string>
          </property>
         </widget>
        </item>

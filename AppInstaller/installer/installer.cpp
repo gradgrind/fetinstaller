@@ -451,6 +451,12 @@ void Installer::handleCopyingFinished()
             print_line(tr("Installation successful!"));
             ui->launch->setEnabled(true);
         } else {
+            print_line(tr("App registration failed."), true);
+            for ( const auto& f : std:: as_const(localfiles) ) {
+                if ( !QFile::remove(f) ) {
+                    print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
+                }
+            }
             ui->launch->setChecked(false);
         }
     } else {
