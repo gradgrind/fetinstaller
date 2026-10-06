@@ -111,13 +111,6 @@ bool Installer::registerApp()
     QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
     binDir.mkpath(binDir.path());
 
-    //QString execrpath{appinfo.EXECDIR + appinfo.APPEXEC};
-    //QString execfile{app_dir.absoluteFilePath(execrpath)};
-    //if ( !QFileInfo{execfile}.isExecutable() ) {
-    //    print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
-    //    return false;
-    //}
-
     // If "versioned", add version to executable and desktop file, which then needs editing.
     QString appsdname; // name of ".desktop" file in .local/share/applications
     QString appspath; // full path to ".desktop" file in .local/share/applications
@@ -220,6 +213,7 @@ bool Installer::registerApp()
         QString mfile{app_dir.absoluteFilePath("share/mime/packages/" + appinfo.APPLICATION + ".xml")};
         if ( QFileInfo{mfile}.isFile() ) {
             QString ipath{shareDir.absoluteFilePath("mime/packages/" + appinfo.APPLICATION + ".xml")};
+            shareDir.mkpath("mime/packages");
             if ( QFile::copy(mfile, ipath) ) {
                 print_line(tr("Install mime file: '%1'").arg(ipath));
                 localfiles.append(ipath);

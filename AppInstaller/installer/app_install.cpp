@@ -1,9 +1,9 @@
-#include "appinfo.h"
 #include "installer.h"
 
 #include <QLocale>
 #include <QMessageBox>
 #include <QSettings>
+#include <QtEnvironmentVariables>
 
 int main(int argc, char *argv[])
 {
@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
     //qDebug() << "&&&2" << QLocale::languageToCode(locale.language());
 
     // Test for admin privileges
+    qunsetenv("XDG_CONFIG_DIRS"); // needed for some Linux environments, to ensure the test works.
     QSettings settings(QSettings::SystemScope, "gradgrind", "app_installer");
     if ( settings.isWritable() ) {
         QMessageBox::critical(
