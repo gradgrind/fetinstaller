@@ -4,36 +4,7 @@
 #include <QTemporaryDir>
 #include <QProcess>
 
-static const char* NO_FILE_LIST = QT_TRANSLATE_NOOP("AppInfo", R"(
-Couldn't read list of installed files:
-
-base directory: %1
-
-"installed_files" path: %2
-)");
-
-
-#if defined Q_OS_WIN
-
-AppInfo::AppInfo()
-    : APPNAME{"FET"}
-    , APPEXEC{"fet.exe"}
-    , APPFILENAME{"fet"}
-    , EXECDIR{""}
-    , APPFILES{""}
-    {}
-
-#else
-
-AppInfo::AppInfo()
-    : APPNAME{"FET"}
-    , APPEXEC{"fet"}
-    , APPFILENAME{"fet"}
-    , EXECDIR{"bin/"}
-    , APPFILES{"share/fet/"}
-{}
-
-#endif
+AppInfo::AppInfo() {}
 
 bool AppInfo::init()
 {
@@ -48,16 +19,17 @@ bool AppInfo::init()
     // Determine the installation's base directory
     appdir.setPath(QCoreApplication::applicationDirPath());
     appdir.makeAbsolute();
-    QDir xdir{EXECDIR};
-    while ( true ) {
-        if ( xdir.path() == "." )
-            break;
-        appdir.cdUp();
-        if ( !xdir.cdUp() ) {
-            QMessageBox::critical(nullptr, tr("Critical Error"), tr("Couldn't find uninstaller base folder"));
-            return false;
-        }
-    }
+#if defined Q_OS_WIN
+    // The uninstaller is expected in the root directory of the installation.
+#else
+    // The uninstaller is expected in the "bin" directory of the installation.
+    appdir.cdUp();
+#endif
+
+    //TODO: Check validity of root directory, if possible!
+
+    //QMessageBox::critical(nullptr, tr("Critical Error"), tr("Couldn't find uninstaller base folder"));
+    //return false;
 
 #if defined Q_OS_WIN
     if ( args.length() == 3 ) {
@@ -111,16 +83,8 @@ err:
         }
     }
 
-    // Default installation path (Windows)
-    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs/%1").arg(APPNAME);
-
-#elif defined Q_OS_LINUX
-
-    // Default installation path (Linux)
-    defaultInstallationPath = QDir::home().absoluteFilePath(".local/apps/%1").arg(APPNAME);
-
 #endif
 
-    registered = ( basedir == defaultInstallationPath );
+    basename = basedir.dirName();
     return true;
 }

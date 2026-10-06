@@ -36,36 +36,42 @@ void Uninstaller::unregisterApp()
 {
     // Remove system files from ~/.local.
     // Read the list of installed files
-    QString installed_files_path{appinfo->basedir.filePath("system_files")};
+    QString installed_files_path{basedir.filePath("system_files")};
     QFile textFile{installed_files_path};
     if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
         print_line(tr("App installed no system files"));
+        print_line("");
         return;
     }
     // Read file line by line
-    QTextStream textStream(&textFile);
-    bool ok{true};
-    while ( true )
+    QTextStream in(&textFile);
+    QStringList newlines;
+    bool appregistered{false};
+    while ( !in.atEnd() )
     {
-        QString line = textStream.readLine();
-        if ( line.isNull() )
-            break;    // end of file
+        QString line = in.readLine();
+        qDebug() << "???" << line;
         QString fpath{line.trimmed()};
         if ( !fpath.isEmpty() ) {
-            if ( QFile::remove(fpath) ) {
+            if ( fpath.startsWith("+++") ) {
+                appregistered = true;
+            } else if ( QFile::remove(fpath) ) {
                 print_line(tr("Removed %1").arg(fpath));
             } else {
                 unregister_failed.append(fpath);
             }
         }
     }
+    textFile.close();
 
+    if ( appregistered ) {
+        QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
+        print_line(tr("Update icon cache"));
+        QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
+        print_line(tr("Update mime database"));
+        QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
+    }
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
-    QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
-    print_line(tr("Update icon cache"));
-    QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
-    print_line(tr("Update mime database"));
-    QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
     print_line(tr("Update desktop database"));
     QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
 

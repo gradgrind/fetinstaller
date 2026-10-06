@@ -1,5 +1,4 @@
 #include "uninstaller.h"
-
 #include <QLocale>
 #include <QProcess>
 
@@ -22,7 +21,7 @@ int main(int argc, char *argv[])
             return 0;
         }
 
-        Uninstaller w(&appinfo);
+        Uninstaller w(appinfo);
         w.show();
         int cc = QApplication::exec();
         return cc;

@@ -110,12 +110,13 @@ bool Installer::registerApp()
     // For executable link in PATH
     QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
     binDir.mkpath(binDir.path());
-    QString execrpath{appinfo.EXECDIR + appinfo.APPEXEC};
-    QString execfile{app_dir.absoluteFilePath(execrpath)};
-    if ( !QFileInfo{execfile}.isExecutable() ) {
-        print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
-        return false;
-    }
+
+    //QString execrpath{appinfo.EXECDIR + appinfo.APPEXEC};
+    //QString execfile{app_dir.absoluteFilePath(execrpath)};
+    //if ( !QFileInfo{execfile}.isExecutable() ) {
+    //    print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
+    //    return false;
+    //}
 
     // If "versioned", add version to executable and desktop file, which then needs editing.
     QString appsdname; // name of ".desktop" file in .local/share/applications
@@ -123,39 +124,38 @@ bool Installer::registerApp()
     bool mimefiles{false}; // flag for cache updating
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
     if ( ui->versioned->isChecked() ) {
-        // Add versioned link to executable.
+        // Add versioned links to executables.
         // Note that there will be no mime type or icons if there is no unversioned installation!
-        QString appexecV{appinfo.APPEXEC + "-" + appinfo.APPVERSION};
-        QString appexecpathV{binDir.filePath(appexecV)};
-        if ( !QFile::link(execfile, appexecpathV) ) {
-            print_line(tr("Couldn't add executable link to PATH: '%1'").arg(execfile), true);
-            return false;
+        for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
+            QString execrpath{appinfo.EXECDIR + b};
+            QString execfile{app_dir.absoluteFilePath(execrpath)};
+            if ( !QFileInfo{execfile}.isExecutable() ) {
+                print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
+                return false;
+            }
+            QString appexecpath{binDir.filePath(b + "-" + appinfo.APPVERSION)};
+            if ( !QFile::link(execfile, appexecpath) ) {
+                print_line(tr("Couldn't add executable link to PATH: '%1'").arg(appexecpath), true);
+                return false;
+            }
+            print_line(tr("Add executable to PATH: '%1'").arg(appexecpath));
+            localfiles.append(appexecpath);
         }
-        print_line(tr("Add executable to PATH: '%1'").arg(appexecpathV));
-        localfiles.append(appexecpathV);
 
         // Add versioned .desktop file (for "Start" menu entry).
         // The "Exec" field needs editing.
         QFile f(appsfile);
         if ( f.open(QFile::ReadOnly | QFile::Text) ) {
             QTextStream in(&f);
-
             QStringList newlines;
-            bool ok{false};
             while (!in.atEnd())
             {
                 QString line = in.readLine();
                 if ( line.startsWith("Exec=") ) {
-                    QStringList newline;
-                    line.slice(5); // strip off the prefix
-                    for ( const auto &w : line.split(' ') ) {
-                        if ( w == appinfo.APPEXEC ) {
-                            newline.append(appexecV);
-                        } else {
-                            newline.append(w);
-                        }
-                    }
-                    newlines.append("Exec=" + newline.join(' '));
+                    //TODO ...
+                    newlines.append(
+                        "Exec=" + appinfo.EXECLINE.replace(
+                            "%APP%", appinfo.APPEXEC + "-" + appinfo.APPVERSION));
                 } else if ( line.startsWith("Name=") ) {
                     newlines.append("Name=" + appinfo.APPNAME + "-" + appinfo.APPVERSION);
 
@@ -188,14 +188,25 @@ bool Installer::registerApp()
         localfiles.append(appspath);
     } else {
         // Add "unversioned" files and links.
-        QString appexecpath{binDir.filePath(appinfo.APPEXEC)};
-        if ( !QFile::link(execfile, appexecpath) ) {
-            print_line(tr("Couldn't add executable link to PATH: '%1'").arg(execfile), true);
-            return false;
-        }
-        print_line(tr("Add executable to PATH: '%1'").arg(appexecpath));
-        localfiles.append(appexecpath);
 
+        // Executables
+        for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
+            QString execrpath{appinfo.EXECDIR + b};
+            QString execfile{app_dir.absoluteFilePath(execrpath)};
+            if ( !QFileInfo{execfile}.isExecutable() ) {
+                print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
+                return false;
+            }
+            QString appexecpath{binDir.filePath(b)};
+            if ( !QFile::link(execfile, appexecpath) ) {
+                print_line(tr("Couldn't add executable link to PATH: '%1'").arg(appexecpath), true);
+                return false;
+            }
+            print_line(tr("Add executable to PATH: '%1'").arg(appexecpath));
+            localfiles.append(appexecpath);
+        }
+
+        // "Desktop" file (for start menu entry, etc.)
         appsdname = appinfo.APPLICATION + ".desktop";
         appspath  = appsDir.absoluteFilePath(appsdname);
         if ( !QFile::copy(appsfile, appspath) ) {
@@ -268,14 +279,17 @@ bool Installer::registerApp()
         for ( const auto& f : std:: as_const(localfiles) ) {
             log_stream << f << "\n";
         }
-        file_log.close();
 
         if ( mimefiles ) {
             print_line(tr("Update icon cache"));
             QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
             print_line(tr("Update mime database"));
             QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
+            log_stream << "+++ registered +++\n";
         }
+
+        file_log.close();
+
         print_line(tr("Update desktop database"));
         QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
         return true;

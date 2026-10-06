@@ -270,10 +270,7 @@ void Installer::setInstallPath(QString ipath)
         dst_dir = ipath;
     }
     QString app_dstdir;
-    if ( ui->versioned->isChecked() ) // toggling the check-box should call refreshView
-        app_dstdir = dst_dir.absoluteFilePath(appinfo.APPNAME + "-" + appinfo.APPVERSION);
-    else
-        app_dstdir = dst_dir.absoluteFilePath(appinfo.APPNAME);
+    app_dstdir = dst_dir.absoluteFilePath(appinfo.APPNAME + "-" + appinfo.APPVERSION);
     if ( QFileInfo::exists(app_dstdir) ) {
         if ( !QFileInfo{app_dstdir}.isDir() ) {
             addBoldLine(ui->check_destination, tr("Destination not a folder: %1").arg(app_dstdir));
@@ -309,8 +306,6 @@ void Installer::setInstallPath(QString ipath)
     }
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
-
-//TODO: Check all occurrences of dst_dir ... some should be app_dir!!!
 
 void Installer::uninstallExisting()
 {

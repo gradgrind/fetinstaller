@@ -22,10 +22,9 @@ class Uninstaller : public QWidget
     Q_OBJECT
     QThread workerThread;
     DeleteWorker* worker;
-    AppInfo* appinfo;
 
 public:
-    explicit Uninstaller(AppInfo* app_info, QWidget *parent = nullptr);
+    explicit Uninstaller(AppInfo& appinfo, QWidget *parent = nullptr);
     ~Uninstaller();
 
 private slots:
@@ -42,6 +41,7 @@ private:
     void progressOne();
     void unregisterApp();
     QStringList unregister_failed;
+    QDir basedir;
     bool bugflag{false};
 
 signals:

@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QLocale>
 #include <QSettings>
+#include <QStringList>
 
 class AppInfo : QObject
 {
@@ -31,9 +32,12 @@ public:
     QString APPICON;     // probably the same as APPLICATION
     QString EXECDIR;
     QString APPVERSION;
+    QStringList BINLINKS;
 #if defined Q_OS_WIN
     const QString ASSOC_EXT;
     const QString ASSOC_PROGID;
+#else
+    QString EXECLINE; // for .desktop file
 #endif
 };
 

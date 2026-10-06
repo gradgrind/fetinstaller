@@ -2,7 +2,7 @@
 #define APPINFO_H
 
 #include <QObject>
-#include <QStringList>
+#include <QString>
 #include <QDir>
 
 class AppInfo : QObject
@@ -12,17 +12,10 @@ public:
     AppInfo();
     bool init();
 
-    const QString APPNAME;
-    const QString APPEXEC;
-    const QString APPFILENAME;
-    const QString EXECDIR;
-    const QString APPFILES;
-
-    QDir appdir;
-    QDir basedir;
-    QString defaultInstallationPath;
+    QDir appdir;    // root of running app
+    QDir basedir;   // root of installation
+    QString basename; // appname + version (= name of basedir)
     QString appcopy;
-    bool registered;
 };
 
 #endif // APPINFO_H

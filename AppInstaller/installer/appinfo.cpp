@@ -93,6 +93,10 @@ bool AppInfo::init(QLocale locale)
     if ( !read(APPICON, "APPICON") ) {
         APPICON = APPLICATION;
     }
+    QString binlinks;
+    if ( read(binlinks, "BINLINKS") ) {
+        BINLINKS = binlinks.split(',');
+    }
 #if defined Q_OS_WIN
     //TODO
     if ( !read(ASSOC_EXT, "ASSOC_EXT") ) {
@@ -100,6 +104,10 @@ bool AppInfo::init(QLocale locale)
     }
     if ( !read(ASSOC_PROGID, "ASSOC_PROGID") ) {
         //ASSOC_PROGID = ???;
+    }
+#else
+    if ( !read(EXECLINE, "EXECLINE") ) {
+        //TODO: Versioned Exec lines not possible
     }
 #endif
     delete appsettings;

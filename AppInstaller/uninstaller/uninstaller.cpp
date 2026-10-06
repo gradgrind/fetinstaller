@@ -6,14 +6,6 @@
 #include <QTimer>
 #include <QProcess>
 
-static const char* REGISTERED_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", R"(
-This will unregister the application and remove it from the desktop.
-)");
-
-static const char* UNREGISTERED_INSTALLATION = QT_TRANSLATE_NOOP("Uninstaller", R"(
-This installation is not registered – only the installation directory will be removed.
-)");
-
 static const char* UNINSTALL_INCOMPLETE = QT_TRANSLATE_NOOP("Uninstaller", R"(
 The installation folder could not be deleted:
   %1
@@ -22,24 +14,25 @@ Please check its contents and delete manually.
 A renewed installation will only be possible if the folder does not exist.
 )");
 
-Uninstaller::Uninstaller(AppInfo* app_info, QWidget *parent)
-    : appinfo{app_info}
-    , QWidget(parent)
+Uninstaller::Uninstaller(AppInfo& app_info, QWidget *parent)
+    : QWidget(parent)
     , ui(new Ui::Uninstaller)
 {
     ui->setupUi(this);
     ui->stackedWidget->setCurrentIndex(0);
 
+    basedir = app_info.basedir;
+
     // Set application name in GUI
-    ui->label_title->setText(ui->label_title->text().arg(appinfo->APPNAME));
-    ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo->APPNAME));
+    ui->label_title->setText(ui->label_title->text().arg(app_info.basename));
+    ui->label_page_1->setText(ui->label_page_1->text().arg(app_info.basename));
 
     // Connect signals
     connect(ui->buttonBox_1, &QDialogButtonBox::accepted, this, &Uninstaller::page_2);
     connect(ui->buttonBox_1, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
     connect(ui->buttonBox_2, &QDialogButtonBox::accepted, this, &QApplication::quit);
 
-    ui->appinstall_path->setText(appinfo->basedir.path());
+    ui->appinstall_path->setText(app_info.basedir.path());
 
     //NOTE: If the time is too short, a blank window might get shown at first ...
     QTimer::singleShot(100, this, &Uninstaller::page_1);
@@ -65,11 +58,6 @@ void Uninstaller::page_1()
 {
     ui->stackedWidget->setCurrentIndex(0);
     ui->text_1->clear();
-    if ( appinfo->registered ) {
-        ui->text_1->appendPlainText(tr(REGISTERED_INSTALLATION));
-    } else {
-        ui->text_1->appendPlainText(tr(UNREGISTERED_INSTALLATION));
-    }
 }
 
 void Uninstaller::page_2()
@@ -79,16 +67,14 @@ void Uninstaller::page_2()
     // Disable ok button
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
 
-    if ( appinfo->registered ) {
-        unregisterApp();
-    }
+    unregisterApp();
 
     // Initialize progress bar
 
     // Loop through the directory contents
     int count{0};
     for ( const auto &dirEntry : QDirListing(
-             appinfo->basedir.path(),
+             basedir.path(),
              QDirListing::IteratorFlag::IncludeHidden | QDirListing::IteratorFlag::Recursive) ) {
         count++;
     }
@@ -114,7 +100,7 @@ void Uninstaller::page_2()
     // Start deleting.
     print_line(tr("*** Remove installation files ***"));
     print_line("");
-    emit deleteFiles(appinfo->basedir.path());
+    emit deleteFiles(basedir.path());
 }
 
 void Uninstaller::file_deleted(QString fpath, bool ok)
@@ -154,9 +140,9 @@ void Uninstaller::done(bool ok)
     if ( ok ) {
         print_line("");
         // Test if the app installation directory still exists.
-        if ( appinfo->basedir.exists() ) {
+        if ( basedir.exists() ) {
             print_line("");
-            print_line(tr(UNINSTALL_INCOMPLETE).arg(appinfo->basedir.path()));
+            print_line(tr(UNINSTALL_INCOMPLETE).arg(basedir.path()));
         } else {
             if ( unregister_failed.isEmpty() )
                 print_line(tr("App successfully uninstalled."));
