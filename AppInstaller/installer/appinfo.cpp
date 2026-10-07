@@ -69,18 +69,6 @@ bool AppInfo::init(QLocale locale)
     if ( !read(APPVERSION, "VERSION", true) )
         return false;
 
-    //Copied lines from the desktop file!
-    //TODO: Perhaps if Name=APPNAME, the GenericName (or even Comment) should be used?
-    // Perhaps USE the desktop file?
-
-    auto l = locale.name();
-    if ( !read(APPLONGNAME, "Name[" + l + "]") ) {
-        l = QLocale::languageToCode(locale.language());
-        if ( !read(APPLONGNAME, "Name[" + l + "]") ) {
-            read(APPLONGNAME, "Name");
-        }
-    }
-
     if ( !read(APPLICATION, "APPLICATION") ) {
         APPLICATION = APPNAME;
     }
@@ -110,6 +98,40 @@ bool AppInfo::init(QLocale locale)
         //TODO: Versioned Exec lines not possible
     }
 #endif
+
+    // Get the long name for the application from the .desktop file.
+    //TODO: On Windows this will probably need modifying!
+
+    QString dconf{SOURCE_DIR.filePath("share/applications/" + APPLICATION + ".desktop")};
+    if ( !QFileInfo{dconf}.isFile() ) {
+        QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no 'desktop' file: %1").arg(dconf));
+        return false;
+    }
+    QSettings dsettings(dconf, QSettings::IniFormat);
+    dsettings.beginGroup("Desktop Entry");
+
+    // Check Name entry
+    auto val = dsettings.value("Name");
+    if ( val.toString() != APPNAME ) {
+        QMessageBox::critical(
+            nullptr,
+            tr("Critical"),
+            tr("APPNAME in app.conf doesn't match 'Name' in 'desktop' file: %1").arg(dconf));
+        return false;
+    }
+
+    // If possible, get a translated version.
+    auto l = locale.name();
+    val = dsettings.value("GenericName[" + l + "]");
+    if ( !val.isValid() ) {
+        l = QLocale::languageToCode(locale.language());
+        val = dsettings.value("GenericName[" + l + "]");
+        if ( !val.isValid() ) {
+            val = dsettings.value("GenericName");
+        }
+    }
+    APPLONGNAME = val.toString();
+
     delete appsettings;
     appsettings = nullptr;
     return true;

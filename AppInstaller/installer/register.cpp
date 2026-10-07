@@ -86,8 +86,6 @@ bool Installer::registerApp()
         return true;
     }
 
-    //TODO: Add more links (man, doc, ...)?
-
     print_line("");
 
     // It is possible that the installation bundle contains more than one executable and
@@ -145,7 +143,6 @@ bool Installer::registerApp()
             {
                 QString line = in.readLine();
                 if ( line.startsWith("Exec=") ) {
-                    //TODO ...
                     newlines.append(
                         "Exec=" + appinfo.EXECLINE.replace(
                             "%APP%", appinfo.APPEXEC + "-" + appinfo.APPVERSION));
@@ -239,6 +236,9 @@ bool Installer::registerApp()
 
             mimefiles = true;
         }
+
+        // man pages
+        linkDirectoryHierarchy(app_dir.filePath("share/man"), shareDir.absoluteFilePath("man"));
     }
 
     // Desktop starter, if requested.

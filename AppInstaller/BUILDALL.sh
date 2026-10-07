@@ -62,7 +62,7 @@ fi
 
 # Add the installer configuration file
 mkdir -p build/app_bundle/_installer_
-sed "s/^VERSION=.*\$/VERSION=$APPVERSION/g" app.conf > build/app_bundle/_installer_/app.conf
+sed "s/%VERSION%/$APPVERSION/g" app.conf > build/app_bundle/_installer_/app.conf
 
 cmake --build build/uninstaller --target install --parallel 6
 
