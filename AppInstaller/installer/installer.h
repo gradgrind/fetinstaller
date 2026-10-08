@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QTranslator>
 #include <QWidget>
+#include <QPlainTextEdit>
 #include <QThread>
 #include <QDir>
 #include <QString>
@@ -21,6 +22,19 @@ struct linktest {
     QString target;     // empty if error
 };
 
+enum registerType {
+    R_COPY,
+    R_LINK,
+    R_WRITE
+};
+
+struct registerItem {
+    QString source;
+    QString destination;
+    QString message;
+    registerType type;
+};
+
 class Installer : public QWidget
 {
     Q_OBJECT
@@ -31,8 +45,6 @@ class Installer : public QWidget
 public:
     explicit Installer(QLocale locale, QWidget *parent = nullptr);
     ~Installer();
-
-    bool app_initialized{false};
 
 private slots:
     void page_0();
@@ -67,24 +79,31 @@ private:
 
     void print_line(QString line, bool bold = false);
     void progressOne();
+    bool isInstalled(QString version = {});
+    bool preRegister();
     bool registerApp();
-    bool linkDirectoryHierarchy(const QString &srcPath, const QString &dstPath);
 
-    bool bugflag{false};
-    //bool registered;
+    QPlainTextEdit* textOutput{nullptr};
     QStringList copyErrors;
-    bool scanComplete;
-    bool scanOk;
     QString defaultInstallationPath;
-    bool installationPartial{false};
     InstallFiles installFiles; // files and directories to be installed
-    QString xfilepath; // path to file containing installed file list
-    QFile file_log;
+    QList<registerItem> registrationList;
+    QString desktopName;
+    QString desktopPath;
     QStringList localfiles;
     QDir src_dir;
     QDir dst_dir;
     QDir app_dir; // within dst_dir, the actual installation directory
     QString uninstall_exe;
+
+    bool bugflag{false};
+    bool scanComplete;
+    bool scanOk;
+    bool mimefiles; // flag for cache updating
+    bool installationPartial{false};
+
+public:
+    bool app_initialized{false};
 
 signals:
     void doCopy(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);

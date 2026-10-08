@@ -1,2 +1,11 @@
-Just beginning ..., nothing usable yet.
+The Linux version now seems to be running quite smoothly.
+
+TODO: Do the German translation as a proof of concept.
+
+The latest changes need to be adapted for the Windows version, and how the
+Windows uninstaller manages to delete itself still needs finalizing.
+
+The problem on Windows is that, unlike on Linux, files in use by a running program (including the program itself) cannot be deleted. It might be functionally neatest to use a Powershell script for the uninstaller, as this can delete itself (I think ...), but that means a whole new program in a different language with a different GUI. Especially the translations look challenging.
+
+At present the compromise solution is probably to use a simple Powershell script to copy the uninstaller (with libraries) to a temporary location, run the uninstaller, then finally delete the temporary stuff. The current C++ uninstaller has code for copying itself, which might be more convenient than copying in Powershell.
 

@@ -17,8 +17,7 @@ bool AppInfo::init()
     // root.
 
     // Determine the installation's base directory
-    appdir.setPath(QCoreApplication::applicationDirPath());
-    appdir.makeAbsolute();
+    appdir.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
 #if defined Q_OS_WIN
     // The uninstaller is expected in the root directory of the installation.
 #else

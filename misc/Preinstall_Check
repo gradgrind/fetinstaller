@@ -1,0 +1,14 @@
+## To be installed outside of the app bundle
+
+### Unversioned AND Versioned installs
+
+ - ~/.local/share/applications/$APPLICATION[-$APPVERSION].desktop
+ 
+ - ~/.local/bin/app_n[-$APPVERSION] foreach app_n in appinfo.BINLINKS
+ 
+### Unversioned only
+
+ - ~/.local/share/mime/packages/$APPLICATION.xml
+ 
+ - files in ~/.local/share/icons (need to search for them in the source).
+

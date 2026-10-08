@@ -1,0 +1,21 @@
+I have been looking at the desktop integration (fet.xml, icons and fet.desktop) of various applications on Linux. It seems that the way these are handled in various distributions and desktops is not very uniform.
+
+One thing I don't really like (though perhaps other people do ...) is the way start menu entries are shown with names like "File Manager" or, in the case of FET, "Timetable Generator". I would prefer the application to be called "FET" – for me "Timetable Generator" is a generic name.
+
+If you are interested in changing this, fet.desktop could have all its "Name" entries changed to "GenericName" (the existing GenericName entries don't really serve any useful purpose) and a single "Name=FET" line could be added.
+
+One other thing I noticed is that if the mime type and icons are installed for the user (in "~/.local/share"), on at least GNOME, KDE and XFCE the file manager shows the fet icon for xxx.fet files, which is how it should be. But on Cinnamon this doesn't work. This can be "fixed" by adding a "generic-icon" line to fet.xml:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+  <mime-type type="application/vnd.fet.file">
+    <comment>FET timetabling file</comment>
+    <sub-class-of type="application/xml"/>
+    <glob pattern="*.fet"/>
+    <icon name="fet"/>
+    <generic-icon name="fet"/>
+  </mime-type>
+</mime-info> 
+
+Perhaps this is a bug in Cinnamon, but the mime file stuff is not well documented, so it's difficult to tell. As far as I can see this addition doesn't cause problems anywhere else.
+

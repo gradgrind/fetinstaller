@@ -13,6 +13,10 @@ static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   Please check that your installer has not been corrupted.<br>
   If necessary, contact the distributor.)");
 
+static const char *ALREADY_INSTALLED = QT_TRANSLATE_NOOP("Installer", R"(
+%1 is already installed.<br>
+To proceed, uninstall the existing app or select a 'versioned' installation.)");
+
 void Installer::closeEvent(QCloseEvent *event)
 {
     if ( installationPartial ) { // set to true during file copying, etc.
@@ -59,6 +63,7 @@ Installer::Installer(QLocale locale, QWidget *parent)
     connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
     connect(ui->removeExisting, &QPushButton::clicked, this, &Installer::uninstallExisting);
     connect(ui->versioned, &QCheckBox::toggled, this, &Installer::refreshView);
+    connect(ui->unpack_only, &QCheckBox::toggled, this, &Installer::refreshView);
 
     //NOTE: If the time is too short, a blank window might get shown at first ...
     QTimer::singleShot(100, this, &Installer::page_0);
@@ -208,37 +213,12 @@ void Installer::page_1()
 #else
     defaultInstallationPath = QDir::home().absoluteFilePath(".local/apps");
 #endif
-    /* TODO-- Seek existing installation
-    QString which_app{QStandardPaths::findExecutable(appinfo.APPEXEC)};
-    if ( which_app.isEmpty() ) {
-        ui->existing_app->setCurrentIndex(0);
-    } else {
-        ui->existing_app->setCurrentIndex(1);
-        ui->existing_path->setText(which_app);
-
-        QDir app_dir{QFileInfo{which_app}.canonicalFilePath()};
-        app_dir.cdUp();
-
-        //TODO: This will need adapting for Windows (powershell script ...)
-        uninstall = QStandardPaths::findExecutable("app_uninstall", QStringList() << app_dir.path());
-        if ( uninstall.isEmpty() ) {
-            ui->existingCheckBox->hide();
-        } else {
-            ui->existingCheckBox->setChecked(true);
-            ui->existingCheckBox->show();
-        }
-    }
-    */
 }
 
 void Installer::page_2()
 {
-    /* TODO-- If a previous installation is to be uninstalled, do it now (if possible)
-    if ( !uninstall.isEmpty() && ui->existingCheckBox->isChecked() ) {
-        QProcess::execute(uninstall); // must wait for completion before returning!
-    }
-    */
     ui->stackedWidget->setCurrentIndex(2);
+    textOutput = ui->check_destination;
     setInstallPath(defaultInstallationPath);
 }
 
@@ -260,6 +240,8 @@ void Installer::selectInstallDir()
 
 void Installer::setInstallPath(QString ipath)
 {
+    ui->check_destination->clear();
+    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
     uninstall_exe.clear();
     ui->removeExisting->hide();
     if ( ipath.isEmpty() ) {
@@ -273,7 +255,7 @@ void Installer::setInstallPath(QString ipath)
     app_dstdir = dst_dir.absoluteFilePath(appinfo.APPNAME + "-" + appinfo.APPVERSION);
     if ( QFileInfo::exists(app_dstdir) ) {
         if ( !QFileInfo{app_dstdir}.isDir() ) {
-            addBoldLine(ui->check_destination, tr("Destination not a folder: %1").arg(app_dstdir));
+            print_line(tr("Destination not a folder: %1").arg(app_dstdir), true);
             return;
         }
     } else {
@@ -281,27 +263,33 @@ void Installer::setInstallPath(QString ipath)
     }
     ui->setDefaultPath->setEnabled(ipath != defaultInstallationPath);
 
-    // Check destination
-    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
-    ui->check_destination->clear();
+    // *** Check destination ***
     // Destination writable? (not reliable on Windows?)
     if ( !QFileInfo{app_dstdir}.isWritable() ) {
-        addBoldLine(ui->check_destination, tr("Destination not writable: %1").arg(app_dstdir));
+        print_line(tr("Destination not writable: %1").arg(app_dstdir), true);
+        return;
+    }
+    // If doing a full installation, check for existing full, uninstallable installation
+    if ( !ui->unpack_only->isChecked() && !ui->versioned->isChecked() && isInstalled() ) {
+        ui->removeExisting->show();
+        print_line(tr(ALREADY_INSTALLED).arg(appinfo.APPNAME), true);
         return;
     }
     // Check that the installation directory is empty
     app_dir = app_dstdir;
     if ( !app_dir.isEmpty() ) {
-        addBoldLine(ui->check_destination, tr("Destination not empty: %1").arg(app_dir.path()));
+        print_line(tr("Destination not empty: %1").arg(app_dir.path()), true);
         // Check for app uninstaller.
-        //TODO: This may need tweaking for Windows.
-        uninstall_exe = QStandardPaths::findExecutable(
-            "app_uninstall",
-            QStringList() << app_dir.filePath(appinfo.EXECDIR));
-        if ( !uninstall_exe.isEmpty() ) {
+        if ( isInstalled(app_dir.path()) ) {
             ui->removeExisting->show();
-            addBoldLine(ui->check_destination, tr("To use the destination, uninstall the existing app."));
+            print_line(tr("To use the destination, uninstall the existing app."), true);
         }
+        return;
+    }
+    // Check registration possible,if required
+    if ( !preRegister() ) {
+        print_line("");
+        print_line(tr("--> 'Registration' not possible."), true);
         return;
     }
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
@@ -316,12 +304,13 @@ void Installer::uninstallExisting()
 
 void Installer::refreshView()
 {
-    // Use this after manual changes to destination folder.
+    // Use this after manual changes to destination folder, etc.
     setInstallPath();
 }
 
 void Installer::page_3()
 {
+    textOutput = ui->installDetails;
     ui->installProgress->setMinimum(0);
     ui->installProgress->setValue(0);
     // Disable the checkboxes and OK button until the copying has finished
@@ -393,9 +382,9 @@ void Installer::print_line(QString line, bool bold)
 {
     if ( !bugflag ) {
         if ( bold )
-            addBoldLine(ui->installDetails, line);
+            addBoldLine(textOutput, line);
         else
-            ui->installDetails->appendPlainText(line);
+            textOutput->appendPlainText(line);
     }
 }
 

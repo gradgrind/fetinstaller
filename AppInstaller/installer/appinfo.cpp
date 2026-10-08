@@ -8,7 +8,7 @@
 AppInfo::AppInfo()
 {
     // Get source path
-    SOURCE_DIR = QFileInfo(QCoreApplication::applicationDirPath()).canonicalFilePath();
+    SOURCE_DIR.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
     if (QFileInfo::exists(SOURCE_DIR.filePath("app_bundle"))) {
         // Accept an "app_bundle" directory in the same directory as the installer executable
         SOURCE_DIR.cd("app_bundle");
@@ -22,7 +22,7 @@ AppInfo::AppInfo()
     }
     // Path prefixes for OS-specific configuration items
 #if defined Q_OS_WIN
-    ostype = "Windows/"
+    ostype = "Windows/";
 #elif defined Q_OS_LINUX
     ostype = "Linux/";
 #endif
