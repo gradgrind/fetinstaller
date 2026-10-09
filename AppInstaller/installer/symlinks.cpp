@@ -12,52 +12,30 @@ static const char *ABS_LINK = QT_TRANSLATE_NOOP(
     "SYMLINKS",
     "WARNING, absolute symlink: %1 -> %2");
 
-static const char *ABS_NO_TARGET = QT_TRANSLATE_NOOP(
-    "SYMLINKS",
-    "WARNING, absolute symlink: %1 -> %2 (doesn't exist!)");
-
-static const char *ABS_WITHIN = QT_TRANSLATE_NOOP(
-    "SYMLINKS",
-    "ERROR, absolute symlink within package: %1 -> %2");
-
 static const char *WINDOWS_SYMLINK = QT_TRANSLATE_NOOP(
     "SYMLINKS",
     "ERROR, Windows symlinks are not supported: %1");
+
+static const char *WINDOWS_SHORTCUT = QT_TRANSLATE_NOOP(
+    "SYMLINKS",
+    "ERROR, Windows shortcuts are not supported: %1");
 
 #ifdef Q_OS_WIN
 
 // On Windows there are symlinks and "shortcuts" (.lnk).
 // At present symlinks are not permitted – one difficulty is that
 // they normally need administrator privileges for creation.
-// Windows shortcuts can be created by QFile::link.
-// It looks like only absolute shortcuts are possible.
+// Windows shortcuts may only be absolute and are not permitted here.
 
 linktest Installer::testLink(QString rpath)
 {
     const QFileInfo finfo{src_dir.filePath(rpath)};
-    if ( !finfo.isShortcut() ) {
-        if ( finfo.isSymLink() ) {
-            return {tr(WINDOWS_SYMLINK).arg(rpath)};
-        }
-        return {};
+    if ( finfo.isShortcut() ) {
+        return {tr(WINDOWS_SHORTCUT).arg(rpath)};
+    } else if ( finfo.isSymLink() ) {
+        return {tr(WINDOWS_SYMLINK).arg(rpath)};
     }
-
-    QString linkPath{finfo.symLinkTarget()}; // target path, absolute only
-    bool linkTargetExists = finfo.exists();
-
-    // An absolute link within the install package is an error.
-    // An absolute link outside the package will be accepted, but a warning will be issued.
-    if ( src_dir.relativeFilePath(linkPath).startsWith("..") ) {
-        // outside the package
-        QString x;
-        if ( linkTargetExists ) {
-            return {tr(ABS_LINK).arg(rpath, linkPath), rpath, linkPath};
-        }
-        return {tr(ABS_NO_TARGET).arg(rpath, linkPath), rpath, linkPath};
-    } else {
-        // inside the package
-        return {tr(ABS_WITHIN).arg(rpath, linkPath)};
-    }
+    return {};
 }
 
 #else
@@ -86,19 +64,8 @@ linktest Installer::testLink(QString rpath)
             }
         }
     } else {
-        // An absolute link within the install package is an error.
-        // An absolute link outside the package will be accepted, but a warning will be issued.
-        if ( src_dir.relativeFilePath(linkPath).startsWith("..") ) {
-            // outside the package
-            QString x;
-            if ( linkTargetExists ) {
-                return {tr(ABS_LINK).arg(rpath, linkPath), rpath, linkPath};
-            }
-            return {tr(ABS_NO_TARGET).arg(rpath, linkPath), rpath, linkPath};
-        } else {
-            // inside the package
-            return {tr(ABS_WITHIN).arg(rpath, linkPath)};
-        }
+        // Absolute links are not acceptable.
+        return {tr(ABS_LINK).arg(rpath, linkPath), rpath, linkPath};
     }
 }
 

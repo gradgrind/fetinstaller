@@ -12,8 +12,181 @@
 #include <windows.h>
 #include <shlobj.h>
 
+//TODO: adapt for Windows
+bool Installer::preRegister()
+{
+    //TODO: are these still relevant in some way, or is something else necessary?
+    registrationList.clear();
+    mimefiles = false; // flag for cache updating
+
+    if ( ui->unpack_only->isChecked() ) {
+        // no "registration" of any sort
+        return true;
+    }
+
+    // Collect the pending registry entries. Test that they are not already in use.
+
+
+//---
+
+    bool ok{true};
+
+    // For ".desktop" file (start menu, etc.)
+    QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
+
+    // For executable link in PATH
+    QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
+
+    QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
+    if ( ui->versioned->isChecked() ) {
+        // Add versioned links to executables.
+        // Note that there will be no mime type or icons if there is no unversioned installation!
+        for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
+            QString execrpath{appinfo.EXECDIR + b};
+            QString execfile{app_dir.absoluteFilePath(execrpath)};
+            if ( !QFileInfo{src_dir.filePath(execrpath)}.isExecutable() ) {
+                print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
+                ok = false;
+            }
+            QString appexecpath{binDir.filePath(b + "-" + appinfo.APPVERSION)};
+            registrationList.append(
+                {execfile, appexecpath, tr("Add executable to PATH: '%1'").arg(appexecpath), R_LINK});
+        }
+
+        // Add versioned .desktop file (for "Start" menu entry).
+        // The "Exec" field needs editing.
+        QString appsrpath{"share/applications/" + appinfo.APPLICATION + ".desktop"};
+        QString appsfile{app_dir.absoluteFilePath(appsrpath)};
+        QString dtfile{src_dir.filePath(appsrpath)};
+        if ( !QFileInfo{dtfile}.isFile() ) {
+            print_line(tr("'Desktop' file missing in installation bundle: '%1'").arg(appsrpath), true);
+            ok = false;
+        } else {
+            // New, versioned, .desktop file
+            desktopName = appinfo.APPLICATION + "-" + appinfo.APPVERSION + ".desktop";
+            desktopPath = appsDir.absoluteFilePath(desktopName);
+            // The "Exec" field needs editing.
+            QFile f(dtfile);
+            if ( f.open(QFile::ReadOnly | QFile::Text) ) {
+                QTextStream in(&f);
+                QStringList newlines;
+                while (!in.atEnd())
+                {
+                    QString line = in.readLine();
+                    if ( line.startsWith("Exec=") ) {
+                        newlines.append(
+                            "Exec=" + appinfo.EXECLINE.replace(
+                                "%APP%", appinfo.APPEXEC + "-" + appinfo.APPVERSION));
+                    } else if ( line.startsWith("Name=") ) {
+                        newlines.append("Name=" + appinfo.APPNAME + "-" + appinfo.APPVERSION);
+                    } else {
+                        newlines.append(line);
+                    }
+                }
+                f.close();
+                registrationList.append(
+                    {newlines.join("\n") + "\n", desktopPath,
+                     tr("Add 'Start' menu entry: '%1'").arg(desktopPath), R_WRITE});
+            } else {
+                print_line(tr("Couldn't read 'desktop' file in installation bundle: '%1'").arg(appsrpath), true);
+                ok = false;
+            }
+        }
+    } else {
+        // Add "unversioned" links to executables.
+        for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
+            QString execrpath{appinfo.EXECDIR + b};
+            QString execfile{app_dir.absoluteFilePath(execrpath)};
+            if ( !QFileInfo{src_dir.filePath(execrpath)}.isExecutable() ) {
+                print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
+                ok = false;
+            }
+            QString appexecpath{binDir.filePath(b)};
+            registrationList.append(
+                {execfile, appexecpath, tr("Add executable to PATH: '%1'").arg(appexecpath), R_LINK});
+        }
+
+        // Add unversioned .desktop file (for "Start" menu entry).
+        QString appsrpath{"share/applications/" + appinfo.APPLICATION + ".desktop"};
+        QString appsfile{app_dir.absoluteFilePath(appsrpath)};
+        if ( !QFileInfo{src_dir.filePath(appsrpath)}.isFile() ) {
+            print_line(tr("'Desktop' file missing in installation bundle: '%1'").arg(appsrpath), true);
+            ok = false;
+        } else {
+            desktopName = appinfo.APPLICATION + ".desktop";
+            desktopPath = appsDir.absoluteFilePath(desktopName);
+            registrationList.append(
+                {appsfile, desktopPath,
+                 tr("Add 'Start' menu entry: '%1'").arg(desktopPath), R_COPY});
+        }
+
+        // Add mime-type and icons, if present
+        QString mrpath{"mime/packages/" + appinfo.APPLICATION + ".xml"};
+        QString mfile{app_dir.absoluteFilePath("share/" + mrpath)};
+        if ( QFileInfo{src_dir.absoluteFilePath("share/" + mrpath)}.isFile() ) {
+            mimefiles = true;
+            QString ipath{shareDir.absoluteFilePath(mrpath)};
+            registrationList.append(
+                {mfile, ipath, tr("Install mime file: '%1'").arg(ipath), R_COPY});
+
+            // Add icon link(s).
+            // In principle there can be "apps" icons and "mimetypes" icons, but I haven't found any
+            // use for the "mimetypes" icons. The documentation says "Icons to be used as file icons
+            // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
+            // show the icon even if it is only in "apps".
+            // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
+            // However, it does work in Cinnamon if the app's .xml file in share/mime/packages gets the
+            // additional line:
+            //    <generic-icon name="$APPLICATION"/> (after the line: <icon name="$APPLICATION"/>)
+            // NOTE: Only icons needed for the the mime-type should be in "share/icons".
+            QDir iconsource{src_dir.absoluteFilePath("share/icons")};
+            QDir iconinsrc{app_dir.absoluteFilePath("share/icons")};
+            QDir icondest{shareDir.absoluteFilePath("icons")};
+            for (const auto& f : QDirListing(
+                     iconsource.path(),
+                     QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive)) {
+                QString rpath{iconsource.relativeFilePath(f.absoluteFilePath())};
+                QString sfile{iconinsrc.absoluteFilePath(rpath)};
+                QString dpath{icondest.absoluteFilePath(rpath)};
+                registrationList.append(
+                    {sfile, dpath, tr("Add icon file: '%1'").arg(dpath), R_LINK});
+            }
+        }
+
+        // man page link(s)
+        QDir mansource{src_dir.absoluteFilePath("share/man")};
+        QDir maninsrc{app_dir.absoluteFilePath("share/man")};
+        QDir mandest{shareDir.absoluteFilePath("man")};
+        for (const auto& f : QDirListing(
+                 mansource.path(),
+                 QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive)) {
+            QString rpath{mansource.relativeFilePath(f.absoluteFilePath())};
+            QString sfile{maninsrc.absoluteFilePath(rpath)};
+            QString dpath{mandest.absoluteFilePath(rpath)};
+            registrationList.append(
+                {sfile, dpath, tr("Add man file: '%1'").arg(dpath), R_LINK});
+        }
+    }
+
+    for ( const auto& reg : std::as_const(registrationList) ) {
+        if ( QFileInfo::exists(reg.destination) || QFileInfo{reg.destination}.isSymbolicLink() ) {
+            print_line(tr("Can't install item to: '%1'").arg(reg.destination), true);
+            ok = false;
+        }
+    }
+    return ok;
+}
+
+//TODO: adapt to preRegister()
 bool Installer::registerApp()
 {
+    if ( ui->unpack_only->isChecked() ) {
+        // no "registration" of any sort
+        return true;
+    }
+
+
+
     // Only perform these operations if installing to the "standard" location, an application
     // directory in "~/.local/apps".
     if ( !registered ) {
@@ -21,13 +194,16 @@ bool Installer::registerApp()
     }
 
     // Write to registry ...
+    QString vappname{appinfo.APPNAME + "-" + appinfo.APPVERSION};
+    QString LOCALAPPDATA{QDir::toNativeSeparators(
+        QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation))};
+    QString InstDir{LOCALAPPDATA + "\\Programs\\" + vappname}; // app folder is always "versioned"
 
     QString ShCtxt{"HKEY_CURRENT_USER"};
+
     QString UNINFO{ShCtxt + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + appinfo.APPNAME};
     QSettings settings1(UNINFO, QSettings::NativeFormat);
-    // Consider using versioned app folders ...
-    QString LOCALAPPDATA{QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation))};
-    QString InstDir{LOCALAPPDATA + "\\Programs\\" + appinfo.APPNAME + "-" + appinfo.APPVERSION};
+    // Versioned app folder:
 
     settings1.setValue("DisplayName", appinfo.APPNAME);
     settings1.setValue("UninstallString", "\"" + InstDir + "\\app_uninstall.exe\""); //???

@@ -98,9 +98,7 @@ void Installer::page_0()
     src_dir = appinfo.SOURCE_DIR;
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
-    if ( QStandardPaths::findExecutable(
-             appinfo.APPEXEC
-             , QStringList() << src_dir.filePath(appinfo.EXECDIR)).isEmpty() ) {
+    if ( !QFileInfo{appinfo.EXECDIR + "/" + appinfo.APPEXEC}.isExecutable() ) {
         addBoldLine(ui->messages_0, "BUG: installation files not found.");
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
@@ -109,13 +107,12 @@ void Installer::page_0()
     // Collect files to be installed
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-    using F = QDirListing::IteratorFlag;
     // Recursive search, but don't recurse into symlinked directories.
     int badfiles{0};
     int warnings{0};
     for ( const auto &dirEntry : QDirListing(
             src_dir.path(),
-            F::Recursive | F::IncludeHidden) ) {
+            QDirListing::IteratorFlag::Recursive | QDirListing::IteratorFlag::IncludeHidden) ) {
         QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
         if ( rpath.startsWith("_installer_") )
             continue;
