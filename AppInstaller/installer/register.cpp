@@ -12,6 +12,28 @@
 #include <windows.h>
 #include <shlobj.h>
 
+QString uninstall_command{"powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%1\\app_uninstall.ps1\""};
+
+bool Installer::isInstalled(QString dir)
+{
+    if ( dir.isEmpty() ) {
+        QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
+        QString app{ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME};
+        QString UNINFO{"Microsoft/Windows/CurrentVersion/Uninstall/" + app};
+        auto ustring = regsettings.value(UNINFO + "/UninstallString");
+        if ( !ustring.isNull() ) {
+            uninstall_exe = ustring.toString();
+            return !uninstall_exe.isEmpty();
+        }
+        return false;
+    }
+    QFileInfo uinfo{dir + "/" + appinfo.EXECDIR + "/app_uninstall.ps1"};
+    uninstall_exe = uninstall_command.arg(QDir::toNativeSeparators(uinfo.filePath()));
+    // The app counts as "installed" only if uinfo exists.
+    return uinfo.isFile();
+}
+
+
 //TODO: adapt for Windows
 bool Installer::preRegister()
 {
@@ -25,6 +47,49 @@ bool Installer::preRegister()
     }
 
     // Collect the pending registry entries. Test that they are not already in use.
+    //TODO ...
+
+    QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
+    QString app{ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME};
+    // Register uninstaller.
+    regsettings.beginGroup("Microsoft/Windows/CurrentVersion/Uninstall/" + app);
+
+    // The app folders are versioned regardless of whether the installation is versioned.
+    QString idir{QDir::toNativeSeparators(app_dir.path())};
+
+    //QString LOCALAPPDATA{
+    //    QDir::toNativeSeparators(
+    //        QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation))};
+
+
+
+
+
+    registrationList.append({UNINFO + "DisplayName", app});
+    registrationList.append({UNINFO + "UninstallString", uninstall_command.arg(idir)});
+    registrationList.append({UNINFO + "Publisher", appinfo.Publisher});
+    registrationList.append({UNINFO + "WebLink", appinfo.WebLink});
+    registrationList.append({UNINFO + "DisplayVersion", appinfo.APPVERSION});
+    // Installation size
+    qint64 size{0};
+    for ( const auto &dirEntry : QDirListing(
+             app_dir.path(),
+             QDirListing::IteratorFlag::FilesOnly
+                 | QDirListing::IteratorFlag::Recursive
+                 | QDirListing::IteratorFlag::IncludeHidden) ) { //TODO: IncludeHidden?
+        size += dirEntry.size();
+    }
+    registrationList.append({UNINFO + "EstimatedSize", "", size / 1024, true}); // Windows uses KiB (1024 bytes)
+    registrationList.append({UNINFO + "UninstallLocation", idir});
+
+    regsettings.endGroup();
+
+
+
+    if ( ui->versioned->isChecked() ) {
+        // Add versioned "start" menu entry).
+        // Note that there will be no file-type associations if there is no unversioned installation!
+    }
 
 
 //---
@@ -78,7 +143,7 @@ bool Installer::preRegister()
                             "Exec=" + appinfo.EXECLINE.replace(
                                 "%APP%", appinfo.APPEXEC + "-" + appinfo.APPVERSION));
                     } else if ( line.startsWith("Name=") ) {
-                        newlines.append("Name=" + appinfo.APPNAME + "-" + appinfo.APPVERSION);
+                        newlines.append("Name=" + versioned_app);
                     } else {
                         newlines.append(line);
                     }
@@ -185,7 +250,10 @@ bool Installer::registerApp()
         return true;
     }
 
+    QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
 
+
+    //TODO...
 
     // Only perform these operations if installing to the "standard" location, an application
     // directory in "~/.local/apps".
@@ -194,10 +262,9 @@ bool Installer::registerApp()
     }
 
     // Write to registry ...
-    QString vappname{appinfo.APPNAME + "-" + appinfo.APPVERSION};
     QString LOCALAPPDATA{QDir::toNativeSeparators(
         QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation))};
-    QString InstDir{LOCALAPPDATA + "\\Programs\\" + vappname}; // app folder is always "versioned"
+    QString InstDir{LOCALAPPDATA + "\\Programs\\" + versioned_app}; // app folder is always "versioned"
 
     QString ShCtxt{"HKEY_CURRENT_USER"};
 
@@ -206,7 +273,7 @@ bool Installer::registerApp()
     // Versioned app folder:
 
     settings1.setValue("DisplayName", appinfo.APPNAME);
-    settings1.setValue("UninstallString", "\"" + InstDir + "\\app_uninstall.exe\""); //???
+    settings1.setValue("UninstallString", "\"" + InstDir + "\\app_uninstall.ps1\""); //???
     //settings1.setValue("Publisher", "Liviu Lalescu");
     //settings1.setValue("UrlInfoAbout", "https://lalescu.ro/liviu/fet/");
     settings1.setValue("DisplayVersion", appinfo.APPVERSION);
@@ -257,9 +324,12 @@ bool Installer::registerApp()
 
 bool Installer::isInstalled(QString dir)
 {
+    // Assume an uninstaller is in the same directory as the app executable.
     QFileInfo uinfo;
     QString execfile{QDir::home().absoluteFilePath(".local/bin/" + appinfo.APPEXEC)};
     if ( dir.isEmpty() ) {
+        if ( ui->versioned->isChecked() )
+            execfile += "-" + appinfo.APPVERSION;
         QString xpath{QFileInfo{execfile}.readSymLink()};
         if ( xpath.isEmpty() ) {
             return false; // only if this is a symlink can the app count as "installed"
@@ -335,7 +405,7 @@ bool Installer::preRegister()
                             "Exec=" + appinfo.EXECLINE.replace(
                                 "%APP%", appinfo.APPEXEC + "-" + appinfo.APPVERSION));
                     } else if ( line.startsWith("Name=") ) {
-                        newlines.append("Name=" + appinfo.APPNAME + "-" + appinfo.APPVERSION);
+                        newlines.append("Name=" + versioned_app);
                     } else {
                         newlines.append(line);
                     }

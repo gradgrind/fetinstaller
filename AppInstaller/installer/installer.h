@@ -22,6 +22,18 @@ struct linktest {
     QString target;     // empty if error
 };
 
+#if defined Q_OS_WIN
+
+struct registerItem {
+    QString path;
+    QString value;
+    qint64 nvalue{0};
+    bool numeric{false};
+
+};
+
+#else
+
 enum registerType {
     R_COPY,
     R_LINK,
@@ -34,6 +46,8 @@ struct registerItem {
     QString message;
     registerType type;
 };
+
+#endif
 
 class Installer : public QWidget
 {
@@ -94,6 +108,7 @@ private:
     QDir src_dir;
     QDir dst_dir;
     QDir app_dir; // within dst_dir, the actual installation directory
+    QString versioned_app; // app name + "-" + app version
     QString uninstall_exe;
 
     bool bugflag{false};

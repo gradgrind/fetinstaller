@@ -15,7 +15,8 @@ static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
 
 static const char *ALREADY_INSTALLED = QT_TRANSLATE_NOOP("Installer", R"(
 %1 is already installed.<br>
-To proceed, uninstall the existing app or select a 'versioned' installation.)");
+To proceed, uninstall the existing app.<br>
+If you are trying an 'unversioned' installation, a 'versioned' installation might be possible.)");
 
 void Installer::closeEvent(QCloseEvent *event)
 {
@@ -37,6 +38,7 @@ Installer::Installer(QLocale locale, QWidget *parent)
         return;
     }
     app_initialized = true;
+    versioned_app = appinfo.APPNAME + "-" + appinfo.APPVERSION;
 
     // Set application name in GUI
     ui->label_title->setText(ui->label_title->text().arg(appinfo.APPNAME, appinfo.APPLONGNAME));
@@ -248,8 +250,8 @@ void Installer::setInstallPath(QString ipath)
         ui->installPath->setText(ipath);
         dst_dir = ipath;
     }
-    QString app_dstdir;
-    app_dstdir = dst_dir.absoluteFilePath(appinfo.APPNAME + "-" + appinfo.APPVERSION);
+
+    QString app_dstdir{dst_dir.absoluteFilePath(versioned_app)};
     if ( QFileInfo::exists(app_dstdir) ) {
         if ( !QFileInfo{app_dstdir}.isDir() ) {
             print_line(tr("Destination not a folder: %1").arg(app_dstdir), true);
@@ -266,10 +268,10 @@ void Installer::setInstallPath(QString ipath)
         print_line(tr("Destination not writable: %1").arg(app_dstdir), true);
         return;
     }
-    // If doing a full installation, check for existing full, uninstallable installation
-    if ( !ui->unpack_only->isChecked() && !ui->versioned->isChecked() && isInstalled() ) {
+    // If doing an actual installation, check for an existing one
+    if ( !ui->unpack_only->isChecked() && isInstalled() ) {
         ui->removeExisting->show();
-        print_line(tr(ALREADY_INSTALLED).arg(appinfo.APPNAME), true);
+        print_line(tr(ALREADY_INSTALLED).arg(ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME), true);
         return;
     }
     // Check that the installation directory is empty
@@ -295,7 +297,9 @@ void Installer::setInstallPath(QString ipath)
 void Installer::uninstallExisting()
 {
     // Try to remove the installation in app_dir
-    QProcess::execute(uninstall_exe);
+    QProcess process;
+    process.startCommand(uninstall_exe);
+    process.waitForFinished();
     setInstallPath();
 }
 

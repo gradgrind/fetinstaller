@@ -34,8 +34,10 @@ public:
     QString APPVERSION;
     QStringList BINLINKS;
 #if defined Q_OS_WIN
-    const QString ASSOC_EXT;
-    const QString ASSOC_PROGID;
+    QString ASSOC_EXT;
+    QString ASSOC_PROGID;
+    QString Publisher;
+    QString WebLink;
 #else
     QString EXECLINE; // for .desktop file
 #endif

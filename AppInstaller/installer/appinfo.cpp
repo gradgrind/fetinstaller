@@ -93,6 +93,12 @@ bool AppInfo::init(QLocale locale)
     if ( !read(ASSOC_PROGID, "ASSOC_PROGID") ) {
         //ASSOC_PROGID = ???;
     }
+    if ( !read(Publisher, "Publisher") ) {
+        //Publisher = ???;
+    }
+    if ( !read(WebLink, "WebLink") ) {
+        //WebLink = ???;
+    }
 #else
     if ( !read(EXECLINE, "EXECLINE") ) {
         //TODO: Versioned Exec lines not possible
