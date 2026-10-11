@@ -477,9 +477,10 @@ void Installer::handleCopyingFinished()
             }
             if ( fail ) {
                 for ( const auto& f : std:: as_const(localfiles) ) {
-                    if ( !QFile::remove(f) ) {
-                        print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
-                    }
+                    if ( f.startsWith("+++") ) {
+                        if ( removeSpecial(f) ) continue;
+                    } else if ( QFile::remove(f) ) continue;
+                    print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
                 }
                 ui->launch->setChecked(false);
             }

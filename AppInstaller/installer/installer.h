@@ -98,6 +98,7 @@ private:
     bool preRegister();
     bool registerApp();
     QString addedFileType();
+    bool removeSpecial(QString item);
 
     QPlainTextEdit* textOutput{nullptr};
     QStringList copyErrors;

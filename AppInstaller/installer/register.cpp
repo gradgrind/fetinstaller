@@ -54,13 +54,14 @@ bool Installer::preRegister()
 
 bool Installer::registerApp()
 {
-
-    //TODO: Collect registry settings in localfiles, so they can be undone?
+    localfiles.clear(); // collect files added outside the app bundle an registry entries
 
     QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
     QString app{ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME};
     // Register uninstaller.
-    regsettings.beginGroup("Microsoft/Windows/CurrentVersion/Uninstall/" + app);
+    QString app_uninstall_reg{"Microsoft/Windows/CurrentVersion/Uninstall/" + app};
+    regsettings.beginGroup(app_uninstall_reg);
+    localfiles.append("***" + app_uninstall_reg)
 
     // The app folders are versioned regardless of whether the installation is versioned.
     QString idir{QDir::toNativeSeparators(app_dir.path())};
@@ -84,15 +85,20 @@ bool Installer::registerApp()
     regsettings.endGroup();
 
     if ( mimefiles && !ui->versioned->isChecked() ) {
-        regsettings.beginGroup("Classes");
-        regsettings.setValue(appinfo.ASSOC_EXT + "/OpenWithProgIds/" + appinfo.ASSOC_PROGID, "");
-        regsettings.setValue(appinfo.ASSOC_PROGID + "/shell/open/FriendlyAppName", appinfo.APPNAME + " " + appinfo.APPVERSION);
-        QString appPath{"\"" + idir + "\\" + appinfo.APPEXEC + "\""};
-        regsettings.setValue(appinfo.ASSOC_PROGID + "/shell/open/command/.", appPath + " \"%1\"");
-        regsettings.setValue(appinfo.ASSOC_PROGID + "/DefaultIcon/.", appPath + ",0");
-    }
+        QString key_c{Classes/"};
+        QString key_c1{key_c + appinfo.ASSOC_EXT + "/OpenWithProgIds/" + appinfo.ASSOC_PROGID};
+        localfiles.append("+++reg:" + key_c1);
+        regsettings.setValue(key_c1, "");
 
-    localfiles.clear(); // collect files added outside the app bundle
+        QString key_c2{key_c + appinfo.ASSOC_PROGID};
+        localfiles.append("+++reg:" + key_c2);
+        regsettings.beginGroup(key_c2);
+        regsettings.setValue("shell/open/FriendlyAppName", appinfo.APPNAME + " " + appinfo.APPVERSION);
+        QString appPath{"\"" + idir + "\\" + appinfo.APPEXEC + "\""};
+        regsettings.setValue("shell/open/command/.", appPath + " \"%1\"");
+        regsettings.setValue("DefaultIcon/.", appPath + ",0");
+        regsettings.endGroup();
+    }
 
     // Start menu entry
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
@@ -132,6 +138,14 @@ QString Installer::addedFileType()
             NULL                    // Not used
             );
     return appinfo.ASSOC_EXT;
+}
+
+bool Installer::removeSpecial(QString item)
+{
+    if ( item.startsWith("+++reg:") ) {
+        QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
+        regsettings.remove(item.sliced(7));
+    }
 }
 
 #elif defined Q_OS_LINUX
@@ -404,6 +418,11 @@ QString Installer::addedFileType()
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
     QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
     return appinfo.APPLICATION;
+}
+
+bool Installer::removeSpecial(QString item)
+{
+    return true; // there are no entries which need acting on here
 }
 
 #else
