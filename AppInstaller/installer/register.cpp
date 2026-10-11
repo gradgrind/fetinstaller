@@ -48,7 +48,6 @@ bool Installer::preRegister()
 
 bool Installer::registerApp()
 {
-
     QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
     QString app{ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME};
     // Register uninstaller.
@@ -78,6 +77,7 @@ bool Installer::registerApp()
 
     regsettings.endGroup();
 
+    // File-type association
     if ( !appinfo.ASSOC_EXT.isEmpty() && !ui->versioned->isChecked() ) {
         QString key_c{"Classes/"};
         QString key_c1{key_c + appinfo.ASSOC_EXT + "/OpenWithProgIds/" + appinfo.ASSOC_PROGID};
@@ -92,6 +92,8 @@ bool Installer::registerApp()
         regsettings.setValue("shell/open/command/.", appPath + " \"%1\"");
         regsettings.setValue("DefaultIcon/.", appPath + ",0");
         regsettings.endGroup();
+
+        localfiles.append("+++file-type:" + appinfo.ASSOC_EXT);
     }
 
     // Start menu entry
@@ -121,7 +123,7 @@ bool Installer::registerApp()
     return true;
 }
 
-QString Installer::addedFileType()
+void Installer::addedFileType()
 {
     // The SHChangeNotify function allows the association of the
     // icons with the file type to be changed immediately.
@@ -131,7 +133,6 @@ QString Installer::addedFileType()
             NULL,                   // Item that changed
             NULL                    // Not used
             );
-    return appinfo.ASSOC_EXT;
 }
 
 bool Installer::removeSpecial(QString item)
@@ -145,6 +146,11 @@ bool Installer::removeSpecial(QString item)
 QString Installer::get_execpath(QDir dir)
 {
     return dir.absoluteFilePath(appinfo.APPEXEC);
+}
+
+void Installer::update_desktop_database()
+{
+    // No action is necessary.
 }
 
 #elif defined Q_OS_LINUX
@@ -294,7 +300,7 @@ bool Installer::preRegister()
                 QString mime_path{shareDir.absoluteFilePath(mrpath)};
                 registrationList.append(
                     {mfile, mime_path, tr("Install mime file: '%1'").arg(mime_path), R_COPY});
-                localfiles.append("+++file-type:" + addedFileType()); // uninstaller flag
+                localfiles.append("+++file-type:" + appinfo.APPMIME); // uninstaller flag
 
                 //TODO: Only register the svg icon?
 
@@ -417,14 +423,13 @@ bool Installer::registerApp()
     return true;
 }
 
-QString Installer::addedFileType()
+void Installer::addedFileType()
 {
     print_line(tr("Update icon cache"));
     QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
     print_line(tr("Update mime database"));
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
     QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
-    return appinfo.APPLICATION;
 }
 
 bool Installer::removeSpecial(QString item)
@@ -435,6 +440,13 @@ bool Installer::removeSpecial(QString item)
 QString Installer::get_execpath(QDir dir)
 {
     return dir.absoluteFilePath("bin/" + appinfo.APPEXEC);
+}
+
+void Installer::update_desktop_database()
+{
+    print_line(tr("Update desktop database"));
+    QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
+    QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
 }
 
 #else

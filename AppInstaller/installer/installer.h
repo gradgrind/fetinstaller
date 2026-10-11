@@ -96,10 +96,11 @@ private:
     bool isInstalled(QString version = {});
     bool preRegister();
     bool registerApp();
-    QString addedFileType();
+    void addedFileType();
     bool removeSpecial(QString item);
     bool missingFileTypeAssociation();
     QString get_execpath(QDir dir);
+    void update_desktop_database();
 
     QPlainTextEdit* textOutput{nullptr};
     QStringList copyErrors;
