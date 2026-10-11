@@ -40,6 +40,7 @@ public:
     QString WebLink;
 #else
     QString EXECLINE; // for .desktop file
+    //TODO: ICONLINE for .desktop file?
 #endif
 };
 

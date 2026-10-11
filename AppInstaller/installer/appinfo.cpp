@@ -63,9 +63,6 @@ bool AppInfo::init(QLocale locale)
     if ( !read(APPNAME, "APPNAME", true) )
         return false;
 
-    if ( !read(EXECDIR, "EXECDIR", true) )
-        return false;
-
     if ( !read(APPVERSION, "VERSION", true) )
         return false;
 
@@ -86,6 +83,7 @@ bool AppInfo::init(QLocale locale)
         BINLINKS = binlinks.split(',');
     }
 #if defined Q_OS_WIN
+    EXECDIR = "";
     //TODO
     if ( !read(ASSOC_EXT, "ASSOC_EXT") ) {
         //ASSOC_EXT = ???;
@@ -100,6 +98,7 @@ bool AppInfo::init(QLocale locale)
         //WebLink = ???;
     }
 #else
+    EXECDIR = "bin/";
     if ( !read(EXECLINE, "EXECLINE") ) {
         //TODO: Versioned Exec lines not possible
     }

@@ -286,10 +286,19 @@ void Installer::setInstallPath(QString ipath)
         return;
     }
     // Check registration possible,if required
-    if ( !preRegister() ) {
+    if ( ui->unpack_only->isChecked() ) {
+        // no "registration" of any sort
         print_line("");
-        print_line(tr("--> 'Registration' not possible."), true);
-        return;
+        print_line(tr("Warning: the app will be unpacked only, there will be no system integration."), true);
+    } else {
+        if ( !preRegister() ) {
+            print_line("");
+            print_line(tr("--> 'Registration' not possible."), true);
+            return;
+        }
+        if ( ui->versioned->isChecked() && missingFileTypeAssociation() ) {
+            print_line(tr("Warning: no file-type association"), true);
+        }
     }
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
@@ -431,18 +440,49 @@ void Installer::handleCopyingFinished()
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     print_line("");
     if ( copyErrors.isEmpty() ) {
-        if ( registerApp() ) {
+        if ( ui->unpack_only->isChecked() ) {
             installationPartial = false; // for page_4 handler => don't show page 4
-            print_line(tr("Installation successful!"));
+            print_line(tr("Unpacking successful!"));
             ui->launch->setEnabled(true);
         } else {
-            print_line(tr("App registration failed."), true);
-            for ( const auto& f : std:: as_const(localfiles) ) {
-                if ( !QFile::remove(f) ) {
-                    print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
+            bool fail{false};
+            if ( registerApp() ) {
+                // Open file to record files installed outside the installation directory.
+                QFile file_log{app_dir.absoluteFilePath("system_files")};
+                if ( file_log.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
+                    if ( mimefiles && !ui->versioned->isChecked() ) {
+                        localfiles.append("+++file-type:" + addedFileType());
+                    }
+
+                    QTextStream log_stream(&file_log);
+                    for ( const auto& f : std:: as_const(localfiles) ) {
+                        log_stream << f << "\n";
+                    }
+                    file_log.close();
+
+                    print_line(tr("Update desktop database"));
+                    QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
+                    QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
+
+                    installationPartial = false; // for page_4 handler => don't show page 4
+                    print_line(tr("Installation successful!"));
+                    ui->launch->setEnabled(true);
+                } else {
+                    print_line(tr("ERROR, could not create the 'system_files' list"), true);
+                    fail = true;
                 }
+            } else {
+                print_line(tr("App registration failed."), true);
+                fail = true;
             }
-            ui->launch->setChecked(false);
+            if ( fail ) {
+                for ( const auto& f : std:: as_const(localfiles) ) {
+                    if ( !QFile::remove(f) ) {
+                        print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
+                    }
+                }
+                ui->launch->setChecked(false);
+            }
         }
     } else {
         for ( const auto& e : std::as_const(copyErrors) ) {
