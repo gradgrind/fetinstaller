@@ -79,20 +79,19 @@ bool AppInfo::init(QLocale locale)
         BINLINKS = binlinks.split(',');
     }
 #if defined Q_OS_WIN
-    EXECDIR = "";
     read(ASSOC_EXT, "ASSOC_EXT");
     read(ASSOC_PROGID, "ASSOC_PROGID");
     read(Publisher, "Publisher");
     read(WebLink, "WebLink");
 #else
-    EXECDIR = "bin/";
     if ( !read(EXECLINE, "EXECLINE") ) {
         //TODO: Versioned Exec lines not possible
     }
 #endif
 
     // Get the long name for the application from the .desktop file.
-    //TODO: On Windows this will probably need modifying!
+    //TODO: For a Windows-only app there will (presumably) be no .desktop file, so
+    // some other method would be needed.
 
     QString dconf{SOURCE_DIR.filePath("share/applications/" + APPLICATION + ".desktop")};
     if ( !QFileInfo{dconf}.isFile() ) {
