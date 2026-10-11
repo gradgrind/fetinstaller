@@ -15,8 +15,7 @@ static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
 
 static const char *ALREADY_INSTALLED = QT_TRANSLATE_NOOP("Installer", R"(
 %1 is already installed.<br>
-To proceed, uninstall the existing app.<br>
-If you are trying an 'unversioned' installation, a 'versioned' installation might be possible.)");
+To proceed, uninstall the existing app.)");
 
 void Installer::closeEvent(QCloseEvent *event)
 {
@@ -271,7 +270,12 @@ void Installer::setInstallPath(QString ipath)
     // If doing an actual installation, check for an existing one
     if ( !ui->unpack_only->isChecked() && isInstalled() ) {
         ui->removeExisting->show();
-        print_line(tr(ALREADY_INSTALLED).arg(ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME), true);
+        if ( ui->versioned->isChecked() ) {
+            print_line(tr(ALREADY_INSTALLED).arg(versioned_app), true);
+        } else {
+            print_line(tr(ALREADY_INSTALLED).arg(appinfo.APPNAME), true);
+            print_line(tr("A 'versioned' installation might, however, be possible."));
+        }
         return;
     }
     // Check that the installation directory is empty
@@ -297,7 +301,7 @@ void Installer::setInstallPath(QString ipath)
             return;
         }
         if ( ui->versioned->isChecked() && missingFileTypeAssociation() ) {
-            print_line(tr("Warning: no file-type association"), true);
+            print_line(tr("Warning: this 'versioned' installation will have no file-type association"), true);
         }
     }
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
@@ -450,10 +454,6 @@ void Installer::handleCopyingFinished()
                 // Open file to record files installed outside the installation directory.
                 QFile file_log{app_dir.absoluteFilePath("system_files")};
                 if ( file_log.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
-                    if ( mimefiles && !ui->versioned->isChecked() ) {
-                        localfiles.append("+++file-type:" + addedFileType());
-                    }
-
                     QTextStream log_stream(&file_log);
                     for ( const auto& f : std:: as_const(localfiles) ) {
                         log_stream << f << "\n";

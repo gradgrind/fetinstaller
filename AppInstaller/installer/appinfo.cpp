@@ -72,31 +72,18 @@ bool AppInfo::init(QLocale locale)
     if ( !read(APPEXEC, "APPEXEC") ) {
         APPEXEC = APPLICATION;
     }
-    if ( !read(APPMIME, "APPMIME") ) {
-        APPMIME = APPLICATION;
-    }
-    if ( !read(APPICON, "APPICON") ) {
-        APPICON = APPLICATION;
-    }
+    read(APPMIME, "APPMIME");
+    read(APPICON, "APPICON");
     QString binlinks;
     if ( read(binlinks, "BINLINKS") ) {
         BINLINKS = binlinks.split(',');
     }
 #if defined Q_OS_WIN
     EXECDIR = "";
-    //TODO
-    if ( !read(ASSOC_EXT, "ASSOC_EXT") ) {
-        //ASSOC_EXT = ???;
-    }
-    if ( !read(ASSOC_PROGID, "ASSOC_PROGID") ) {
-        //ASSOC_PROGID = ???;
-    }
-    if ( !read(Publisher, "Publisher") ) {
-        //Publisher = ???;
-    }
-    if ( !read(WebLink, "WebLink") ) {
-        //WebLink = ???;
-    }
+    read(ASSOC_EXT, "ASSOC_EXT");
+    read(ASSOC_PROGID, "ASSOC_PROGID");
+    read(Publisher, "Publisher");
+    read(WebLink, "WebLink");
 #else
     EXECDIR = "bin/";
     if ( !read(EXECLINE, "EXECLINE") ) {

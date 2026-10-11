@@ -94,11 +94,11 @@ private:
     void print_line(QString line, bool bold = false);
     void progressOne();
     bool isInstalled(QString version = {});
-    bool missingFileTypeAssociation();
     bool preRegister();
     bool registerApp();
     QString addedFileType();
     bool removeSpecial(QString item);
+    bool missingFileTypeAssociation();
 
     QPlainTextEdit* textOutput{nullptr};
     QStringList copyErrors;
@@ -113,12 +113,6 @@ private:
     QDir app_dir; // within dst_dir, the actual installation directory
     QString versioned_app; // app name + "-" + app version
     QString uninstall_exe;
-#if defined Q_OS_WIN
-    //TODO
-#else
-    QString mime_path;
-    bool mimefiles; // flag for cache updating
-#endif
     bool bugflag{false};
     bool scanComplete;
     bool scanOk;

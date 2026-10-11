@@ -27,34 +27,27 @@ bool Installer::isInstalled(QString dir)
         }
         return false;
     }
-    QFileInfo uinfo{dir + "/" + appinfo.EXECDIR + "/app_uninstall.ps1"};
-    uninstall_exe = uninstall_command.arg(QDir::toNativeSeparators(uinfo.filePath()));
-    // The app counts as "installed" only if uinfo exists.
-    return uinfo.isFile();
+    uninstall_exe = uninstall_command.arg(QDir::toNativeSeparators(dir));
+    // The app counts as "installed" only if the uninstaller exists.
+    return QFileInfo{dir + "/" +  "app_uninstall.ps1"}.isFile();
 }
 
 bool Installer::missingFileTypeAssociation()
 {
-    if ( mimefiles ) {
-        QSettings regsettings{
-            "HKEY_CURRENT_USER\\Software\\Classes\\" + appinfo.ASSOC_EXT + "\\OpenWithProgIds", QSettings::NativeFormat};
-        return regsettings.childKeys().isEmpty();
-    }
-    return false;
+    if ( appinfo.ASSOC_EXT.isEmpty() ) return false;
+    QSettings regsettings{
+        "HKEY_CURRENT_USER\\Software\\Classes\\" + appinfo.ASSOC_EXT + "\\OpenWithProgIds", QSettings::NativeFormat};
+    return regsettings.childKeys().isEmpty();
 }
 
 bool Installer::preRegister()
 {
-    //TODO: is this still relevant for Windows in some way, or is something else necessary?
-    registrationList.clear();
-
-    mimefiles = !appinfo.ASSOC_EXT.isEmpty();
+    localfiles.clear(); // collect files added outside the app bundle an registry entries
     return true;
 }
 
 bool Installer::registerApp()
 {
-    localfiles.clear(); // collect files added outside the app bundle an registry entries
 
     QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
     QString app{ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME};
@@ -71,6 +64,7 @@ bool Installer::registerApp()
     regsettings.setValue("Publisher", appinfo.Publisher);
     regsettings.setValue("WebLink", appinfo.WebLink);
     regsettings.setValue("DisplayVersion", appinfo.APPVERSION);
+    regsettings.setValue("UninstallLocation", idir);
     // Installation size
     qint64 size{0};
     for ( const auto &dirEntry : QDirListing(
@@ -78,14 +72,14 @@ bool Installer::registerApp()
              QDirListing::IteratorFlag::FilesOnly
                  | QDirListing::IteratorFlag::Recursive
                  | QDirListing::IteratorFlag::IncludeHidden) ) { //TODO: IncludeHidden?
-        size += dirEntry.size("UninstallLocation", idir);
+        size += dirEntry.size();
     }
-    regsettings.setValue("EstimatedSize", "", size / 1024, true); // Windows uses KiB (1024 bytes)
+    regsettings.setValue("EstimatedSize", size / 1024); // Windows uses KiB (1024 bytes)
 
     regsettings.endGroup();
 
-    if ( mimefiles && !ui->versioned->isChecked() ) {
-        QString key_c{Classes/"};
+    if ( !appinfo.ASSOC_EXT.isEmpty() && !ui->versioned->isChecked() ) {
+        QString key_c{"Classes/"};
         QString key_c1{key_c + appinfo.ASSOC_EXT + "/OpenWithProgIds/" + appinfo.ASSOC_PROGID};
         localfiles.append("+++reg:" + key_c1);
         regsettings.setValue(key_c1, "");
@@ -129,8 +123,8 @@ bool Installer::registerApp()
 
 QString Installer::addedFileType()
 {
-    ; The SHChangeNotify function allows the association of the
-        ; icons with the file type to be changed immediately.
+    // The SHChangeNotify function allows the association of the
+    // icons with the file type to be changed immediately.
         SHChangeNotify(
             SHCNE_ASSOCCHANGED,     // Event ID
             SHCNF_IDLIST,           // Flags
@@ -165,7 +159,7 @@ bool Installer::isInstalled(QString dir)
         // Seek installation directory, and hence uninstaller.
         uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "/app_uninstall"};
     } else {
-        uinfo = QFileInfo{dir + "/" + appinfo.EXECDIR + "/app_uninstall"};
+        uinfo = QFileInfo{dir + "/" + appinfo.EXECDIR + "app_uninstall"};
     }
     uninstall_exe = uinfo.filePath();
     // The app counts as "installed" only if this exists and is executable.
@@ -174,7 +168,10 @@ bool Installer::isInstalled(QString dir)
 
 bool Installer::missingFileTypeAssociation()
 {
-    return mimefiles && !QFileInfo::exists(mime_path);
+    if ( appinfo.APPMIME.isEmpty() ) return false;
+    QString mrpath{"mime/packages/" + appinfo.APPMIME + ".xml"};
+    QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
+    return !QFileInfo{shareDir.absoluteFilePath(mrpath)}.isFile();
 }
 
 bool Installer::preRegister()
@@ -183,6 +180,7 @@ bool Installer::preRegister()
     // Test that they are not already occupied.
 
     registrationList.clear();
+    localfiles.clear();
 
     // For ".desktop" file (start menu, etc.)
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
@@ -191,10 +189,6 @@ bool Installer::preRegister()
     QDir binDir{QDir::home().absoluteFilePath(".local/bin")};
 
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
-    QString mrpath{"mime/packages/" + appinfo.APPLICATION + ".xml"};
-    QString mfile{app_dir.absoluteFilePath("share/" + mrpath)};
-    mimefiles = QFileInfo{src_dir.absoluteFilePath("share/" + mrpath)}.isFile();
-    mime_path = shareDir.absoluteFilePath(mrpath);
     bool ok{true};
 
     if ( ui->versioned->isChecked() ) {
@@ -284,34 +278,43 @@ bool Installer::preRegister()
                  tr("Add 'Start' menu entry: '%1'").arg(desktopPath), R_COPY});
         }
 
-        // Add mime-type and icons, if present
-        if ( mimefiles ) {
-            registrationList.append(
-                {mfile, mime_path, tr("Install mime file: '%1'").arg(mime_path), R_COPY});
-
-            //TODO: Only register the svg icon?
-
-            // Add icon link(s).
-            // In principle there can be "apps" icons and "mimetypes" icons, but I haven't found any
-            // use for the "mimetypes" icons. The documentation says "Icons to be used as file icons
-            // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
-            // show the icon even if it is only in "apps".
-            // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
-            // However, it does work in Cinnamon if the app's .xml file in share/mime/packages gets the
-            // additional line:
-            //    <generic-icon name="$APPLICATION"/> (after the line: <icon name="$APPLICATION"/>)
-            // NOTE: Only icons needed for the the mime-type should be in "share/icons".
-            QDir iconsource{src_dir.absoluteFilePath("share/icons")};
-            QDir iconinsrc{app_dir.absoluteFilePath("share/icons")};
-            QDir icondest{shareDir.absoluteFilePath("icons")};
-            for (const auto& f : QDirListing(
-                     iconsource.path(),
-                     QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive)) {
-                QString rpath{iconsource.relativeFilePath(f.absoluteFilePath())};
-                QString sfile{iconinsrc.absoluteFilePath(rpath)};
-                QString dpath{icondest.absoluteFilePath(rpath)};
+        // Add mime-type and icons, if available
+        if ( !appinfo.APPMIME.isEmpty() ) {
+            QString mrpath{"mime/packages/" + appinfo.APPMIME + ".xml"};
+            QString mfile{app_dir.absoluteFilePath("share/" + mrpath)};
+            if ( !QFileInfo{src_dir.absoluteFilePath("share/" + mrpath)}.isFile() ) {
+                print_line(tr("Mime-type file missing in installation bundle: '%1'").arg(mfile), true);
+                ok = false;
+            } else {
+                QString mime_path{shareDir.absoluteFilePath(mrpath)};
                 registrationList.append(
-                    {sfile, dpath, tr("Add icon file: '%1'").arg(dpath), R_LINK});
+                    {mfile, mime_path, tr("Install mime file: '%1'").arg(mime_path), R_COPY});
+                localfiles.append("+++file-type:" + addedFileType()); // uninstaller flag
+
+                //TODO: Only register the svg icon?
+
+                // Add icon link(s).
+                // In principle there can be "apps" icons and "mimetypes" icons, but I haven't found any
+                // use for the "mimetypes" icons. The documentation says "Icons to be used as file icons
+                // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
+                // show the icon even if it is only in "apps".
+                // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
+                // However, it does work in Cinnamon if the app's .xml file in share/mime/packages gets the
+                // additional line:
+                //    <generic-icon name="$APPLICATION"/> (after the line: <icon name="$APPLICATION"/>)
+                // NOTE: Only icons needed for the the mime-type should be in "share/icons".
+                QDir iconsource{src_dir.absoluteFilePath("share/icons")};
+                QDir iconinsrc{app_dir.absoluteFilePath("share/icons")};
+                QDir icondest{shareDir.absoluteFilePath("icons")};
+                for (const auto& f : QDirListing(
+                         iconsource.path(),
+                         QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive)) {
+                    QString rpath{iconsource.relativeFilePath(f.absoluteFilePath())};
+                    QString sfile{iconinsrc.absoluteFilePath(rpath)};
+                    QString dpath{icondest.absoluteFilePath(rpath)};
+                    registrationList.append(
+                        {sfile, dpath, tr("Add icon file: '%1'").arg(dpath), R_LINK});
+                }
             }
         }
 
@@ -348,7 +351,6 @@ bool Installer::registerApp()
     // Anything else may need special treatment, or no handling at all.
 
     // Add files to ~/.local
-    localfiles.clear();
     QDir d0;
     bool ok{true};
     for ( const auto& reg : std::as_const(registrationList) ) {
