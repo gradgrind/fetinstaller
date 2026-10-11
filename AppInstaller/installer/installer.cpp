@@ -99,7 +99,7 @@ void Installer::page_0()
     src_dir = appinfo.SOURCE_DIR;
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
-    if ( !QFileInfo{appinfo.EXECDIR + "/" + appinfo.APPEXEC}.isExecutable() ) {
+    if ( !QFileInfo{get_execpath(src_dir)}.isExecutable() ) {
         addBoldLine(ui->messages_0, "BUG: installation files not found.");
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
@@ -521,7 +521,7 @@ void Installer::page_4()
         // Installation complete, don't switch to the additional page
         if ( ui->launch->isChecked() ) {
             QProcess runapp;
-            runapp.setProgram(app_dir.filePath(appinfo.EXECDIR + appinfo.APPEXEC));
+            runapp.setProgram(get_execpath(app_dir));
             runapp.startDetached();
         }
         qApp->quit();

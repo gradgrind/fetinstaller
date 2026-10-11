@@ -99,6 +99,7 @@ private:
     QString addedFileType();
     bool removeSpecial(QString item);
     bool missingFileTypeAssociation();
+    QString get_execpath(QDir dir);
 
     QPlainTextEdit* textOutput{nullptr};
     QStringList copyErrors;

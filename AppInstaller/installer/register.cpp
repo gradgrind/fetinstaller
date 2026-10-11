@@ -142,6 +142,11 @@ bool Installer::removeSpecial(QString item)
     }
 }
 
+QString Installer::get_execpath(QDir dir)
+{
+    return dir.absoluteFilePath(appinfo.APPEXEC);
+}
+
 #elif defined Q_OS_LINUX
 
 bool Installer::isInstalled(QString dir)
@@ -159,7 +164,7 @@ bool Installer::isInstalled(QString dir)
         // Seek installation directory, and hence uninstaller.
         uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "/app_uninstall"};
     } else {
-        uinfo = QFileInfo{dir + "/" + appinfo.EXECDIR + "app_uninstall"};
+        uinfo = QFileInfo{dir + "/bin/app_uninstall"};
     }
     uninstall_exe = uinfo.filePath();
     // The app counts as "installed" only if this exists and is executable.
@@ -195,7 +200,7 @@ bool Installer::preRegister()
         // Add versioned links to executables.
         // Note that there will be no mime type or icons if there is no unversioned installation!
         for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
-            QString execrpath{appinfo.EXECDIR + b};
+            QString execrpath{"bin/" + b};
             QString execfile{app_dir.absoluteFilePath(execrpath)};
             if ( !QFileInfo{src_dir.filePath(execrpath)}.isExecutable() ) {
                 print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
@@ -253,7 +258,7 @@ bool Installer::preRegister()
     } else {
         // Add "unversioned" links to executables.
         for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
-            QString execrpath{appinfo.EXECDIR + b};
+            QString execrpath{"bin/" + b};
             QString execfile{app_dir.absoluteFilePath(execrpath)};
             if ( !QFileInfo{src_dir.filePath(execrpath)}.isExecutable() ) {
                 print_line(tr("Executable missing in installation bundle: '%1'").arg(execrpath), true);
@@ -425,6 +430,11 @@ QString Installer::addedFileType()
 bool Installer::removeSpecial(QString item)
 {
     return true; // there are no entries which need acting on here
+}
+
+QString Installer::get_execpath(QDir dir)
+{
+    return dir.absoluteFilePath("bin/" + appinfo.APPEXEC);
 }
 
 #else
