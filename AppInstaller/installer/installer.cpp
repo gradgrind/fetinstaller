@@ -460,9 +460,19 @@ void Installer::handleCopyingFinished()
                     }
                     file_log.close();
 
+
+
+                    //TODO!: I have probably already done the file-type association updates, but if
+                    // writing to system_files fails, I will undo the installation, which may
+                    // require a rerun of the file-type associations updates. It would be better to
+                    // do them only when it is clear that the writing works!
+
+                    //TODO!: This is Linux only ...
                     print_line(tr("Update desktop database"));
                     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
                     QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
+
+
 
                     installationPartial = false; // for page_4 handler => don't show page 4
                     print_line(tr("Installation successful!"));
