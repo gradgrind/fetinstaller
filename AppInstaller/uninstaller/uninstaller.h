@@ -40,6 +40,8 @@ private:
     void print_line(QString line, bool bold = false);
     void progressOne();
     void unregisterApp();
+    void removeSpecials(const QStringList specials);
+
     QStringList unregister_failed;
     QDir basedir;
     bool bugflag{false};

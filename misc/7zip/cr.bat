@@ -7,5 +7,5 @@ del  archive.exe
 copy /b ..\bin\7zSD.sfx + config2.txt +  archive.7z  archive.exe
 
 # In powershell:
-# cmd /c 'copy /b ..\bin\7zSD.sfx + config2.txt +  archive.7z  archive.exe'
+# cmd /c "copy /b ..\bin\7zSD.sfx + 7z_config.txt +  archive.7z  $app-$v.exe"
 

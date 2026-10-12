@@ -53,7 +53,7 @@ bool Installer::registerApp()
     // Register uninstaller.
     QString app_uninstall_reg{"Microsoft/Windows/CurrentVersion/Uninstall/" + app};
     regsettings.beginGroup(app_uninstall_reg);
-    localfiles.append("***" + app_uninstall_reg)
+    localfiles.append("+++reg:" + app_uninstall_reg);
 
     // The app folders are versioned regardless of whether the installation is versioned.
     QString idir{QDir::toNativeSeparators(app_dir.path())};

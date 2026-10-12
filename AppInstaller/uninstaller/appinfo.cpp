@@ -19,9 +19,9 @@ bool AppInfo::init()
     // Determine the installation's base directory
     appdir.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
 #if defined Q_OS_WIN
-    // The uninstaller is expected in the root directory of the installation.
+    // The uninstaller is expected to be in the root directory of the installation.
 #else
-    // The uninstaller is expected in the "bin" directory of the installation.
+    // The uninstaller is expected to be in the "bin" directory of the installation.
     appdir.cdUp();
 #endif
 
@@ -62,20 +62,52 @@ err:
     if ( !appcopy.isEmpty() ) {
         // Copy the necessary files to a temporary directory so that the uninstaller can be run from there.
         QDir tdir{appcopy};
-        for ( const auto &dirEntry : QDirListing(basedir.path(), QDirListing::IteratorFlag::FilesOnly) ) {
+        if ( !tdir.isEmpty() ) {
+            QMessageBox::critical(
+                nullptr,
+                tr("Critical Error"),
+                tr("Temporary directory is not empty: '%1'").arg(appcopy));
+            return false;
+        }
+        for ( const auto &dirEntry : QDirListing(
+                 basedir.absolutePath(),
+                 QDirListing::IteratorFlag::FilesOnly) ) {
             // (faster than using name filters)
             const QString fileName = dirEntry.fileName();
-            if ( fileName.endsWith(".dll") || fileName == "qt.conf" || fileName == "app_uninstall.exe") ) {
-                // In the case of a link this copies the target file, on Windows there are unlikely
+            if ( fileName.endsWith(".dll") || fileName == "qt.conf" || fileName == "app_uninstall.exe" ) {
+                // In the case of a link this copies the target file, but on Windows there are unlikely
                 // to be links among the files copied here (on Linux there would almost certainly
-                // be links):
+                // be links).
                 if ( !QFile::copy(dirEntry.filePath(), tdir.filePath(fileName)) ) {
                     QMessageBox::critical(
                         nullptr,
                         tr("Critical Error"),
                         (tr("Copying uninstaller to temporary folder failed:")
                          + "\n  %1 -> %2")
-                            .arg(dirEntry.filePath(), tdir.filePath(fileName)));
+                            .arg(dirEntry.absoluteFilePath(), tdir.absoluteFilePath(fileName)));
+                    return false;
+                }
+            }
+        }
+        // Add plugins
+        for ( const auto &dirEntry : QDirListing(
+                 basedir.absoluteFilePath("plugins"),
+                 QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive) ) {
+            // (faster than using name filters)
+            const QString filepath = dirEntry.absoluteFilePath();
+            if ( filepath.endsWith(".dll") ) {
+                // In the case of a link this copies the target file, but on Windows there are unlikely
+                // to be links among the files copied here.
+                // Ensure the destination folder exists.
+                tdir.mkpath(basedir.relativeFilePath(dirEntry.absolutePath()));
+                const QString target{tdir.absoluteFilePath(basedir.relativeFilePath(filepath))};
+                if ( !QFile::copy(filepath, target) ) {
+                    QMessageBox::critical(
+                        nullptr,
+                        tr("Critical Error"),
+                        (tr("Copying uninstaller to temporary folder failed:")
+                         + "\n  %1 -> %2")
+                            .arg(filepath, target));
                     return false;
                 }
             }

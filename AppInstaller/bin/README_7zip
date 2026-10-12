@@ -1,0 +1,25 @@
+7-zip can be used to produce self-extracting executables.
+
+Just the lzma pack for 7-zip (downloadable from https://www.7-zip.org/sdk.html)
+is needed, the 7-zip package itself is not necessary, though it might be useful. However, the 7zSD.sfx file which is needed insists on running with
+administrator privileges, which the installer explicitly doesn't want.
+
+This can be overcome by modifying the binary file, adding an appropriate
+"manifest". A suitable one is 7zsd.manifest which can be added in Visual Studio:
+
+"A Win32 resource must be added to your .exe. The type of the resource must be ‘RT_MANIFEST’ and the resource id must be ‘1’. An easy way to do this is with Visual Studio.NET:
+
+    Open your exe in VS (file -> open file)
+    Right click on it and select add resource
+    Click ‘Import…’ from the dialog
+    Select your manifest file
+    In the ‘Resource Type’ field, enter ‘RT_MANIFEST’
+    In the property grid, change the resource ID from ‘101’ to ‘1’.
+    Save the exe.
+"
+
+Perhaps there is a way of doing this without installing the multiple
+GB of Visual Studio?
+
+
+

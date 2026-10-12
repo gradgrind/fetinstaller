@@ -83,17 +83,17 @@ bool AppInfo::init(QLocale locale)
     read(ASSOC_PROGID, "ASSOC_PROGID");
     read(Publisher, "Publisher");
     read(WebLink, "WebLink");
+
+    // Get the long name for the application from the .desktop file.
+    QString dconf{SOURCE_DIR.filePath("_installer_/desktop")};
 #else
     if ( !read(EXECLINE, "EXECLINE") ) {
         //TODO: Versioned Exec lines not possible
     }
-#endif
 
     // Get the long name for the application from the .desktop file.
-    //TODO: For a Windows-only app there will (presumably) be no .desktop file, so
-    // some other method would be needed.
-
     QString dconf{SOURCE_DIR.filePath("share/applications/" + APPLICATION + ".desktop")};
+#endif
     if ( !QFileInfo{dconf}.isFile() ) {
         QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no 'desktop' file: %1").arg(dconf));
         return false;

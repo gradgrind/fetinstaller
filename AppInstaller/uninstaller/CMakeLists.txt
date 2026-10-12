@@ -25,12 +25,6 @@ qt_add_executable(app_uninstall
     appinfo.cpp appinfo.h
 )
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    # Change the executable name so that multiple uninstallers can – if necessary – be placed in
-    # one directory.
-    #set_target_properties(app_uninstall PROPERTIES OUTPUT_NAME "${app_exec}_uninstall")
-endif()
-
 qt_add_translations(
     TARGETS app_uninstall
     MERGE_QT_TRANSLATIONS
@@ -61,8 +55,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         INCLUDE_PLUGINS wayland
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    install(PROGRAMS app_uninstall.bat DESTINATION "${CMAKE_INSTALL_BINDIR}")
-    install(PROGRAMS uninstall.bat DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(PROGRAMS app_uninstall.ps1 DESTINATION "${CMAKE_INSTALL_BINDIR}")
     qt_generate_deploy_app_script(
         TARGET app_uninstall
         OUTPUT_SCRIPT udeploy_script
