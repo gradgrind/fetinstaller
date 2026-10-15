@@ -1,0 +1,7 @@
+# An alternative to "makeself"
+
+This uses "incbin" (https://github.com/graphitemaster/incbin) to include the installer, supplied as "app_bundle.tar.xz", in an executable file. The executable part is in "istart.c". It uses commands from the system (tar, rm) to unpack the archive to a temporary directory, run the actual installer and then delete the temporary directory. It is compiled with "musl-gcc" from "musl" to produce a static binary.
+
+I don't know if this is any better than "makeself", in terms of what it does it's probably rather similar, but in C rather than shell.
+
+With some tweaking it might be usable on Windows ... but it would need to include at least a simple unpacker for xz archives, because the "tar" provided in older Windows doesn't support xz. Later Windows 11 version do apparently include xz support (tar.exe --version)! For older ones it could be added by installing the xz executable in %PATH%. However, it might not be too difficult to include xz embedded in the installer.
