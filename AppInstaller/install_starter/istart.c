@@ -10,9 +10,12 @@
 
 INCBIN(App, "app_bundle.tar.xz");
 
+char* tmpdir;
+
 void error(char *s)
 {
   perror(s);
+  free (tmpdir);
   exit(1);
 }
 
@@ -71,11 +74,11 @@ int main(int argc, char **argv)
 {
     // Note, the compiler/linker may issue a security warning, e.g. GCC:
     // "warning: the use of `tmpnam' is dangerous, better use `mkstemp'"
-    char* tmpdir = tmpnam(NULL);
+    tmpdir = tempnam(NULL, "AppInstaller");
     printf("temporary file name: %s\n", tmpdir);
     if (mkdir(tmpdir, 0700) != 0) {
         fprintf(stderr, "Failed to create temporary directory: %s\n", tmpdir);
-        error("  :");
+        error("");
     }
     //printf("temporary file name: %s\n", P_tmpdir);
 
@@ -130,7 +133,21 @@ int main(int argc, char **argv)
     //TODO: Run installer ...
     system("sleep 5");
 
-    execlp("rm", "rm", "-r", tmpdir, (char*)NULL);
+    int count;
+    char *cmd = NULL;
+    const char *cmd0 = "rm -r \"%s\"";
+    count = asprintf(&cmd, cmd0, tmpdir);
+    printf("The length of the following string will be %i.\n", count);
+    printf("%s\n", cmd);
+    int sysrc = system(cmd);
+    printf("System -> %d\n", sysrc);
+    if ( sysrc != 0 ) {
+        fprintf(stderr, "Failed to remove temporary directory: %s\n", tmpdir);
+        if ( sysrc == -1 ) error("");
+    }
+    free( cmd );
+
+    free (tmpdir);
 
     return 0;
 }
