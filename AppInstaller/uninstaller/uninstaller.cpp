@@ -20,6 +20,7 @@ Uninstaller::Uninstaller(AppInfo& app_info, QWidget *parent)
 {
     ui->setupUi(this);
     ui->stackedWidget->setCurrentIndex(0);
+    setWindowIcon(QIcon(":/icons/uninstaller.svg"));
 
     basedir = app_info.basedir;
 

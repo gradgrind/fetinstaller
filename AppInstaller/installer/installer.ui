@@ -88,7 +88,7 @@
          <enum>Qt::TextFormat::PlainText</enum>
         </property>
         <property name="pixmap">
-         <pixmap resource="installer_resources.qrc">:/icons/icons/installer.svg</pixmap>
+         <pixmap resource="installer_resources.qrc">:/icons/installer.svg</pixmap>
         </property>
         <property name="scaledContents">
          <bool>false</bool>

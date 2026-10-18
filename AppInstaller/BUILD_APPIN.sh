@@ -29,7 +29,11 @@ SCRIPT=$(readlink -f "$0")
 BASEDIR=$(dirname "$SCRIPT")
 cd $BASEDIR
 
+echo
 # Build app, assuming it is in the parent directory
+echo "Build application ..."
+echo
+
 cmake -B build/$APPNAME -S .. -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
 
 if [ $? -ne 0 ]; then
@@ -44,7 +48,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo
 # Build the installer
+echo "Build the installer ..."
+echo
+
 cmake -B build/installer -S installer -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
 
 if [ $? -ne 0 ]; then
@@ -59,7 +67,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo
 # Build the uninstaller
+echo "Build uninstaller ..."
+echo
+
 cmake -B build/uninstaller -S uninstaller -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
 
 if [ $? -ne 0 ]; then
@@ -78,13 +90,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo
+echo "Create app_bundle archive: build/app_bundle.tar.xz"
+echo
+
 cd build/app_bundle
-tar -cJf ../app_bundle.tar.xz
+tar -cJf ../app_bundle.tar.xz *
 
 if [ $? -ne 0 ]; then
     echo "ABORTING 7"
     exit 1
 fi
+
+echo
+echo "Build app installer: $APPNAME-$APPVERSION.run"
+echo
 
 cd ../../appin
 musl-gcc -static -o "../$APPNAME-$APPVERSION.run" appin.c

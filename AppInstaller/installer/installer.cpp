@@ -39,6 +39,10 @@ Installer::Installer(QLocale locale, QWidget *parent)
     app_initialized = true;
     versioned_app = appinfo.APPNAME + "-" + appinfo.APPVERSION;
 
+    src_dir = appinfo.SOURCE_DIR;
+
+    setWindowIcon(QIcon(":/icons/installer.svg"));
+
     // Set application name in GUI
     ui->label_title->setText(ui->label_title->text().arg(appinfo.APPNAME, appinfo.APPLONGNAME));
     ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.APPNAME));
@@ -95,8 +99,6 @@ void Installer::page_0()
     QStringList installationFiles;
     QStringList installationDirs;
     QList<QPair<QString, QString>> installationLinks; // symlinks / Windows shortcuts
-
-    src_dir = appinfo.SOURCE_DIR;
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
     if ( !QFileInfo{get_execpath(src_dir)}.isExecutable() ) {

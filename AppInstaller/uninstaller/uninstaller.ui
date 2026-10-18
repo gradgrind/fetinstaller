@@ -197,7 +197,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="uninstaller_resources.qrc">:/icons/icons/uninstaller.svg</pixmap>
+         <pixmap resource="uninstaller_resources.qrc">:/icons/uninstaller.svg</pixmap>
         </property>
         <property name="scaledContents">
          <bool>false</bool>
