@@ -20,8 +20,15 @@ APPVERSION=$(<../VERSION)
 # Then run this script. It will change its working directory to run in
 # the "AppInstaller" directory.
 
-QTVERSION="6.11.2"
 QTDIR="$HOME/Qt"
+QTVERSION=$(ls -r "$QTDIR" | grep -m 1 ^6.1)
+if [ -z "$QTVERSION" ]; then
+    echo "No suitable Qt installation found in '$QTDIR'"
+    exit 1
+fi
+#QTVERSION="6.12.0"
+echo "Using '$QTDIR/$QTVERSION'"
+echo
 
 export PATH=$QTDIR/Tools/CMake/bin:$PATH
 
@@ -29,7 +36,6 @@ SCRIPT=$(readlink -f "$0")
 BASEDIR=$(dirname "$SCRIPT")
 cd $BASEDIR
 
-echo
 # Build app, assuming it is in the parent directory
 echo "Build application ..."
 echo
@@ -67,6 +73,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Ensure that the "_installer_" directory exists
+mkdir -p build/app_bundle/_installer_
+
 echo
 # Build the uninstaller
 echo "Build uninstaller ..."
@@ -80,7 +89,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Add the installer configuration file
-mkdir -p build/app_bundle/_installer_
 sed "s/%VERSION%/$APPVERSION/g" app.conf > build/app_bundle/_installer_/app.conf
 
 cmake --build build/uninstaller --target install --parallel 6

@@ -13,8 +13,15 @@ APPVERSION=$(<../VERSION)
 # source code.
 # Then run this script. It will run in the "AppInstaller" directory.
 
-QTVERSION="6.11.2"
 QTDIR="$HOME/Qt"
+QTVERSION=$(ls -r "$QTDIR" | grep -m 1 ^6.1)
+if [ -z "$QTVERSION" ]; then
+    echo "No suitable Qt installation found in '$QTDIR'"
+    exit 1
+fi
+#QTVERSION="6.12.0"
+echo "Using '$QTDIR/$QTVERSION'"
+echo
 
 export PATH=$QTDIR/Tools/CMake/bin:$PATH
 
@@ -71,4 +78,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-makeself --xz --nox11 build/app_bundle "build/$APPNAME-$APPVERSION.run" "$APPNAME installer" ./_installer_/app_install
+makeself --xz --nox11 build/app_bundle "$APPNAME-$APPVERSION.run" "$APPNAME installer" ./_installer_/app_install

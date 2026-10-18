@@ -1,8 +1,15 @@
 # Build script for Windows (Powershell) using a standard Qt installation set up
 # by the the Qt online installer.
 
-$QTVERSION = "6.12.0"
 $QTDIR = "C:\Qt"
+$QTVERSION = Get-ChildItem -Path "$QTDIR" -Filter "6.1*" | Select-Object -ExpandProperty Name -Last 1
+#$QTVERSION = "6.12.0"
+if ( [string]::IsNullOrEmpty($QTVERSION) )
+{
+    Write-Host "No suitable Qt installation found in '$QTDIR'"
+    exit 1
+}
+Write-Host "Using '$QTDIR\$QTVERSION'"
 
 cd "$PSScriptRoot"
 $version = Get-Content "..\VERSION"
@@ -15,7 +22,7 @@ cmake -B build\FET -S .. -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" -DCMAK
 
 if ( !$? )
 {
-    Write-Host "ABORTING 1";
+    Write-Host "ABORTING 1"
     exit 1
 }
 
@@ -23,7 +30,7 @@ cmake --build build\FET --target install --parallel 6
 
 if ( !$? )
 {
-    Write-Host "ABORTING 2";
+    Write-Host "ABORTING 2"
     exit 1
 }
 
@@ -32,7 +39,7 @@ cmake -B build\installer -S installer -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\min
 
 if ( !$? )
 {
-    Write-Host "ABORTING 3";
+    Write-Host "ABORTING 3"
     exit 1
 }
 
@@ -40,7 +47,7 @@ cmake --build build\installer --target install --parallel 6
 
 if ( !$? )
 {
-    Write-Host "ABORTING 4";
+    Write-Host "ABORTING 4"
     exit 1
 }
 
@@ -59,7 +66,7 @@ cmake -B build\uninstaller -S uninstaller -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION
 
 if ( !$? )
 {
-    Write-Host "ABORTING 5";
+    Write-Host "ABORTING 5"
     exit 1
 }
 
@@ -67,7 +74,7 @@ cmake --build build\uninstaller --target install --parallel 6
 
 if ( !$? )
 {
-    Write-Host "ABORTING 6";
+    Write-Host "ABORTING 6"
     exit 1
 }
 
