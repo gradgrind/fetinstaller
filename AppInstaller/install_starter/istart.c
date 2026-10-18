@@ -1,4 +1,3 @@
-// Based on:
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -75,7 +74,7 @@ int main(int argc, char **argv)
 {
     // Note, the compiler/linker may issue a security warning, e.g. GCC:
     // "warning: the use of `tmpnam' is dangerous, better use `mkstemp'"
-    tmpdir = tempnam(NULL, "AppInstaller");
+    tmpdir = tempnam(NULL, "AppIn");
     printf("temporary file name: %s\n", tmpdir);
     if (mkdir(tmpdir, 0700) != 0) {
         fprintf(stderr, "Failed to create temporary directory: %s\n", tmpdir);
@@ -102,7 +101,7 @@ int main(int argc, char **argv)
 
     // Parent process
     else if (p > 0) {
-        printf("Spawned 'tar -xZ' as a child process at pid %d\n", p);
+        printf("Spawned 'tar -xJ' as a child process at pid %d\n", p);
 
         close(fd1[0]); // Close reading end of pipe
 
@@ -110,11 +109,8 @@ int main(int argc, char **argv)
         write(fd1[1], &gAppData[0], gAppSize);
         close(fd1[1]);
 
-        //TODO? Wait for child to send a string
+        // Wait for child to finish
         wait(NULL);
-
-
-
     }
 
     // Child process
@@ -127,12 +123,12 @@ int main(int argc, char **argv)
         close(fd1[1]);
 
         // Over-write the child process with the 'tar' binary
-        execlp("tar", "tar", "-xJ", "-C", tmpdir, (char*)NULL);
+        execlp("tar", "tar", "-xJf", "-", "-C", tmpdir, (char*)NULL);
         error("Could not run 'tar'");
     }
 
     //TODO: Run installer ...
-    system("sleep 5");
+    system("sleep 20");
 
     int count;
     char *cmd = NULL;

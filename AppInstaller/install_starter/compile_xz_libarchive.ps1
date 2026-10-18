@@ -28,7 +28,7 @@ cmake -B build\la -S libarchive-3.8.10 -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mi
 
 if ( !$? )
 {
-    Write-Host "ABORTING 1";
+    Write-Host "ABORTING 3";
     exit 1
 }
 
@@ -36,6 +36,6 @@ cmake --build build\la --target install --parallel 6
 
 if ( !$? )
 {
-    Write-Host "ABORTING 2";
+    Write-Host "ABORTING 4";
     exit 1
 }
