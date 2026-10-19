@@ -380,7 +380,6 @@ bool Installer::registerApp()
                 print_line(reg.message);
                 continue;
             }
-
         } else if ( reg.type == R_WRITE ) {
             // Write the file
             QFile fw(reg.destination);
@@ -388,6 +387,7 @@ bool Installer::registerApp()
                 QTextStream out(&fw);
                 out << reg.source;
                 fw.close();
+                localfiles.append(reg.destination);
                 print_line(reg.message);
                 continue;
             }
