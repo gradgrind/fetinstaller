@@ -12,11 +12,14 @@ endif()
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 
+set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_uninstall.rc")
+
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES de)
 set(CMAKE_AUTORCC ON)
 
 qt_add_executable(app_uninstall
     WIN32 MACOSX_BUNDLE
+    ${app_icon_resource_windows}
     app_uninstall.cpp
     uninstaller.h uninstaller.cpp uninstaller.ui
     uninstaller_resources.qrc
