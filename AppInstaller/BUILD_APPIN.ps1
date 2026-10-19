@@ -97,8 +97,17 @@ catch {
     }
 }
 
-# Something like:
-SStart-Process -FilePath "$tarx" -Wait -NoNewWindow -ArgumentList "--version"
+cd build\app_bundle
+Start-Process -FilePath "$tarx" -Wait -NoNewWindow -ArgumentList "-cJf ..\app_bundle.tar.xz *"
 
-#TODO ... complete tar command, run appin ... see sh version
+if ( !$? )
+{
+    Write-Host "ABORTING 7"
+    exit 1
+}
+
+Write-Host "`Build app installer: $APPNAME-$APPVERSION.exe`n"
+
+cd ../../appin
+gcc -static -o "../$APPNAME-$APPVERSION.exe" appinw.c
 
