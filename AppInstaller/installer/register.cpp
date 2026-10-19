@@ -154,6 +154,7 @@ void Installer::update_desktop_database()
 }
 
 #elif defined Q_OS_LINUX
+#include <QXmlStreamReader>
 
 bool Installer::isInstalled(QString dir)
 {
@@ -218,20 +219,21 @@ bool Installer::preRegister()
         }
 
         // Add versioned .desktop file (for "Start" menu entry).
-        // The "Exec" field needs editing.
-        QString appsrpath{"share/applications/" + appinfo.APPLICATION + ".desktop"};
-        QString appsfile{app_dir.absoluteFilePath(appsrpath)};
-        QString dtfile{src_dir.filePath(appsrpath)};
-        if ( !QFileInfo{dtfile}.isFile() ) {
-            print_line(tr("'Desktop' file missing in installation bundle: '%1'").arg(appsrpath), true);
+        // The "Exec", "Icon" and "Name" fields needs editing.
+        QString appicon;
+        if ( !desktop_icon(appicon) ) {
             ok = false;
         } else {
-            // New, versioned, .desktop file
             desktopName = appinfo.APPLICATION + "-" + appinfo.APPVERSION + ".desktop";
             desktopPath = appsDir.absoluteFilePath(desktopName);
+            QString dtfile{src_dir.absoluteFilePath("share/applications/" + appinfo.APPLICATION + ".desktop")};
             // The "Exec" field needs editing.
             QFile f(dtfile);
-            if ( f.open(QFile::ReadOnly | QFile::Text) ) {
+            if ( !f.open(QFile::ReadOnly | QFile::Text) ) {
+                print_line("BUG, Repeated read in installation bundle failed: share/applications/"
+                               + appinfo.APPLICATION + ".desktop", true);
+                ok = false;
+            } else {
                 QTextStream in(&f);
                 QStringList newlines;
                 while (!in.atEnd())
@@ -241,24 +243,29 @@ bool Installer::preRegister()
                         newlines.append(
                             "Exec=" + appinfo.EXECLINE.replace(
                                 "%APP%", appinfo.APPEXEC + "-" + appinfo.APPVERSION));
-                    } else if ( line.startsWith("Name=") ) {
-                        newlines.append("Name=" + versioned_app);
-                    } else if ( line.startsWith("Icon=") ) {
-                        //TODO ... if the app has an icon ...
-                        //newlines.append("Icon=" + absolute address of app bundle icon);
-                        //else
-                        newlines.append(line);
-                    } else {
-                        newlines.append(line);
+                        continue;
                     }
+                    if ( line.startsWith("Name=") ) {
+                        newlines.append("Name=" + versioned_app);
+                        continue;
+                    }
+                    if ( line.startsWith("Icon=") && !appicon.isEmpty() ) {
+                        // Use icon's absolute path.
+                        QString iconpathx{"share/icons/hicolor/scalable/apps/" + appicon + ".svg"};
+                        QString sfile{src_dir.absoluteFilePath(iconpathx)};
+                        if ( !QFileInfo::exists(sfile) ) {
+                            print_line(tr("Icon missing in installation bundle: '%1'").arg(iconpathx), true);
+                            ok = false;
+                        } else {
+                            line = "Icon=" + app_dir.absoluteFilePath(iconpathx);
+                        }
+                    }
+                    newlines.append(line);
                 }
                 f.close();
                 registrationList.append(
                     {newlines.join("\n") + "\n", desktopPath,
                      tr("Add 'Start' menu entry: '%1'").arg(desktopPath), R_WRITE});
-            } else {
-                print_line(tr("Couldn't read 'desktop' file in installation bundle: '%1'").arg(appsrpath), true);
-                ok = false;
             }
         }
     } else {
@@ -275,57 +282,86 @@ bool Installer::preRegister()
                 {execfile, appexecpath, tr("Add executable to PATH: '%1'").arg(appexecpath), R_LINK});
         }
 
+        QStringList icons; // collect icon names to register
+
         // Add unversioned .desktop file (for "Start" menu entry).
-        QString appsrpath{"share/applications/" + appinfo.APPLICATION + ".desktop"};
-        QString appsfile{app_dir.absoluteFilePath(appsrpath)};
-        if ( !QFileInfo{src_dir.filePath(appsrpath)}.isFile() ) {
-            print_line(tr("'Desktop' file missing in installation bundle: '%1'").arg(appsrpath), true);
+        QString appicon;
+        if ( !desktop_icon(appicon) ) {
             ok = false;
         } else {
             desktopName = appinfo.APPLICATION + ".desktop";
             desktopPath = appsDir.absoluteFilePath(desktopName);
             registrationList.append(
-                {appsfile, desktopPath,
+                {app_dir.absoluteFilePath("share/applications/" + desktopName), desktopPath,
                  tr("Add 'Start' menu entry: '%1'").arg(desktopPath), R_COPY});
+            if ( !appicon.isEmpty() ) {
+                icons.append(appicon);
+            }
         }
 
         // Add mime-type and icons, if available
         if ( !appinfo.APPMIME.isEmpty() ) {
             QString mrpath{"mime/packages/" + appinfo.APPMIME + ".xml"};
-            QString mfile{app_dir.absoluteFilePath("share/" + mrpath)};
-            if ( !QFileInfo{src_dir.absoluteFilePath("share/" + mrpath)}.isFile() ) {
-                print_line(tr("Mime-type file missing in installation bundle: '%1'").arg(mfile), true);
+            QString mxrpath{"share/" + mrpath};
+            QString mdfile{app_dir.absoluteFilePath(mxrpath)};
+            QString msfile{src_dir.absoluteFilePath(mxrpath)};
+            if ( !QFileInfo{msfile}.isFile() ) {
+                print_line(tr("Mime-type file missing in installation bundle: '%1'").arg(mxrpath), true);
                 ok = false;
             } else {
-                QString mime_path{shareDir.absoluteFilePath(mrpath)};
-                registrationList.append(
-                    {mfile, mime_path, tr("Install mime file: '%1'").arg(mime_path), R_COPY});
-                localfiles.append("+++file-type:" + appinfo.APPMIME); // uninstaller flag
-
-                //TODO: Only register the svg icon?
-
-                // Add icon link(s).
-                // In principle there can be "apps" icons and "mimetypes" icons, but I haven't found any
-                // use for the "mimetypes" icons. The documentation says "Icons to be used as file icons
-                // should use 'mimetypes' as context", but the file managers in at least GNOME, KDE and XFCE
-                // show the icon even if it is only in "apps".
-                // In Cinnamon this doesn't work, but using the "mimetypes" context doesn't work either.
-                // However, it does work in Cinnamon if the app's .xml file in share/mime/packages gets the
-                // additional line:
-                //    <generic-icon name="$APPLICATION"/> (after the line: <icon name="$APPLICATION"/>)
-                // NOTE: Only icons needed for the the mime-type should be in "share/icons".
-                QDir iconsource{src_dir.absoluteFilePath("share/icons")};
-                QDir iconinsrc{app_dir.absoluteFilePath("share/icons")};
-                QDir icondest{shareDir.absoluteFilePath("icons")};
-                for (const auto& f : QDirListing(
-                         iconsource.path(),
-                         QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive)) {
-                    QString rpath{iconsource.relativeFilePath(f.absoluteFilePath())};
-                    QString sfile{iconinsrc.absoluteFilePath(rpath)};
-                    QString dpath{icondest.absoluteFilePath(rpath)};
-                    registrationList.append(
-                        {sfile, dpath, tr("Add icon file: '%1'").arg(dpath), R_LINK});
+                // Read the file as XML, seek the icon entries.
+                // This just deals with <icon name= .../> entries.
+                QFile f(msfile);
+                if ( !f.open(QFile::ReadOnly | QFile::Text) ) {
+                    print_line(tr("Couldn't read mime-type file in installation bundle: '%1'").arg(mxrpath), true);
+                    ok = false;
+                } else {
+                    QXmlStreamReader xml(&f);
+                    while ( !xml.atEnd() ) {
+                        if ( xml.readNext() == QXmlStreamReader::StartElement ) {
+                            if (xml.name() == "icon") {
+                                QString iconname{xml.attributes().value("name")};
+                                if ( !iconname.isEmpty() && !icons.contains(iconname) ) {
+                                    icons.append(iconname);
+                                }
+                            }
+                        }
+                    }
+                    if ( xml.hasError() ) {
+                        print_line(tr("Invalid mime-type file in installation bundle: '%1'").arg(mxrpath), true);
+                        print_line(tr("  ... in line %1: %2").arg(xml.lineNumber()).arg(xml.errorString()), true);
+                        ok = false;
+                    } else {
+                        // Register the mime file.
+                        QString mime_path{shareDir.absoluteFilePath(mrpath)};
+                        registrationList.append(
+                            {mdfile, mime_path, tr("Install mime file: '%1'").arg(mime_path), R_COPY});
+                        localfiles.append("+++file-type:" + appinfo.APPMIME); // uninstaller flag
+                    }
                 }
+            }
+        }
+
+        // Add icon link(s).
+        // In principle there can be "apps" icons and "mimetypes" icons, but I haven't found any
+        // use for the "mimetypes" icons. The documentation says "Icons to be used as file icons
+        // should use 'mimetypes' as context", but it seems to work in at least GNOME, KDE and XFCE
+        // using just "apps".
+        // In Cinnamon this doesn't work, but does if the app's .xml file in share/mime/packages
+        // gets the additional line:
+        //    <generic-icon name="icon-name"/> (after the line: <icon name="icon-name"/>)
+        // Register only the svg icon(s) for the mime type (and desktop file).
+        for ( const auto& iname : std::as_const(icons) ) {
+            QString iconpath{"icons/hicolor/scalable/apps/" + iname + ".svg"};
+            QString iconpathx{"share/" + iconpath};
+            QString sfile{src_dir.absoluteFilePath(iconpathx)};
+            if ( !QFileInfo::exists(sfile) ) {
+                print_line(tr("Icon missing in installation bundle: '%1'").arg(iconpathx), true);
+                ok = false;
+            } else {
+                QString dpath{shareDir.absoluteFilePath(iconpath)};
+                registrationList.append(
+                    {app_dir.absoluteFilePath(iconpathx), dpath, tr("Add icon file: '%1'").arg(dpath), R_LINK});
             }
         }
 
@@ -351,6 +387,42 @@ bool Installer::preRegister()
         }
     }
     return ok;
+}
+
+bool Installer::desktop_icon(QString &icon)
+{
+    // Get Icon name from .desktop file if there is a corresponding svg icon in the app bundle.
+    // The name is stored to the 'icon' parameter. Return 'false' if an error occurred.
+    // Note that the result can be 'true' but not set 'icon' (if the icon is not provided at
+    // the correct location in the app bundle.
+    QString appsrpath{"share/applications/" + appinfo.APPLICATION + ".desktop"};
+    QString dtfile{src_dir.filePath(appsrpath)};
+    if ( !QFileInfo{dtfile}.isFile() ) {
+        print_line(tr("'Desktop' file missing in installation bundle: '%1'").arg(appsrpath), true);
+        return false;
+    }
+    // Read the file, seek the "Icon=" line.
+    QFile f(dtfile);
+    if ( !f.open(QFile::ReadOnly | QFile::Text) ) {
+        print_line(tr("Couldn't read 'desktop' file in installation bundle: '%1'").arg(appsrpath), true);
+        return false;
+    }
+    QTextStream in(&f);
+    while (!in.atEnd())
+    {
+        QString line = in.readLine();
+        if ( line.startsWith("Icon=") ) {
+            line.slice(5);
+            QString iconpath{"icons/hicolor/scalable/apps/" + line + ".svg"};
+            QString sfile{src_dir.absoluteFilePath("share/" + iconpath)};
+            if ( QFileInfo::exists(sfile) ) {
+                icon = line;
+                break;
+            }
+        }
+    }
+    f.close();
+    return true;
 }
 
 bool Installer::registerApp()

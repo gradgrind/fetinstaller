@@ -95,6 +95,7 @@ private:
     void progressOne();
     bool isInstalled(QString version = {});
     bool preRegister();
+    bool desktop_icon(QString &icon);
     bool registerApp();
     void addedFileType();
     bool removeSpecial(QString item);
