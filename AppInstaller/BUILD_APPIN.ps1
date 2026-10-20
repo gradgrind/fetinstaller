@@ -1,6 +1,8 @@
 # Build script for Windows (Powershell) using a standard Qt installation set up
 # by the the Qt online installer.
 
+$APPNAME = "FET"
+
 $QTDIR = "C:\Qt"
 $QTVERSION = Get-ChildItem -Path "$QTDIR" -Filter "6.1*" | Select-Object -ExpandProperty Name -Last 1
 #$QTVERSION = "6.12.0"
@@ -12,7 +14,7 @@ if ( [string]::IsNullOrEmpty($QTVERSION) )
 Write-Host "Using '$QTDIR\$QTVERSION'"
 
 cd "$PSScriptRoot"
-$version = Get-Content "..\VERSION"
+$APPVERSION = Get-Content "..\VERSION"
 
 $env:Path = "$QTDIR\Tools\CMake_64\bin;$QTDIR\Tools\mingw1310_64\bin;" + $env:Path
 
@@ -56,7 +58,7 @@ $installerdir = "build\app_bundle\_installer_"
 if ( -not ( Test-Path -Path "$installerdir" ) ) {
     New-Item -Path "$installerdir" -ItemType Directory
 }
-(Get-Content app.conf).Replace('%VERSION%', $version) | Set-Content build\app_bundle\_installer_\app.conf
+(Get-Content app.conf).Replace('%VERSION%', $APPVERSION) | Set-Content build\app_bundle\_installer_\app.conf
 
 
 Copy-Item "..\fet.desktop" -Destination "$installerdir\desktop"
@@ -109,5 +111,5 @@ if ( !$? )
 Write-Host "`Build app installer: $APPNAME-$APPVERSION.exe`n"
 
 cd ../../appin
-gcc -static -o "../$APPNAME-$APPVERSION.exe" appinw.c
+gcc -mwindows -o "../$APPNAME-$APPVERSION.exe" appinw.c
 

@@ -1,6 +1,8 @@
 # Build script for Windows (Powershell) using a standard Qt installation set up
 # by the the Qt online installer.
 
+$APPNAME = "FET"
+
 $QTDIR = "C:\Qt"
 $QTVERSION = Get-ChildItem -Path "$QTDIR" -Filter "6.1*" | Select-Object -ExpandProperty Name -Last 1
 #$QTVERSION = "6.12.0"
