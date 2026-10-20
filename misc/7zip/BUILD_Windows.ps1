@@ -93,5 +93,5 @@ if (Test-Path -Path "$vapp") {
     Remove-Item "$vapp"
 }
 ..\bin\x64\7zr a archive.7z app_bundle -mx -mf=BCJ2
-cmd /c "copy /b ..\bin\7zSDu.sfx + ..\7z_config.txt +  archive.7z  $vapp"
+cmd /c "copy /b ..\mod-sfx\7zSDu.sfx + ..\7z_config.txt +  archive.7z  $vapp"
 
