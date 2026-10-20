@@ -1,5 +1,7 @@
 # Build script for Windows (Powershell) using a standard Qt installation set up
 # by the the Qt online installer.
+# This is a Powershell script. To run it, it may be necessary to do something like:
+# "powershell -ExecutionPolicy Bypass -File BUILD_APPIN.ps1"
 
 $APPNAME = "FET"
 

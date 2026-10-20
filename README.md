@@ -1,6 +1,11 @@
-# fetinstaller
+# QUIF – Qt-based User Installer Framework
 
- - A graphical installer for FET (free timetable software)
+ - A graphical installer for Qt-based apps which include the Qt library files and install to user-space (no administrator privileges necessary)
+
+It is often practical for GUI apps to bring their own copies of the graphical libraries they need. This allows installation on a wide variety of machines without too much concern about compatibility with the machine's own libraries. One just needs to unpack the application bundle and run the app from there. Especially apps using the Qt toolkit use this approach quite frequently.
+
+
+
 
 The idea is to build an installer for the FET binary package using Qt to produce a comfortable installation experience. The Qt libraries needed by the installer are supplied by the FET installation itself, so that the installer takes up very little extra space.
 

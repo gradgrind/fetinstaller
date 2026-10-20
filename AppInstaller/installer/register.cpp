@@ -73,7 +73,7 @@ bool Installer::registerApp()
                  | QDirListing::IteratorFlag::IncludeHidden) ) { //TODO: IncludeHidden?
         size += dirEntry.size();
     }
-    regsettings.setValue("EstimatedSize", size / 1024); // Windows uses KiB (1024 bytes)
+    regsettings.setValue("EstimatedSize", static_cast<quint32>(size / 1024)); // Windows uses KiB (1024 bytes)
 
     regsettings.endGroup();
 
@@ -139,8 +139,11 @@ bool Installer::removeSpecial(QString item)
 {
     if ( item.startsWith("+++reg:") ) {
         QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
-        regsettings.remove(item.sliced(7));
+        auto key = item.sliced(7);
+        regsettings.remove(key);
+        return !regsettings.contains(key);
     }
+    return true;
 }
 
 QString Installer::get_execpath(QDir dir)
