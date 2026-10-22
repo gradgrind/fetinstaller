@@ -34,7 +34,7 @@ qt_add_translations(
     TS_FILE_DIR translations
     # Do not embed generated .qm files.
     #QM_FILES_OUTPUT_VARIABLE qm_files
-    LUPDATE_OPTIONS -no-obsolete
+    #LUPDATE_OPTIONS -no-obsolete
 )
 
 target_link_libraries(app_uninstall

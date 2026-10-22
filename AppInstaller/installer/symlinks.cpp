@@ -10,7 +10,7 @@ static const char *REL_NO_TARGET = QT_TRANSLATE_NOOP(
 
 static const char *ABS_LINK = QT_TRANSLATE_NOOP(
     "SYMLINKS",
-    "WARNING, absolute symlink: %1 -> %2");
+    "ERROR, absolute symlink: %1 -> %2");
 
 static const char *WINDOWS_SYMLINK = QT_TRANSLATE_NOOP(
     "SYMLINKS",

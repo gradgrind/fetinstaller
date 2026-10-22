@@ -10,9 +10,9 @@ This project is directed specifically at C++/Qt GUI applications which compile t
 
  - creates a Start-Menu entry
 
- - can add a file-type association
+ - can register a file-ending (mime-type on Linux)
 
- - also a "versioned" installation installation is possible, allowing multiple versions to be installed, but this doesn't do file-type association
+ - also a "versioned" installation installation is possible, allowing multiple versions to be installed, but this doesn't do the file-ending registration
 
  - optional desktop starter link
 
@@ -28,4 +28,4 @@ The reason to restrict the scope to C++/Qt GUI applications is that the installe
 
 Using basically the same framework for building the installer as is used for the application itself should make the whole process easier to learn and more transparent, when compared to using other tools with obscure configuration languages (e.g. NSIS). It should be relatively straightforward to customise the installer/uninstaller to suit the needs of a particular application.
 
-The installer and uninstaller are built using CMAKE, so this should also be the preferred tool for building the application itself. It should then be easy to ensure that the libraries, plugins, etc., get stored in the correct places.
+The installer and uninstaller are built using CMAKE, which is the standard tool for Qt, so this should also be the preferred tool for building the application itself. It should then be easy to ensure that the libraries, plugins, etc., get stored in the correct places.

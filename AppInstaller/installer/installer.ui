@@ -104,7 +104,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="page_0">
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -156,11 +156,11 @@
 
 ####
 
-This will install %1 for the current user, by default in a local applications folder, but the installation location can be changed.
+Install %1 for the current user, by default in a local applications folder, but the installation location can be changed. If relevant, a file-type ending (with icon) can be registered.
 
-The application is normally registered as &quot;%1&quot;, but it can also be installed in a &quot;versioned&quot; form parallel to other installations of the application with different versions.
+The application is normally registered as &quot;%1&quot;, but it can also be installed in a &quot;versioned&quot; form parallel to other installations of the application with different versions. In this case no file-type ending will be registered.
 
-A further possibility is to just unpack the installation directory without registering it in the desktop,</string>
+A further possibility is to just unpack the installation directory without registering it in any way.</string>
          </property>
          <property name="textFormat">
           <enum>Qt::TextFormat::MarkdownText</enum>
