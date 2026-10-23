@@ -4,6 +4,20 @@
 #include <QSettings>
 #include <QMessageBox>
 
+#if defined Q_OS_WIN
+#include <process.h>
+#endif
+
+// A Powershell command to remove the temporary directory, reporting an error if it didn't work.
+const QString PSCMD{R"(
+if ( Test-Path -Path "%1" ) {
+    Remove-Item "%1" -Recurse -Force -ErrorAction SilentlyContinue;
+    if ( -not $? ) {
+        Add-Type -AssemblyName PresentationCore,PresentationFramework;
+        [System.Windows.MessageBox]::Show("%3", "%2", 0, 16);
+    }
+})"};
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -39,8 +53,20 @@ int main(int argc, char *argv[])
         w.show();
         cc = QApplication::exec();
 #if defined Q_OS_WIN
-//TODO: remove temporary directory.
-// Use _execl or _execlp.
+        // Remove temporary directory.
+        QString dpath{appinfo.appdir.absolutePath()};
+        QString emsg{QCoreApplication::translate("main", "Failed: delete folder '%1'").arg(dpath)};
+        QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg)};
+        QByteArray cmdbytes{cmd.toLocal8Bit()};
+        const char* cmdx = cmdbytes.constData();
+        _execlp("powershell", "powershell", "-Command", cmdx, (char*) NULL);
+        // Shouldn't return!
+        QMessageBox::critical(
+            nullptr,
+            QCoreApplication::translate("main", "Tidying"),
+            QCoreApplication::translate("main", "Removing the temporary folder failed:\n  %1")
+                .arg(dpath));
+        cc = 100;
 #endif
     }
     return cc;
