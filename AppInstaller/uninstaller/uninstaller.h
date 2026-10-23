@@ -37,13 +37,14 @@ private slots:
 private:
     Ui::Uninstaller *ui;
 
+    bool uninstaller2tmp(QString& installpath, QString& tmppath, QString &error);
     void print_line(QString line, bool bold = false);
     void progressOne();
     void unregisterApp();
     void removeSpecials(const QStringList specials);
 
     QStringList unregister_failed;
-    QDir basedir;
+    QDir base_dir;
     bool bugflag{false};
 
 signals:

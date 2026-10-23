@@ -11,11 +11,13 @@ class AppInfo : QObject
 public:
     AppInfo();
     bool init();
+    bool uninstaller2tmp(); // needed only on Windows
+    bool copyfile(QString frel);
 
     QDir appdir;    // root of running app
     QDir basedir;   // root of installation
     QString basename; // appname + version (= name of basedir)
-    QString appcopy;
+    QString error;
 };
 
 #endif // APPINFO_H

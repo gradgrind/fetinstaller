@@ -31,19 +31,17 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    int cc{1};
     // Initialize paths
     AppInfo appinfo;
     if ( appinfo.init() ) {
-        if ( !appinfo.appcopy.isEmpty() ) {
-            // Copy only
-            return 0;
-        }
-
         Uninstaller w(appinfo);
         w.show();
-        int cc = QApplication::exec();
-        return cc;
-    } else {
-        return 1;
+        cc = QApplication::exec();
+#if defined Q_OS_WIN
+//TODO: remove temporary directory.
+// Use _execl or _execlp.
+#endif
     }
+    return cc;
 }

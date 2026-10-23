@@ -8,7 +8,7 @@
 void Uninstaller::unregisterApp()
 {
     // Read the list of files installed outside the app bundle and also "special" entries.
-    QString installed_files_path{basedir.filePath("system_files")};
+    QString installed_files_path{base_dir.filePath("system_files")};
     QFile textFile{installed_files_path};
     if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
         print_line(tr("App installed no system files"));

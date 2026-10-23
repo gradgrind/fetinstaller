@@ -22,7 +22,7 @@ Uninstaller::Uninstaller(AppInfo& app_info, QWidget *parent)
     ui->stackedWidget->setCurrentIndex(0);
     setWindowIcon(QIcon(":/icons/uninstaller.svg"));
 
-    basedir = app_info.basedir;
+    base_dir = app_info.basedir;
 
     // Set application name in GUI
     ui->label_title->setText(ui->label_title->text().arg(app_info.basename));
@@ -75,7 +75,7 @@ void Uninstaller::page_2()
     // Loop through the directory contents
     int count{0};
     for ( const auto &dirEntry : QDirListing(
-             basedir.path(),
+             base_dir.path(),
              QDirListing::IteratorFlag::IncludeHidden | QDirListing::IteratorFlag::Recursive) ) {
         count++;
     }
@@ -101,7 +101,7 @@ void Uninstaller::page_2()
     // Start deleting.
     print_line(tr("*** Remove installation files ***"));
     print_line("");
-    emit deleteFiles(basedir.path());
+    emit deleteFiles(base_dir.path());
 }
 
 void Uninstaller::file_deleted(QString fpath, bool ok)
@@ -141,9 +141,9 @@ void Uninstaller::done(bool ok)
     if ( ok ) {
         print_line("");
         // Test if the app installation directory still exists.
-        if ( basedir.exists() ) {
+        if ( base_dir.exists() ) {
             print_line("");
-            print_line(tr(UNINSTALL_INCOMPLETE).arg(basedir.path()));
+            print_line(tr(UNINSTALL_INCOMPLETE).arg(base_dir.path()));
         } else {
             if ( unregister_failed.isEmpty() )
                 print_line(tr("App successfully uninstalled."));

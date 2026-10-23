@@ -3,18 +3,22 @@
 #include <QMessageBox>
 #include <QTemporaryDir>
 #include <QProcess>
+#include <QRandomGenerator>
+
+#if defined Q_OS_WIN
+#include <process.h>
+#endif
 
 AppInfo::AppInfo() {}
 
 bool AppInfo::init()
 {
-    QStringList args = QCoreApplication::arguments();
-
-    // Windows: With command-line switch -c, copy a subset of the files to a temporary
-    // directory, passed as command-line argument.
-    // With command-line switch -u, use the path passed as command-line argument
-    // instead of the root path of the uninstall executable as the installation
-    // root.
+    // If there is a command-line argument it must be the address of the installation to remove.
+    // This is only supported on Windows, where a program cannot delete its own files.
+    // On Windows a call with no argument will copy the uninstaller, together with necessary
+    // library and plugin files, to a temporary directory. It will then run "itself" again, this
+    // time with an argument, the path to the installation to be removed, using the C function
+    // "_execl" to switch fully to the new instance.
 
     // Determine the installation's base directory
     appdir.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
@@ -25,97 +29,102 @@ bool AppInfo::init()
     appdir.cdUp();
 #endif
 
-    //TODO: Check validity of root directory, if possible!
-
-    //QMessageBox::critical(nullptr, tr("Critical Error"), tr("Couldn't find uninstaller base folder"));
-    //return false;
-
-#if defined Q_OS_WIN
-    if ( args.length() == 3 ) {
-        if ( args.at(1) == "-c" ) {
-            basedir = appdir;
-            appcopy = args.at(2);
-        } else if ( args.at(1) == "-u" ) {
-            basedir.setPath(args.at(2));
-        } else
-            goto err;
-    }
-#else
+    QStringList args = QCoreApplication::arguments();
     if ( args.length() == 1 ) {
-        basedir = appdir;
-    }
-#endif
-    else {
-err:
-        QMessageBox::critical(
-            nullptr,
-            tr("Critical Error"),
-            tr("Invalid command line:\n  - %1").arg(args.join("\n  - ")));
-        return false;
-    }
-
 #if defined Q_OS_WIN
-
-    // On Windows the uninstaller must be run from a temporary folder because it can't delete
-    // the files belonging to the running process.
-
-    if ( !appcopy.isEmpty() ) {
-        // Copy the necessary files to a temporary directory so that the uninstaller can be run from there.
-        QDir tdir{appcopy};
-        if ( !tdir.isEmpty() ) {
+        // Copy uninstaller to temporary directory and run from there.
+        if ( uninstaller2tmp() ) {
+            // The uninstaller executable should be in the root directory of the copy, which
+            // should be in basedir.
+            // The uninstaller is expected to be in the "bin" directory of the installation.
+            QByteArray cmdbytes{basedir.absoluteFilePath("/app_uninstall.exe").toLocal8Bit()};
+            const char* cmd = cmdbytes.constData();
+            QByteArray arg1{appdir.absolutePath().toLocal8Bit()};
+            _execl(cmd, cmd, arg1.constData(), (char*) NULL);
+            // Doesn't return!
+            error = QString{"Failed: switch to uninstaller in '%1'"}.arg(basedir.absolutePath());
+        }
+        // Remove temporary dictionary.
+        if ( basedir != QDir{} && !basedir.removeRecursively() ) {
             QMessageBox::critical(
                 nullptr,
-                tr("Critical Error"),
-                tr("Temporary directory is not empty: '%1'").arg(appcopy));
+                QCoreApplication::translate("Uninstall0", "Critical Error"),
+                QCoreApplication::translate("Uninstall0", "Failed: Remove temporary folder: '%1'").arg(tmppath));
+        }
+        return false;
+    } else if ( args.length() == 2 ) {
+        QDir xdir{args.at(1)};
+        if ( xdir.exists("app_uninstall.exe") ) {
+            basedir = xdir;
+        } else {
+            error = tr("No uninstaller found in '%1'").arg(appdir.absolutePath());
             return false;
         }
-        for ( const auto &dirEntry : QDirListing(
-                 basedir.absolutePath(),
-                 QDirListing::IteratorFlag::FilesOnly) ) {
-            // (faster than using name filters)
-            const QString fileName = dirEntry.fileName();
-            if ( fileName.endsWith(".dll") || fileName == "qt.conf" || fileName == "app_uninstall.exe" ) {
-                // In the case of a link this copies the target file, but on Windows there are unlikely
-                // to be links among the files copied here (on Linux there would almost certainly
-                // be links).
-                if ( !QFile::copy(dirEntry.filePath(), tdir.filePath(fileName)) ) {
-                    QMessageBox::critical(
-                        nullptr,
-                        tr("Critical Error"),
-                        (tr("Copying uninstaller to temporary folder failed:")
-                         + "\n  %1 -> %2")
-                            .arg(dirEntry.absoluteFilePath(), tdir.absoluteFilePath(fileName)));
-                    return false;
-                }
-            }
-        }
-        // Add plugins
-        for ( const auto &dirEntry : QDirListing(
-                 basedir.absoluteFilePath("plugins"),
-                 QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive) ) {
-            // (faster than using name filters)
-            const QString filepath = dirEntry.absoluteFilePath();
-            if ( filepath.endsWith(".dll") ) {
-                // In the case of a link this copies the target file, but on Windows there are unlikely
-                // to be links among the files copied here.
-                // Ensure the destination folder exists.
-                tdir.mkpath(basedir.relativeFilePath(dirEntry.absolutePath()));
-                const QString target{tdir.absoluteFilePath(basedir.relativeFilePath(filepath))};
-                if ( !QFile::copy(filepath, target) ) {
-                    QMessageBox::critical(
-                        nullptr,
-                        tr("Critical Error"),
-                        (tr("Copying uninstaller to temporary folder failed:")
-                         + "\n  %1 -> %2")
-                            .arg(filepath, target));
-                    return false;
-                }
+#else
+        basedir = appdir;
+#endif
+    } else {
+        error = tr("Invalid command line:\n  - %1").arg(args.join("\n  - "));
+        return false;
+    }
+    basename = basedir.dirName();
+    return true;
+}
+
+bool AppInfo::copyfile(QString frel)
+// Copy from appdir to basedir, the file has a relative path.
+{
+    QString dst{basedir.absoluteFilePath(frel)};
+    // Ensure the oarent directory exists.
+    QFileInfo dinfo{QFileInfo{dst}.absolutePath()};
+    if ( !dinfo.isDir() ) {
+        basedir.mkpath(dinfo.absoluteFilePath());
+    }
+    if ( !QFile::copy(appdir.absoluteFilePath(frel), dst) ) {
+        error = tr("Failed: copying file to temporary folder: '%1'").arg(dst);
+        return false;
+    }
+    return true;
+}
+
+bool AppInfo::uninstaller2tmp()
+{
+    // Create a temporary directory.
+    QDir tmpdir0{QDir::temp()};
+    QString tmprel{QString{"AppUnIn%1"}.arg(QRandomGenerator::global()->generate())};
+    if ( !tmpdir0.mkdir(tmprel) ) {
+        error = QCoreApplication::translate(
+                    "Uninstall0", "Failed: create temporary folder: '%1'")
+                    .arg(tmpdir0.absoluteFilePath(tmprel));
+        return false;
+    }
+    basedir.setPath(tmpdir0.absoluteFilePath(tmprel));
+    // Copy the uninstaller and supporting libraries to the temporary directory.
+    if ( !copyfile("app_install.exe") ) {
+        return false;
+    }
+    if ( !copyfile("qt.conf") ) {
+        return false;
+    }
+    for ( const auto &dirEntry : QDirListing(
+             appdir.absolutePath(),
+             QDirListing::IteratorFlag::FilesOnly ) ) {
+        // Only regular files ...
+        const QString fileName = dirEntry.fileName();
+        if ( fileName.endsWith(".dll") ) {
+            if ( !copyfile(fileName) ) {
+                return false;
             }
         }
     }
-
-#endif
-
-    basename = basedir.dirName();
+    // Add plugins
+    for ( const auto &dirEntry : QDirListing(
+             appdir.absoluteFilePath("plugins"),
+             QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive) ) {
+        // Only regular files ...
+        if ( !copyfile(appdir.relativeFilePath(dirEntry.absoluteFilePath())) ) {
+            return false;
+        }
+    }
     return true;
 }
