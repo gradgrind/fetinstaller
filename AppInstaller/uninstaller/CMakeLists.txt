@@ -3,14 +3,14 @@ project(app_uninstall LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
-find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_INSTALL_BINDIR ".")
     set(CMAKE_INSTALL_DATADIR ".")
     set(CMAKE_INSTALL_LIBDIR ".")
 endif()
+
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 
 set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_uninstall.rc")
 

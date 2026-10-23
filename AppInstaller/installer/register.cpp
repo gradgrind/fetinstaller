@@ -12,7 +12,7 @@
 #include <windows.h>
 #include <shlobj.h>
 
-QString uninstall_command{"powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%1\\app_uninstall.ps1\""};
+QString uninstall_command{"\"%1\\app_uninstall.exe\""};
 
 bool Installer::isInstalled(QString dir)
 {
@@ -29,7 +29,7 @@ bool Installer::isInstalled(QString dir)
     }
     uninstall_exe = uninstall_command.arg(QDir::toNativeSeparators(dir));
     // The app counts as "installed" only if the uninstaller exists.
-    return QFileInfo{dir + "/" +  "app_uninstall.ps1"}.isFile();
+    return QFileInfo{dir + "/" +  "app_uninstall.exe"}.isFile();
 }
 
 bool Installer::missingFileTypeAssociation()

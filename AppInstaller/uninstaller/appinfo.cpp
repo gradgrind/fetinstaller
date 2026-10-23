@@ -49,7 +49,8 @@ bool AppInfo::init()
             QMessageBox::critical(
                 nullptr,
                 QCoreApplication::translate("Uninstall0", "Critical Error"),
-                QCoreApplication::translate("Uninstall0", "Failed: Remove temporary folder: '%1'").arg(tmppath));
+                QCoreApplication::translate("Uninstall0", "Failed: Remove temporary folder: '%1'")
+                    .arg(basedir.absolutePath()));
         }
         return false;
     } else if ( args.length() == 2 ) {
