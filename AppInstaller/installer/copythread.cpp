@@ -1,5 +1,4 @@
 #include "copythread.h"
-#include <QProcess>
 
 void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles) {
     /* ... here is the long-running operation ... */

@@ -33,7 +33,7 @@ bool AppInfo::init()
 
     QStringList args = QCoreApplication::arguments();
     if ( args.length() == 1 ) {
-//#if defined Q_OS_WIN
+#if defined Q_OS_WIN
         error = QStringList{
             tr("This program cannot delete itself."),
             tr("The path to the installation to be deleted must be passed on the command line.")}.join("\n");
@@ -46,9 +46,9 @@ bool AppInfo::init()
             error = tr("No uninstaller found in '%1'").arg(appdir.absolutePath());
             return false;
         }
-//else
+#else
         basedir = appdir; // The uninstaller should delete itself.
-//#endif
+#endif
     } else {
         error = tr("Invalid command line:\n  - %1").arg(args.join("\n  - "));
         return false;

@@ -2,7 +2,6 @@
 #include "ui_installer.h"
 #include "copythread.h"
 #include <QDirListing>
-#include <QProcess>
 #include <QPushButton>
 #include <QFileDialog>
 #include <QTimer>
@@ -217,6 +216,8 @@ void Installer::page_1()
 
 void Installer::page_2()
 {
+    connect(&uninstall_process, &QProcess::finished, this, &Installer::uninstallDone);
+
     ui->stackedWidget->setCurrentIndex(2);
     textOutput = ui->check_destination;
     setInstallPath(defaultInstallationPath);
@@ -311,12 +312,25 @@ void Installer::setInstallPath(QString ipath)
 
 void Installer::uninstallExisting()
 {
-    // Try to remove the installation in app_dir
-    QProcess process;
-    process.startCommand(uninstall_exe);
-    process.waitForFinished();
-    setInstallPath();
+    // Try to remove the installation in app_dir.
+    // Disable GUI, set busy cursor ...
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    setEnabled(false);
+    installationPartial = true;
+    uninstall_process.startCommand(uninstall_exe);
+    // The uninstaller should be running ... wait for the "finished" signal (-> uninstallDone())
 }
+
+
+void Installer::uninstallDone(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    // Reset cursor, reenable GUI ...
+    QApplication::restoreOverrideCursor();
+    installationPartial = false;
+    setEnabled(true);
+    setInstallPath();   // refresh displayed info
+}
+
 
 void Installer::refreshView()
 {

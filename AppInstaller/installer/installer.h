@@ -9,6 +9,8 @@
 #include <QDir>
 #include <QString>
 #include <QFileInfo>
+#include <QProcess>
+
 #include "copythread.h"
 #include "appinfo.h"
 
@@ -84,6 +86,7 @@ private slots:
     void handleLinkFailed(QPair<QString, QString> filepaths);
 
     void handleCopyingFinished();
+    void uninstallDone(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
     Ui::Installer *ui;
@@ -120,6 +123,7 @@ private:
     bool scanComplete;
     bool scanOk;
     bool installationPartial{false};
+    QProcess uninstall_process;
 
 public:
     bool app_initialized{false};
