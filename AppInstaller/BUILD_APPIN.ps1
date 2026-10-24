@@ -82,6 +82,23 @@ if ( !$? )
     exit 1
 }
 
+# Build the pre-uninstaller
+cmake -B build\pre_uninstaller -S pre_uninstaller -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" -DCMAKE_GENERATOR="MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="build\$install_prefix"
+
+if ( !$? )
+{
+    Write-Host "ABORTING 7"
+    exit 1
+}
+
+cmake --build build\pre_uninstaller --target install --parallel 6
+
+if ( !$? )
+{
+    Write-Host "ABORTING 8"
+    exit 1
+}
+
 Write-Host "`nCreate app_bundle archive: build/app_bundle.tar.xz`n"
 
 # Prefer "bsdtar" because the built-in "tar" on older systems might not
@@ -106,7 +123,7 @@ Start-Process -FilePath "$tarx" -Wait -NoNewWindow -ArgumentList "-cJf ..\app_bu
 
 if ( !$? )
 {
-    Write-Host "ABORTING 7"
+    Write-Host "ABORTING 9"
     exit 1
 }
 

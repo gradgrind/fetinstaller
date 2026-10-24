@@ -10,11 +10,11 @@
 
 // A Powershell command to remove the temporary directory, reporting an error if it didn't work.
 const QString PSCMD{R"(
-if ( Test-Path -Path "%1" ) {
-    Remove-Item "%1" -Recurse -Force -ErrorAction SilentlyContinue;
+if ( Test-Path -Path '%1' ) {
+    Remove-Item '%1' -Recurse -Force;
     if ( -not $? ) {
         Add-Type -AssemblyName PresentationCore,PresentationFramework;
-        [System.Windows.MessageBox]::Show("%3", "%2", 0, 16);
+        [System.Windows.MessageBox]::Show('%3', '%2', 0, 16);
     }
 })"};
 
@@ -54,20 +54,32 @@ int main(int argc, char *argv[])
         cc = QApplication::exec();
 #if defined Q_OS_WIN
         // Remove temporary directory.
-        QString dpath{appinfo.appdir.absolutePath()};
-        QString emsg{QCoreApplication::translate("main", "Failed: delete folder '%1'").arg(dpath)};
+        QString dpath{QDir::toNativeSeparators(appinfo.appdir.absolutePath())};
+        QString emsg{QCoreApplication::translate("main", "Failed: delete folder \"%1\"").arg(dpath)};
         QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg)};
         QByteArray cmdbytes{cmd.toLocal8Bit()};
         const char* cmdx = cmdbytes.constData();
-        _execlp("powershell", "powershell", "-Command", cmdx, (char*) NULL);
+        /*
+        QMessageBox::information(
+            nullptr,
+            QCoreApplication::translate("main", "Powershell"),
+            cmd);
+        */
+        _execlp("powershell", "powershell", "-WindowStyle", "Hidden", "-Command", cmdx, (char*) NULL);
+        //_execlp("powershell", "powershell", "-NoExit", "-Command", cmdx, (char*) NULL);
         // Shouldn't return!
         QMessageBox::critical(
             nullptr,
             QCoreApplication::translate("main", "Tidying"),
-            QCoreApplication::translate("main", "Removing the temporary folder failed:\n  %1")
+            QCoreApplication::translate("main", "Removing the temporary folder failed: '%1'")
                 .arg(dpath));
         cc = 100;
 #endif
+    } else {
+        QMessageBox::critical(
+            nullptr,
+            QCoreApplication::translate("main", "Critical Error"),
+            appinfo.error);
     }
     return cc;
 }

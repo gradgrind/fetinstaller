@@ -12,7 +12,7 @@
 #include <windows.h>
 #include <shlobj.h>
 
-QString uninstall_command{"\"%1\\app_uninstall.exe\""};
+QString uninstall_command{"\"%1\\app_uninstall0.exe\""};
 
 bool Installer::isInstalled(QString dir)
 {

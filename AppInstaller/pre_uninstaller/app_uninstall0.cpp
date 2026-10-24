@@ -126,7 +126,7 @@ QString uninstaller2tmp()
     // Copy the uninstaller and supporting libraries to the temporary directory.
     QStringList elist;
     QString e;
-    e = copyfile("app_install.exe");
+    e = copyfile("app_uninstall.exe");
     if ( !e.isEmpty() ) {
         elist.append(e);
     }
