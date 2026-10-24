@@ -67,6 +67,16 @@ int main(int argc, char *argv[])
         error(e);
     } else {
         // Transfer control to the uninstaller.
+
+///// NEW IDEA: On Windows, true execl seems not possible, there is always a new pid.
+// So I might as well use QProcess ...
+// And add the option not to continue? I would then need to somehow return the temporary path ...
+
+
+
+
+/////
+
 #if defined Q_OS_WIN
         // The uninstaller is expected to be in the root directory of the installation.
         QByteArray cmdbytes{tmpdir.absoluteFilePath("app_uninstall.exe").toLocal8Bit()};
