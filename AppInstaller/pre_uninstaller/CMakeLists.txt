@@ -8,8 +8,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_INSTALL_DATADIR ".")
     set(CMAKE_INSTALL_LIBDIR ".")
 else()
-    #message(SEND_ERROR "This project is for Windows only.")
-    #return()
+    message(SEND_ERROR "This project is for Windows only.")
+    return()
 endif()
 
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
@@ -22,6 +22,7 @@ set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_uninstall.rc")
 
 qt_add_executable(app_uninstall0
     WIN32
+    ${app_icon_resource_windows}
     app_uninstall0.cpp
 )
 
@@ -55,7 +56,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         INCLUDE_PLUGINS wayland
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    install(PROGRAMS app_uninstall.ps1 DESTINATION "${CMAKE_INSTALL_BINDIR}")
     qt_generate_deploy_app_script(
         TARGET app_uninstall0
         OUTPUT_SCRIPT udeploy0_script

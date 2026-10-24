@@ -26,7 +26,6 @@ qt_add_executable(app_uninstall
     deleteworker.h deleteworker.cpp
     unregister.cpp
     appinfo.cpp appinfo.h
-
 )
 
 qt_add_translations(
@@ -59,7 +58,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         INCLUDE_PLUGINS wayland
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    install(PROGRAMS app_uninstall.ps1 DESTINATION "${CMAKE_INSTALL_BINDIR}")
     qt_generate_deploy_app_script(
         TARGET app_uninstall
         OUTPUT_SCRIPT udeploy_script

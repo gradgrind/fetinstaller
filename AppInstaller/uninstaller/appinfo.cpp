@@ -15,12 +15,14 @@ bool AppInfo::init()
 {
     // If there is a command-line argument it must be the address of the installation to remove.
     // This is only supported on Windows, where a program cannot delete its own files.
-    // On Windows a call with no argument will copy the uninstaller, together with necessary
-    // library and plugin files, to a temporary directory. It will then run "itself" again, this
-    // time with an argument, the path to the installation to be removed, using the C function
-    // "_execl" to switch fully to the new instance.
+    // On Windows "app_uninstall0.exe" will copy the uninstaller, together with necessary
+    // library and plugin files, to a temporary directory. It will then run "app_uninstall.exe"
+    // in the temporary directory, passing the path to the installation to be removed as argument.
+    // The switch is done using the C function "_execl" so that the installer replaces the
+    // pre-installer.
 
-    // Determine the installation's base directory
+    // Determine the installation's base directory, starting with the base directory of the
+    // uninstaller (this program): "appdir".
     appdir.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
 #if defined Q_OS_WIN
     // The uninstaller is expected to be in the root directory of the installation.
@@ -31,27 +33,10 @@ bool AppInfo::init()
 
     QStringList args = QCoreApplication::arguments();
     if ( args.length() == 1 ) {
-#if defined Q_OS_WIN
-        // Copy uninstaller to temporary directory and run from there.
-        if ( uninstaller2tmp() ) {
-            // The uninstaller executable should be in the root directory of the copy, which
-            // should be in basedir.
-            // The uninstaller is expected to be in the "bin" directory of the installation.
-            QByteArray cmdbytes{basedir.absoluteFilePath("/app_uninstall.exe").toLocal8Bit()};
-            const char* cmd = cmdbytes.constData();
-            QByteArray arg1{appdir.absolutePath().toLocal8Bit()};
-            _execl(cmd, cmd, arg1.constData(), (char*) NULL);
-            // Doesn't return!
-            error = QString{"Failed: switch to uninstaller in '%1'"}.arg(basedir.absolutePath());
-        }
-        // Remove temporary dictionary.
-        if ( basedir != QDir{} && !basedir.removeRecursively() ) {
-            QMessageBox::critical(
-                nullptr,
-                QCoreApplication::translate("Uninstall0", "Critical Error"),
-                QCoreApplication::translate("Uninstall0", "Failed: Remove temporary folder: '%1'")
-                    .arg(basedir.absolutePath()));
-        }
+//#if defined Q_OS_WIN
+        error = QStringList{
+            tr("This program cannot delete itself."),
+            tr("The path to the installation to be deleted must be passed on the command line.")}.join("\n");
         return false;
     } else if ( args.length() == 2 ) {
         QDir xdir{args.at(1)};
@@ -61,9 +46,9 @@ bool AppInfo::init()
             error = tr("No uninstaller found in '%1'").arg(appdir.absolutePath());
             return false;
         }
-#else
-        basedir = appdir;
-#endif
+//else
+        basedir = appdir; // The uninstaller should delete itself.
+//#endif
     } else {
         error = tr("Invalid command line:\n  - %1").arg(args.join("\n  - "));
         return false;
