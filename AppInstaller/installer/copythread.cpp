@@ -5,10 +5,13 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
 
     // Start by copying the directories, which should be sorted such that parent directories are always
     // before their child directories. Alphabetical sorting should be adequate.
-    emit number_of_files(
-        iFiles.installationDirs.length()
-        + iFiles.installationFiles.length()
-        + iFiles.installationLinks.length());
+    qsizetype n{iFiles.installationDirs.length()
+          + iFiles.installationFiles.length()
+          + iFiles.installationLinks.length()};
+    if ( iFiles.with_uninstaller ) {
+        n += iFiles.uninstallerFiles.length();
+    }
+    emit number_of_files(n);
 
     for ( const auto& d : iFiles.installationDirs ) {
         if ( dstDir.exists(d) ) {
@@ -26,6 +29,17 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
             emit file_copied(f);
         } else {
             emit failed_copy(f);
+        }
+    }
+
+    // Copy the uninstaller files
+    if ( iFiles.with_uninstaller ) {
+        for ( const auto& f : iFiles.uninstallerFiles ) {
+            if ( QFile::copy(srcDir.filePath(f), dstDir.filePath(f)) ) {
+                emit file_copied(f);
+            } else {
+                emit failed_copy(f);
+            }
         }
     }
 

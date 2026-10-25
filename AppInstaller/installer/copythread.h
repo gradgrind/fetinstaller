@@ -8,9 +8,11 @@
 struct InstallFiles // relative paths to the files and directories to be copied
 {
     QStringList installationFiles;
+    QStringList uninstallerFiles;
     QStringList installationDirs;
     // Links: (not Windows) relative symlinks within the installation only
     QList<QPair<QString, QString>> installationLinks;
+    bool with_uninstaller{true};
 };
 
 class CopyWorker : public QObject

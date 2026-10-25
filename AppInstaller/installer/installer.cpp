@@ -96,8 +96,10 @@ void Installer::page_0()
     scanOk = false;
 
     // Collect the files here for copying later: their paths are relative to the source root.
-    // All files, except from the "_installer_" directory, are copied.
+    // In general, all files, except from the "_installer_" directory (and the installer itself
+    // on Windows, where it is not in the "_installer_" directory), are copied.
     QStringList installationFiles;
+    QStringList uninstallerFiles;
     QStringList installationDirs;
     QList<QPair<QString, QString>> installationLinks; // only relative symlinks within package (not Windows)
 
@@ -152,7 +154,11 @@ void Installer::page_0()
             } else if ( finfo.isFile() ){
                 // normal file
                 if ( finfo.isReadable() ) {
-                    installationFiles.append(rpath);
+                    if ( finfo.fileName().startsWith("app_uninstall") ) {
+                        uninstallerFiles.append(rpath);
+                    } else {
+                        installationFiles.append(rpath);
+                    }
                 } else {
                     addBoldLine(
                         ui->messages_0,
@@ -170,6 +176,7 @@ void Installer::page_0()
     }
     // Save results
     installFiles.installationFiles = installationFiles;
+    installFiles.uninstallerFiles = uninstallerFiles;
     // Sort alphabetically, so parent directories always come before their children:
     installationDirs.sort();
     installFiles.installationDirs = installationDirs;
@@ -407,6 +414,7 @@ void Installer::page_3()
 
     // Start copying
     copyErrors.clear();
+    installFiles.with_uninstaller = !ui->unpack_only->isChecked();
     emit doCopy(src_dir, app_dir, installFiles);
 }
 
