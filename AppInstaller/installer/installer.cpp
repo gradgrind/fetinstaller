@@ -99,7 +99,7 @@ void Installer::page_0()
     // All files, except from the "_installer_" directory, are copied.
     QStringList installationFiles;
     QStringList installationDirs;
-    QList<QPair<QString, QString>> installationLinks; // symlinks / Windows shortcuts
+    QList<QPair<QString, QString>> installationLinks; // only relative symlinks within package (not Windows)
 
     // A simple check that the source directory is valid (contains an install bundle for the app)
     if ( !QFileInfo{get_execpath(src_dir)}.isExecutable() ) {
@@ -295,7 +295,7 @@ void Installer::setInstallPath(QString ipath)
         }
         return;
     }
-    // Check registration possible,if required
+    // Check registration possible, if required
     if ( ui->unpack_only->isChecked() ) {
         // no "registration" of any sort
         print_line("");
@@ -389,11 +389,6 @@ void Installer::page_3()
     // Connect signals
     connect(&workerThread, &QThread::finished, copyWorker, &QObject::deleteLater);
     connect(this, &Installer::doCopy, copyWorker, &CopyWorker::copyDirectory);
-
-    void dir_nocopy(QString filepath);
-    void dir_written(QString filepath);
-    void dir_failed_write(QString filepath);
-    void dir_failed_overwrite(QString filepath);
 
     connect(copyWorker, &CopyWorker::number_of_files, this, &Installer::handleNumberOfFiles);
 

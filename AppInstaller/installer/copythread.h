@@ -9,10 +9,8 @@ struct InstallFiles // relative paths to the files and directories to be copied
 {
     QStringList installationFiles;
     QStringList installationDirs;
-    // Symlinks (not Windows): relative links (within the installation) and
-    //                         absolute links (outside the installation)
-    // Shortcuts (Windows):    absolute links (outside the installation)
-    QList<QPair<QString, QString>> installationLinks; // absolute symlinks (outside the installation)
+    // Links: (not Windows) relative symlinks within the installation only
+    QList<QPair<QString, QString>> installationLinks;
 };
 
 class CopyWorker : public QObject

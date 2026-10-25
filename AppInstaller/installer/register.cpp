@@ -42,7 +42,7 @@ bool Installer::missingFileTypeAssociation()
 
 bool Installer::preRegister()
 {
-    localfiles.clear(); // collect files added outside the app bundle an registry entries
+    localfiles.clear(); // collect files added outside the app bundle, and registry entries
     return true;
 }
 
@@ -58,6 +58,7 @@ bool Installer::registerApp()
     // The app folders are versioned regardless of whether the installation is versioned.
     QString idir{QDir::toNativeSeparators(app_dir.path())};
 
+    print_line(tr("Register app and uninstaller"));
     regsettings.setValue("DisplayName", app);
     regsettings.setValue("UninstallString", '"' + idir + '\\' + UNINSTALLER_NAME + '"');
     regsettings.setValue("Publisher", appinfo.Publisher);
@@ -79,6 +80,7 @@ bool Installer::registerApp()
 
     // File-type association
     if ( !appinfo.ASSOC_EXT.isEmpty() && !ui->versioned->isChecked() ) {
+        print_line(tr("Register file-type association"));
         QString key_c{"Classes/"};
         QString key_c1{key_c + appinfo.ASSOC_EXT + "/OpenWithProgIds/" + appinfo.ASSOC_PROGID};
         localfiles.append("+++reg:" + key_c1);
@@ -102,6 +104,7 @@ bool Installer::registerApp()
     desktopPath = app_dir.absoluteFilePath(appinfo.APPEXEC);
     QString link{appsDir.absoluteFilePath(desktopName)};
     if ( QFile::link(desktopPath, link) ) {
+        print_line(tr("Install start menu entry: '%1'").arg(desktopName));
         localfiles.append(link);
     } else {
         print_line(tr("Couldn't install start menu entry: '%1'").arg(link), true);
@@ -113,6 +116,7 @@ bool Installer::registerApp()
         QDir dskDir{QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)};
         QString link{dskDir.absoluteFilePath(desktopName)};
         if ( QFile::link(desktopPath, link) ) {
+            print_line(tr("Install desktop starter: '%1'").arg(desktopName));
             localfiles.append(link);
         } else {
             print_line(tr("Couldn't install desktop starter: '%1'").arg(link), true);
