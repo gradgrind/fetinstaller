@@ -9,14 +9,29 @@
 #include <QRandomGenerator>
 
 #if defined Q_OS_WIN
-#include <process.h>
+//#include <process.h> // not using _execl
 #else
 #include <unistd.h>
 #endif
 
+#define TMP_NAME "gradgrind_QAIFUS"
+
+static const char* TMP_BUSY{QT_TRANSLATE_NOOP("Uninstall0", R"(
+The temporary folder '%1' is already in use.
+It could be in use by another uninstaller – if so, don't delete it!
+If it is in use by a completely different application (unlikely), don't delete it!
+
+The folder might have been left by a faulty run of the uninstaller.
+
+Only if you are sure it is no longer in use should you delete it.
+
+Delete this folder?)")};
+
 QDir appdir;
 QDir tmpdir;
-QString uninstaller2tmp();
+bool copy_only{false};
+bool uninstaller2tmp();
+bool delTmp();
 
 void error(QString msg)
 {
@@ -52,59 +67,118 @@ int main(int argc, char *argv[])
 
     // Check no command-line arguments
     QStringList args = QCoreApplication::arguments();
-    if ( args.length() != 1 ) {
-        QString e = QCoreApplication::translate("Uninstall0", "Invalid command line:\n  - %1");
-        error(e.arg(args.join("\n  - ")));
+    if ( args.length() == 2 && args.at(1) == "--copy-only" ) {
+        // The "copy-only" switch is to make it also possible on Windows for the installer to
+        // wait for the uninstaller to complete. It can perform the two steps (copy to temporary
+        // folder, then uninstall) separately, waiting for each to complete.
+        copy_only = true;
+    } else if ( args.length() != 1 ) {
+        error(QCoreApplication::translate(
+                  "Uninstall0",
+                  "Invalid command line:\n  - %1").arg(args.join("\n  - ")));
         return 1;
     }
 
     // Determine the installation's base directory
     appdir.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
 
+    // On Windows, there is an "_execl" function, but it does not work quite like the Unix
+    // "execl": on Windows the new process has a new pid, so it doesn't really act like it
+    // was a continuation of the original process, and wait functions will not wait for the
+    // new process to complete. So on Windows we might as well use QProcess.
+
+    // As it is perhaps not really necessary to allow two uninstallers to run at the same time,
+    // simpler code can be used, with a fixed temporary folder.
+
+    QDir tmpdir0{QDir::temp()};
+    QString tmpPath{tmpdir0.absoluteFilePath(TMP_NAME)};
+    if ( QFileInfo::exists(tmpPath) ) {
+        if ( QMessageBox::question(
+            nullptr,
+            QCoreApplication::translate("Uninstall0", "Delete Folder?"),
+            QCoreApplication::translate("Uninstall0", TMP_BUSY)) == QMessageBox::Yes )
+        {
+            if ( tmpdir0.mkdir(TMP_NAME) ) {
+                tmpdir.setPath(tmpPath);
+            } else {
+                error(QCoreApplication::translate(
+                    "Uninstall0",
+                    "Failed: create temporary folder: '%1'").arg(tmpPath));
+                return 1;
+            }
+        }
+    } else
+        return 1;
+
+/* This is a sketch allowing multiple temporary folders. The inserted number could be returned as
+ * completion code (for copy_only). Of course this is rather misusing the completion code idea,
+ * but it is a rather simple way of handling the problem of how to return the temporary folder.
+
+    QString fmt{"AppUnIn_%1"};
+    int nn{0};
+    for ( int n = 10; n < 20; ++n ) {
+        QString tmpname = fmt.arg(n);
+        if ( tmpdir0.mkdir(tmpname) ) {
+            tmpdir.setPath(tmpdir0.absoluteFilePath(tmpname));
+            nn = n;
+            break;
+        }
+    }
+    if ( nn == 0 ) {
+        error(QCoreApplication::translate(
+            "Uninstall0",
+            "Couldn't create temporary folder.\nPerhaps too many are already in use:\n  '%1'")
+                .arg(tmpdir0.absoluteFilePath(fmt.arg("nn"))));
+        return 1;
+    }
+*/
+
     // Copy uninstaller to temporary directory.
-    QString e = uninstaller2tmp();
-    if ( !e.isEmpty() ) {
-        error(e);
-    } else {
-        // Transfer control to the uninstaller.
+    if ( uninstaller2tmp() ) {
 
-///// NEW IDEA: On Windows, true execl seems not possible, there is always a new pid.
-// So I might as well use QProcess ...
-// And add the option not to continue? I would then need to somehow return the temporary path ...
+        if ( copy_only ) {
+            return 0;
+        }
 
-
-
-
-/////
-
+        // Start the uninstaller: on Windows return 0, on Linux don't return (use execl).
 #if defined Q_OS_WIN
         // The uninstaller is expected to be in the root directory of the installation.
-        QByteArray cmdbytes{tmpdir.absoluteFilePath("app_uninstall.exe").toLocal8Bit()};
+        QString cmd{tmpdir.absoluteFilePath("app_uninstall.exe")};
+        if ( QProcess::startDetached(cmd, QStringList{appdir.absolutePath()}) ) {
+            return 0;
+        }
+        error(QCoreApplication::translate(
+            "Uninstall0",
+            "Couldn't start uninstaller: '%1 \"%2\"'")
+                .arg(cmd, appdir.absolutePath()));
 #else
         // The uninstaller is expected to be in the "bin" directory of the installation.
         QByteArray cmdbytes{tmpdir.absoluteFilePath("bin/app_uninstall.exe").toLocal8Bit()};
-#endif
         const char* cmd = cmdbytes.constData();
         QByteArray arg1{appdir.absolutePath().toLocal8Bit()};
-#if defined Q_OS_WIN
-        _execl(cmd, cmd, arg1.constData(), (char*) NULL);
-#else
         execl(cmd, cmd, arg1.constData(), (char*) NULL);
-#endif
         // execl doesn't return, if it works.
-        error(QString{"Failed: Switch to uninstaller in '%1'"}.arg(tmpdir.absolutePath()));
+        error(QCoreApplication::translate(
+            "Uninstall0",
+            "Failed: switch to uninstaller in '%1'").arg(tmpdir.absolutePath()));
+#endif
     }
 
     // Remove temporary dictionary.
-    if ( tmpdir != QDir{} && !tmpdir.removeRecursively() ) {
-        error(QCoreApplication::translate(
-            "Uninstall0", "Failed: Remove temporary folder: '%1'").arg(tmpdir.absolutePath()));
-    }
+    delTmp();
 
     // If successfully completed, we would never arrive here.
     return 1;
 }
 
+bool delTmp() {
+    if ( tmpdir.removeRecursively() )
+        return true;
+    error(QCoreApplication::translate(
+        "Uninstall0",
+        "Failed: Remove temporary folder: '%1'").arg(tmpdir.absolutePath()));
+    return false;
+}
 
 QString copyfile(QString frel)
 // Copy from appdir to tmpdir, the file has a relative path.
@@ -121,19 +195,10 @@ QString copyfile(QString frel)
     return {};
 }
 
-QString uninstaller2tmp()
+bool uninstaller2tmp()
+// Copy the uninstaller and supporting libraries to the temporary directory.
 {
-    // Create a temporary directory.
-    QDir tmpdir0{QDir::temp()};
-    QString tmprel{QString{"AppUnIn%1"}.arg(QRandomGenerator::global()->generate())};
-    if ( !tmpdir0.mkdir(tmprel) ) {
-        return QCoreApplication::translate(
-                "Uninstall0", "Failed: create temporary folder: '%1'")
-                    .arg(tmpdir0.absoluteFilePath(tmprel));
-
-    }
-    tmpdir.setPath(tmpdir0.absoluteFilePath(tmprel));
-    // Copy the uninstaller and supporting libraries to the temporary directory.
+#if defined Q_OS_WIN
     QStringList elist;
     QString e;
     e = copyfile("app_uninstall.exe");
@@ -167,9 +232,16 @@ QString uninstaller2tmp()
         }
     }
     if ( elist.isEmpty() ) {
-        return {};
+        return true;
     }
-    return QCoreApplication::translate(
-            "Uninstall0", "Failed: copying file(s) to temporary folder:\n - %1")
-                .arg(elist.join("\n - "));
+    error(QCoreApplication::translate(
+        "Uninstall0",
+        "Failed: copy file(s) to temporary folder:\n - %1")
+            .arg(elist.join("\n - ")));
+    return false;
+}
+#else
+    error("Not implemented: uninstaller2tmp()");
+    return false;
+#endif
 }
