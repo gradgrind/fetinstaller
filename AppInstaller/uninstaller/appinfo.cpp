@@ -34,17 +34,19 @@ bool AppInfo::init()
     QStringList args = QCoreApplication::arguments();
     if ( args.length() == 1 ) {
 #if defined Q_OS_WIN
-        error = QStringList{
-            tr("This program cannot delete itself."),
-            tr("The path to the installation to be deleted must be passed on the command line.")}.join("\n");
-        return false;
-    } else if ( args.length() == 2 ) {
-        QDir xdir{args.at(1)};
-        if ( xdir.exists("app_uninstall.exe") ) {
-            basedir = xdir;
-        } else {
-            error = tr("No uninstaller found in '%1'").arg(appdir.absolutePath());
+        // Get target
+        QString target{QFile::symLinkTarget(appdir.filePath("UNINSTALL_TARGET.lnk"))};
+        if ( target.isEmpty() ) {
+            error = tr("Missing link: '%1'").arg(appdir.filePath("UNINSTALL_TARGET.lnk"));
             return false;
+        } else {
+            // A simple test for an application folder:
+            if ( QFileInfo::exists(target + "/app_uninstall.exe") ) {
+                basedir.setPath(target);
+            } else {
+                error = tr("Invalid application folder: '%1'").arg(target);
+                return false;
+            }
         }
 #else
         basedir = appdir; // The uninstaller should delete itself.

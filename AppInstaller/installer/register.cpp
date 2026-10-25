@@ -12,7 +12,7 @@
 #include <windows.h>
 #include <shlobj.h>
 
-QString uninstall_command{"\"%1\\app_uninstall0.exe\""};
+#define UNINSTALLER_NAME "app_uninstall0.exe"
 
 bool Installer::isInstalled(QString dir)
 {
@@ -20,16 +20,16 @@ bool Installer::isInstalled(QString dir)
         QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
         QString app{ui->versioned->isChecked() ? versioned_app : appinfo.APPNAME};
         QString UNINFO{"Microsoft/Windows/CurrentVersion/Uninstall/" + app};
-        auto ustring = regsettings.value(UNINFO + "/UninstallString");
-        if ( !ustring.isNull() ) {
-            uninstall_exe = ustring.toString();
-            return !uninstall_exe.isEmpty();
+        auto ustring = regsettings.value(UNINFO + "/UninstallLocation");
+        if ( ustring.isNull() ) {
+            return false;
         }
-        return false;
+        uninstall_exe = QDir::fromNativeSeparators(ustring.toString() + "/" + UNINSTALLER_NAME);
+    } else {
+        uninstall_exe = dir + "/" + UNINSTALLER_NAME;
     }
-    uninstall_exe = uninstall_command.arg(QDir::toNativeSeparators(dir));
     // The app counts as "installed" only if the uninstaller exists.
-    return QFileInfo{dir + "/" +  "app_uninstall.exe"}.isFile();
+    return QFileInfo{uninstall_exe}.isFile();
 }
 
 bool Installer::missingFileTypeAssociation()
@@ -59,7 +59,7 @@ bool Installer::registerApp()
     QString idir{QDir::toNativeSeparators(app_dir.path())};
 
     regsettings.setValue("DisplayName", app);
-    regsettings.setValue("UninstallString", uninstall_command.arg(idir));
+    regsettings.setValue("UninstallString", '"' + idir + '\\' + UNINSTALLER_NAME + '"');
     regsettings.setValue("Publisher", appinfo.Publisher);
     regsettings.setValue("WebLink", appinfo.WebLink);
     regsettings.setValue("DisplayVersion", appinfo.APPVERSION);

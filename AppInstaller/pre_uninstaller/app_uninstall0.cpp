@@ -16,16 +16,17 @@
 
 #define TMP_NAME "gradgrind_QAIFUS"
 
-static const char* TMP_BUSY{QT_TRANSLATE_NOOP("Uninstall0", R"(
+static const char* TMP_BUSY = QT_TRANSLATE_NOOP("Uninstall0", R"(
 The temporary folder '%1' is already in use.
-It could be in use by another uninstaller – if so, don't delete it!
+It could be in use by another uninstaller – if so,         TODO
+don't delete it!
 If it is in use by a completely different application (unlikely), don't delete it!
 
 The folder might have been left by a faulty run of the uninstaller.
 
 Only if you are sure it is no longer in use should you delete it.
 
-Delete this folder?)")};
+Delete this folder?)");
 
 QDir appdir;
 QDir tmpdir;
@@ -136,6 +137,18 @@ int main(int argc, char *argv[])
     // Copy uninstaller to temporary directory.
     if ( uninstaller2tmp() ) {
 
+
+#if defined Q_OS_WIN
+        // Create a link to appdir.absolutePath() in tmpdir
+        if ( !QFile::link(appdir.absolutePath(), tmpdir.filePath("UNINSTALL_TARGET.lnk")) ) {
+            error(QCoreApplication::translate(
+                "Uninstall0",
+                "Failed: link to target: '%1' -> '%2'")
+                    .arg(tmpdir.filePath("UNINSTALL_TARGET.lnk"), appdir.absolutePath()));
+            goto recover;
+        }
+#endif
+
         if ( copy_only ) {
             return 0;
         }
@@ -149,8 +162,7 @@ int main(int argc, char *argv[])
         }
         error(QCoreApplication::translate(
             "Uninstall0",
-            "Couldn't start uninstaller: '%1 \"%2\"'")
-                .arg(cmd, appdir.absolutePath()));
+            "Couldn't start uninstaller: '%1'").arg(cmd));
 #else
         // The uninstaller is expected to be in the "bin" directory of the installation.
         QByteArray cmdbytes{tmpdir.absoluteFilePath("bin/app_uninstall.exe").toLocal8Bit()};
@@ -164,6 +176,7 @@ int main(int argc, char *argv[])
 #endif
     }
 
+recover:
     // Remove temporary dictionary.
     delTmp();
 

@@ -87,6 +87,7 @@ private slots:
 
     void handleCopyingFinished();
     void uninstallDone(int exitCode, QProcess::ExitStatus exitStatus);
+    void uninstallFailed(QProcess::ProcessError error);
 
 private:
     Ui::Installer *ui;

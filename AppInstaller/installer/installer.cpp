@@ -8,6 +8,8 @@
 #include <QStandardPaths>
 #include <QMessageBox>
 
+#define TMP_NAME "gradgrind_QAIFUS"
+
 static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
   Please check that your installer has not been corrupted.<br>
   If necessary, contact the distributor.)");
@@ -217,6 +219,7 @@ void Installer::page_1()
 void Installer::page_2()
 {
     connect(&uninstall_process, &QProcess::finished, this, &Installer::uninstallDone);
+    connect(&uninstall_process, &QProcess::errorOccurred, this, &Installer::uninstallFailed);
 
     ui->stackedWidget->setCurrentIndex(2);
     textOutput = ui->check_destination;
@@ -313,14 +316,41 @@ void Installer::setInstallPath(QString ipath)
 void Installer::uninstallExisting()
 {
     // Try to remove the installation in app_dir.
+
+#if defined Q_OS_WIN
+    // The first stage, the copying, should be pretty quick, so I can use QProcess::execute.
+    int e = QProcess::execute(uninstall_exe, QStringList{"--copy-only"});
+    if ( e != 0 ) {
+        print_line(tr("Failed: copying the uninstaller: '%1'").arg(uninstall_exe), true);
+        return;
+    } else {
+        QDir tmpdir0{QDir::temp()};
+        QString tmpPath{tmpdir0.absoluteFilePath(QString{TMP_NAME} + "/app_uninstall.exe")};
+        if ( QFileInfo::exists(tmpPath) ) {
+            uninstall_process.startCommand(tmpPath);
+            // The path to the installation to be removed should be available in the temporary directory.
+        } else {
+            print_line(tr("Failed: starting the uninstaller: '%1'").arg(tmpPath), true);
+            return;
+        }
+    }
+#else
+    uninstall_process.startCommand(uninstall_exe);
+    // The uninstaller should be running ... wait for the "finished" signal (-> uninstallDone())
+#endif
     // Disable GUI, set busy cursor ...
     QApplication::setOverrideCursor(Qt::WaitCursor);
     setEnabled(false);
     installationPartial = true;
-    uninstall_process.startCommand(uninstall_exe);
-    // The uninstaller should be running ... wait for the "finished" signal (-> uninstallDone())
 }
 
+void Installer::uninstallFailed(QProcess::ProcessError error)
+{
+    QApplication::restoreOverrideCursor();
+    installationPartial = false;
+    setEnabled(true);
+    print_line(tr("Failed: uninstall (%1)").arg(uninstall_process.error()), true);
+}
 
 void Installer::uninstallDone(int exitCode, QProcess::ExitStatus exitStatus)
 {
