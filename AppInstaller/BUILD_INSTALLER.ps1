@@ -13,10 +13,6 @@ if ( [string]::IsNullOrEmpty($APPNAME) )
     Write-Host "  powershell -ExecutionPolicy Bypass -File $name -Argument-List APPNAME"
     exit 1
 }
-else
-{
-    Write-Host "Got `"$APPNAME`""
-}
 
 $QTDIR = "C:\Qt"
 $QTVERSION = Get-ChildItem -Path "$QTDIR" -Filter "6.1*" | Select-Object -ExpandProperty Name -Last 1
@@ -27,6 +23,7 @@ if ( [string]::IsNullOrEmpty($QTVERSION) )
     exit 1
 }
 Write-Host "Using '$QTDIR\$QTVERSION'"
+Write-Host
 
 $env:Path = "$QTDIR\Tools\CMake_64\bin;$QTDIR\Tools\mingw1310_64\bin;" + $env:Path
 
@@ -38,7 +35,7 @@ Write-Host
 
 $APPDIR = Resolve-Path -Path "..\QAIFUS_$APPNAME"
 if ( Test-Path -path "$APPDIR\BUILD.ps1" ) {
-    . "$APPDIR\BUILD.sh"
+    . "$APPDIR\BUILD.ps1"
 }
 else
 {
