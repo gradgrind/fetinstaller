@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 #if defined Q_OS_WIN
         // Remove temporary directory.
         QString dpath{QDir::toNativeSeparators(appinfo.appdir.absolutePath())};
-        QString emsg{QCoreApplication::translate("main", "Failed: delete folder '%1'").arg(dpath)};
+        QString emsg{QCoreApplication::translate("main", "Failed: delete folder \"%1\"").arg(dpath)};
         QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg)};
         QByteArray cmdbytes{cmd.toLocal8Bit()};
         const char* cmdx = cmdbytes.constData();
