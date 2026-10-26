@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-cmake --"build build/$APPNAME" --target install --parallel 6
+cmake --build "build/$APPNAME" --target install --parallel 6
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** $APPNAME build failed"
