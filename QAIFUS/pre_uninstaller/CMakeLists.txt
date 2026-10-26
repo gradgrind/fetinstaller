@@ -6,11 +6,11 @@ else()
     return()
 endif()
 
-#set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_uninstall.rc")
+set(app_icon_resource_windows "${CMAKE_CURRENT_SOURCE_DIR}/icons/app_uninstall.rc")
 
 qt_add_executable(app_uninstall0
     WIN32
-#    ${app_icon_resource_windows}
+    ${app_icon_resource_windows}
     app_uninstall0.cpp
 )
 
