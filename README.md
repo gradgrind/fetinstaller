@@ -10,7 +10,7 @@ This project is directed specifically at C++/Qt GUI applications which compile t
 
  - creates a Start-Menu entry
 
- - can register a file-ending (mime-type on Linux)
+ - can register a file-ending ("mime-type" on Linux)
 
  - also a "versioned" installation installation is possible, allowing multiple versions to be installed, but this doesn't do the file-ending registration
 
