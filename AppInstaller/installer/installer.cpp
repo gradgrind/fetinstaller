@@ -45,7 +45,7 @@ Installer::Installer(QLocale locale, QWidget *parent)
     setWindowIcon(QIcon(":/icons/installer.svg"));
 
     // Set application name in GUI
-    ui->label_title->setText(ui->label_title->text().arg(appinfo.APPNAME, appinfo.APPLONGNAME));
+    ui->label_title->setText(ui->label_title->text().arg(versioned_app, appinfo.APPLONGNAME));
     ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.APPNAME));
     ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.APPNAME));
     ui->removeExisting->setText(ui->removeExisting->text().arg(appinfo.APPNAME));

@@ -106,6 +106,7 @@ private:
     bool missingFileTypeAssociation();
     QString get_execpath(QDir dir);
     void update_desktop_database();
+    bool execInPath(QString xname);
 
     QPlainTextEdit* textOutput{nullptr};
     QStringList copyErrors;

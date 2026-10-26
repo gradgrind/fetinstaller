@@ -163,6 +163,11 @@ void Installer::update_desktop_database()
 #elif defined Q_OS_LINUX
 #include <QXmlStreamReader>
 
+static const char *OTHER_INSTALLATION = QT_TRANSLATE_NOOP("Installer", R"(
+"'%1' is already in the PATH: '%2'
+
+Apparently it has already been installed in some other way.)");
+
 bool Installer::isInstalled(QString dir)
 {
     // Assume an uninstaller is in the same directory as the app executable.
@@ -193,6 +198,15 @@ bool Installer::missingFileTypeAssociation()
     return !QFileInfo{shareDir.absoluteFilePath(mrpath)}.isFile();
 }
 
+bool Installer::execInPath(QString xname)
+{
+    QString xpath = QStandardPaths::findExecutable(xname);
+    if ( xpath.isEmpty() )
+        return false;
+    print_line(tr(OTHER_INSTALLATION).arg(xname, xpath), true);
+    return true;
+}
+
 bool Installer::preRegister()
 {
     // Collect the locations outside of the application bundle which will be written to.
@@ -214,6 +228,9 @@ bool Installer::preRegister()
         // Add versioned links to executables.
         // Note that there will be no mime type or icons if there is no unversioned installation!
         for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
+            if ( execInPath(b + "-" + appinfo.APPVERSION) )
+                ok = false;
+
             QString execrpath{"bin/" + b};
             QString execfile{app_dir.absoluteFilePath(execrpath)};
             if ( !QFileInfo{src_dir.filePath(execrpath)}.isExecutable() ) {
@@ -278,6 +295,9 @@ bool Installer::preRegister()
     } else {
         // Add "unversioned" links to executables.
         for ( const auto &b : std::as_const(appinfo.BINLINKS) ) {
+            if ( execInPath(b) )
+                ok = false;
+
             QString execrpath{"bin/" + b};
             QString execfile{app_dir.absoluteFilePath(execrpath)};
             if ( !QFileInfo{src_dir.filePath(execrpath)}.isExecutable() ) {

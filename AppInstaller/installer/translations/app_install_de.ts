@@ -299,92 +299,103 @@ Um fortzufahren, muss die schon vorhandene Anwendung deinstalliert werden.</tran
     </message>
     <message>
         <location filename="../register.cpp" line="122"/>
-        <location filename="../register.cpp" line="499"/>
+        <location filename="../register.cpp" line="519"/>
         <source>Couldn&apos;t install desktop starter: &apos;%1&apos;</source>
         <translation>Schreibtisch Verknüpfung konnte nicht erstellt werden: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="220"/>
-        <location filename="../register.cpp" line="284"/>
+        <location filename="../register.cpp" line="166"/>
+        <source>
+&quot;&apos;%1&apos; is already in the PATH: &apos;%2&apos;
+
+Apparently it has already been installed in some other way.</source>
+        <translation>
+&apos;%1&apos; ist schon im PATH: &apos;%2&apos;
+
+Anscheinend ist die Anwendung schon anderweitig installiert.</translation>
+    </message>
+    <message>
+        <location filename="../register.cpp" line="237"/>
+        <location filename="../register.cpp" line="304"/>
         <source>Executable missing in installation bundle: &apos;%1&apos;</source>
         <translation>Ausführbare Datei fehlt im Installationspaket: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="225"/>
-        <location filename="../register.cpp" line="289"/>
+        <location filename="../register.cpp" line="242"/>
+        <location filename="../register.cpp" line="309"/>
         <source>Add executable to PATH: &apos;%1&apos;</source>
         <translation>Anwendung in „PATH“ installieren: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="264"/>
-        <location filename="../register.cpp" line="366"/>
+        <location filename="../register.cpp" line="281"/>
+        <location filename="../register.cpp" line="386"/>
         <source>Icon missing in installation bundle: &apos;%1&apos;</source>
         <translation>Icon fehlt im Installationspaket: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="275"/>
-        <location filename="../register.cpp" line="303"/>
+        <location filename="../register.cpp" line="292"/>
+        <location filename="../register.cpp" line="323"/>
         <source>Add &apos;Start&apos; menu entry: &apos;%1&apos;</source>
         <translation>Start-Menü Eintrag erstellen: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="316"/>
+        <location filename="../register.cpp" line="336"/>
         <source>Mime-type file missing in installation bundle: &apos;%1&apos;</source>
         <translation>Mime-Typ-Datei fehlt im Installationspaket: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="323"/>
+        <location filename="../register.cpp" line="343"/>
         <source>Couldn&apos;t read mime-type file in installation bundle: &apos;%1&apos;</source>
         <translation>Mime-Typ-Datei im Installationspaket konnte nicht gelesen werden: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="338"/>
+        <location filename="../register.cpp" line="358"/>
         <source>Invalid mime-type file in installation bundle: &apos;%1&apos;</source>
         <translation>Ungültige Mime-Typ-Datei im Installationspaket: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="339"/>
+        <location filename="../register.cpp" line="359"/>
         <source>  ... in line %1: %2</source>
         <translation>  ... in Zeile %1: %2</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="345"/>
+        <location filename="../register.cpp" line="365"/>
         <source>Install mime file: &apos;%1&apos;</source>
         <translation>Mime-Typ-Datei installieren: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="371"/>
+        <location filename="../register.cpp" line="391"/>
         <source>Add icon file: &apos;%1&apos;</source>
         <translation>Icon-Datei installieren: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="386"/>
+        <location filename="../register.cpp" line="406"/>
         <source>Add man file: &apos;%1&apos;</source>
         <translation>„Man“-Datei installieren: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="392"/>
+        <location filename="../register.cpp" line="412"/>
         <source>Can&apos;t install item to: &apos;%1&apos;</source>
         <translation>„%1“ nicht schreibbar</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="408"/>
+        <location filename="../register.cpp" line="428"/>
         <source>&apos;Desktop&apos; file missing in installation bundle: &apos;%1&apos;</source>
         <translation>„Desktop“-Datei fehlt im Installationspaket: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="414"/>
+        <location filename="../register.cpp" line="434"/>
         <source>Couldn&apos;t read &apos;desktop&apos; file in installation bundle: &apos;%1&apos;</source>
         <translation>„Desktop“-Datei im Installationspaket nicht lesbar: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="475"/>
+        <location filename="../register.cpp" line="495"/>
         <source>Failed: </source>
         <translation>Fehlgeschlagen: </translation>
     </message>
     <message>
         <location filename="../register.cpp" line="119"/>
-        <location filename="../register.cpp" line="485"/>
+        <location filename="../register.cpp" line="505"/>
         <source>Install desktop starter: &apos;%1&apos;</source>
         <translation>Schreibtisch-shortcut installieren: „%1“</translation>
     </message>
@@ -404,22 +415,22 @@ Um fortzufahren, muss die schon vorhandene Anwendung deinstalliert werden.</tran
         <translation>Start-Menü-Eintrag installieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="495"/>
+        <location filename="../register.cpp" line="515"/>
         <source>Failed to make desktop starter executable: &apos;%1&apos;</source>
         <translation>Schreibtisch-shortcut konnte nicht ausführbar gemacht werden: „%1“</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="507"/>
+        <location filename="../register.cpp" line="527"/>
         <source>Update icon cache</source>
         <translation>Icon-Cache aktualisieren</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="509"/>
+        <location filename="../register.cpp" line="529"/>
         <source>Update mime database</source>
         <translation>Mime-Datenbank aktualisieren</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="526"/>
+        <location filename="../register.cpp" line="546"/>
         <source>Update desktop database</source>
         <translation>Schreibtisch-Datenbank aktualisieren</translation>
     </message>

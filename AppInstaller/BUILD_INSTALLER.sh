@@ -22,6 +22,16 @@
 # If necessary, it will change its working directory to run in the
 # "AppInstaller" directory.
 
+SCRIPT=$(readlink -f "$0")
+BASEDIR=$(dirname "$SCRIPT")
+cd $BASEDIR
+
+APPNAME="$1"
+if [ -z "$APPNAME" ]; then
+    echo "Application name missing, use: ./$(basename "$SCRIPT") APPNAME"
+    exit 1
+fi
+
 QTDIR="$HOME/Qt"
 # Find newest available Qt version, but exclude 6.12.0, which is broken.
 # The lowest acceptable version is 6.10.
@@ -36,19 +46,10 @@ echo
 
 export PATH=$QTDIR/Tools/CMake/bin:$PATH
 
-SCRIPT=$(readlink -f "$0")
-BASEDIR=$(dirname "$SCRIPT")
-cd $BASEDIR
-
 # Build app, assuming it is in the parent directory
 echo "Starting build process ..."
 echo
 
-APPNAME="$1"
-if [ -z "$APPNAME" ]; then
-    echo "Application name missing, use: ./$(basename "$SCRIPT") APPNAME"
-    exit 1
-fi
 APPDIR=$(readlink -f "../QAIFUS_$APPNAME")
 if [ -f "$APPDIR/BUILD.sh" ]; then
     . "$APPDIR/BUILD.sh"
@@ -58,7 +59,6 @@ else
 fi
 
 echo
-# Build the installer
 echo "Build the installer app..."
 echo
 
@@ -80,7 +80,6 @@ fi
 mkdir -p build/app_bundle/_installer_
 
 echo
-# Build the uninstaller app
 echo "Build uninstaller app ..."
 echo
 
