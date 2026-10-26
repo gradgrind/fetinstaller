@@ -1,8 +1,5 @@
 #!/bin/bash
 
-APPNAME="FET"
-APPVERSION=$(<../VERSION)
-
 # Build the application itself, app_install and app_uninstall,
 # placing the installation bundle in "build/app_bundle".
 
@@ -39,76 +36,58 @@ BASEDIR=$(dirname "$SCRIPT")
 cd $BASEDIR
 
 # Build app, assuming it is in the parent directory
-echo "Build application ..."
+echo "Starting build process ..."
 echo
 
-cmake -B build/$APPNAME -S .. -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
-
-if [ $? -ne 0 ]; then
-    echo "ABORTING 1"
+APPNAME="$1"
+if [ -z "$APPNAME" ]; then
+    echo "Application name missing, use: ./$(basename "$SCRIPT") APPNAME"
     exit 1
 fi
-
-cmake --build build/$APPNAME --target install --parallel 6
-
-if [ $? -ne 0 ]; then
-    echo "ABORTING 2"
+APPDIR=$(readlink -f "../QAIFUS_$APPNAME")
+if [ -f "$APPDIR/BUILD.sh" ]; then
+    . "$APPDIR/BUILD.sh"
+else
+    echo "File not found: $APPDIR/BUILD.sh"
     exit 1
 fi
 
 echo
 # Build the installer
-echo "Build the installer ..."
+echo "Build the installer components ..."
 echo
 
-cmake -B build/installer -S installer -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
+cmake -B build/QAIFUS -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
 
 if [ $? -ne 0 ]; then
-    echo "ABORTING 3"
+    echo "***!!!*** installer components' configuration failed"
     exit 1
 fi
 
-cmake --build build/installer --target install --parallel 6
+cmake --build build/QAIFUS --target install --parallel 6
 
 if [ $? -ne 0 ]; then
-    echo "ABORTING 4"
+    echo "***!!!*** installer components build failed"
     exit 1
 fi
 
 # Ensure that the "_installer_" directory exists
 mkdir -p build/app_bundle/_installer_
+# Move the installer executable and copy qt.conf
+mv build/app_bundle/bin/app_install build/app_bundle/_installer_
+cp -p build/app_bundle/bin/qt.conf build/app_bundle/_installer_
+# Add the installer app-configuration file
+sed "s/%VERSION%/$APPVERSION/g;s/%APPNAME%/$APPNAME/g" $APPDIR/app.conf > build/app_bundle/_installer_/app.conf
 
 echo
-# Build the uninstaller
-echo "Build uninstaller ..."
-echo
-
-cmake -B build/uninstaller -S uninstaller -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
-
-if [ $? -ne 0 ]; then
-    echo "ABORTING 5"
-    exit 1
-fi
-
-# Add the installer configuration file
-sed "s/%VERSION%/$APPVERSION/g" app.conf > build/app_bundle/_installer_/app.conf
-
-cmake --build build/uninstaller --target install --parallel 6
-
-if [ $? -ne 0 ]; then
-    echo "ABORTING 6"
-    exit 1
-fi
-
-echo
-echo "Create app_bundle archive: build/app_bundle.tar.xz"
+echo "Create app bundle archive: build/app_bundle.tar.xz"
 echo
 
 cd build/app_bundle
 tar -cJf ../app_bundle.tar.xz *
 
 if [ $? -ne 0 ]; then
-    echo "ABORTING 7"
+    echo "***!!!*** app bundle compression failed"
     exit 1
 fi
 
@@ -118,4 +97,9 @@ echo
 
 cd ../../appin
 musl-gcc -static -o "../$APPNAME-$APPVERSION.run" appin.c
+
+if [ $? -ne 0 ]; then
+    echo "***!!!*** final (appin) packaging failed"
+    exit 1
+fi
 

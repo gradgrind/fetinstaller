@@ -1,29 +1,9 @@
-cmake_minimum_required(VERSION 3.28)
-project(app_install LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Subdirectory "installer"
 
-# Place the executables in this non-standard directory as they are not
-# to be installed themselves.
-set(CMAKE_INSTALL_DATADIR "_installer_")
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    # The executable must be placed in the root directory to be able to
-    # share the libraries with the app to be installed.
-    set(CMAKE_INSTALL_BINDIR ".")
-else()
-    set(CMAKE_INSTALL_BINDIR "_installer_")
-endif()
-
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
-find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-
-set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_install.rc")
-
-qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES de)
-set(CMAKE_AUTORCC ON)
+set(app_icon_resource_windows "${CMAKE_CURRENT_SOURCE_DIR}/icons/app_install.rc")
 
 qt_add_executable(app_install
-    WIN32 MACOSX_BUNDLE
+    WIN32
     ${app_icon_resource_windows}
     app_install.cpp
     installer.h installer.cpp installer.ui
@@ -51,8 +31,6 @@ target_link_libraries(app_install
 
 install(TARGETS app_install
     BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

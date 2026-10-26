@@ -1,28 +1,16 @@
-cmake_minimum_required(VERSION 3.28)
-project(app_uninstall0 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Subdirectory "pre_installer" (Windows only)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(CMAKE_INSTALL_BINDIR ".")
-    set(CMAKE_INSTALL_DATADIR ".")
-    set(CMAKE_INSTALL_LIBDIR ".")
 else()
     message(SEND_ERROR "This project is for Windows only.")
     return()
 endif()
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
-find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-
-qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES de)
-set(CMAKE_AUTORCC ON)
-
-set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_uninstall.rc")
+#set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_uninstall.rc")
 
 qt_add_executable(app_uninstall0
     WIN32
-    ${app_icon_resource_windows}
+#    ${app_icon_resource_windows}
     app_uninstall0.cpp
 )
 
@@ -42,9 +30,6 @@ target_link_libraries(app_uninstall0
 )
 
 install(TARGETS app_uninstall0
-    BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

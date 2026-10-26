@@ -1,7 +1,21 @@
-# Build script for Windows (Powershell) using a standard Qt installation set up
-# by the the Qt online installer.
-# This is a Powershell script. To run it, it may be necessary to do something like:
-# "powershell -ExecutionPolicy Bypass -File BUILD_INSTALLER.ps1 -Argument-List MyApp"
+# Build the application itself, app_install, app_uninstall0 and app_uninstall,
+# placing the installation bundle in "build/app_bundle".
+
+# The app bundle is then compressed to "app_bundle.tar.xz", which is
+# included in the installer starter from "appin". The resulting
+# executable is named '$APPNAME-$APPVERSION.exe'.
+
+# This build script is for Windows (Powershell) using a standard Qt installation set
+# up by the the Qt online installer.
+# To build the compressed app bundle a "tar" implementation with "xz" support is
+# needed. On older versions of Windows this may not be present, in which case
+# "bsdtar" can be installed.
+
+# Place the "QAIFUS" folder and a suitable build folder for the application
+# itself, say "QAIFUS_MyApp", in the root folder of the application's
+# source code.
+# Then run this script, something like:
+#   "powershell -ExecutionPolicy Bypass -File BUILD_QAIFUS.ps1 -Argument-List MyApp"
 
 cd "$PSScriptRoot"
 
@@ -16,12 +30,12 @@ if ( [string]::IsNullOrEmpty($APPNAME) )
 
 $QTDIR = "C:\Qt"
 $QTVERSION = Get-ChildItem -Path "$QTDIR" -Filter "6.1*" | Select-Object -ExpandProperty Name -Last 1
-#$QTVERSION = "6.12.0"
 if ( [string]::IsNullOrEmpty($QTVERSION) )
 {
     Write-Host "No suitable Qt installation found in '$QTDIR'"
     exit 1
 }
+#$QTVERSION = "6.11.2"
 Write-Host "Using '$QTDIR\$QTVERSION'"
 Write-Host
 
@@ -39,27 +53,27 @@ if ( Test-Path -path "$APPDIR\BUILD.ps1" ) {
 }
 else
 {
-    Write-Host "File not found: $APPDIR\BUILD.sh"
+    Write-Host "File not found: $APPDIR\BUILD.ps1"
     exit 1
 }
 
 Write-Host
-Write-Host "Build the installer app..."
+Write-Host "Build the installer components ..."
 Write-Host
 
-cmake -B build\installer -S installer -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" -DCMAKE_GENERATOR="MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="build\$install_prefix"
+cmake -B "build\QAIFUS" -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" -DCMAKE_GENERATOR="MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="build\$install_prefix"
 
 if ( !$? )
 {
-    Write-Host "***!!!*** installer app configuration failed"
+    Write-Host "***!!!*** installer components' configuration failed"
     exit 1
 }
 
-cmake --build build\installer --target install --parallel 6
+cmake --build build\QAIFUS --target install --parallel 6
 
 if ( !$? )
 {
-    Write-Host "***!!!*** installer app build failed"
+    Write-Host "***!!!*** installer components' build failed"
     exit 1
 }
 
@@ -72,45 +86,7 @@ if ( -not ( Test-Path -Path "$installerdir" ) ) {
     -replace '%VERSION%', "$APPVERSION" `
     -replace '%APPNAME%', "$APPNAME" |
     Set-Content build\app_bundle\_installer_\app.conf
-
 Copy-Item "$DESKTOP" -Destination "$installerdir\desktop"
-
-Write-Host
-Write-Host "Build the uninstaller app ..."
-Write-Host
-
-cmake -B build\uninstaller -S uninstaller -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" -DCMAKE_GENERATOR="MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="build\$install_prefix"
-
-if ( !$? )
-{
-    Write-Host "***!!!*** uninstaller app configuration failed"
-    exit 1
-}
-
-cmake --build build\uninstaller --target install --parallel 6
-
-if ( !$? )
-{
-    Write-Host "***!!!*** uninstaller app build failed"
-    exit 1
-}
-
-# Build the pre-uninstaller
-cmake -B build\pre_uninstaller -S pre_uninstaller -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" -DCMAKE_GENERATOR="MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="build\$install_prefix"
-
-if ( !$? )
-{
-    Write-Host "***!!!*** pre_uninstaller app configuration failed"
-    exit 1
-}
-
-cmake --build build\pre_uninstaller --target install --parallel 6
-
-if ( !$? )
-{
-    Write-Host "***!!!*** pre_uninstaller app build failed"
-    exit 1
-}
 
 Write-Host
 Write-Host "Create app bundle archive: build\app_bundle.tar.xz"
@@ -132,7 +108,6 @@ catch {
         exit 1
     }
 }
-
 cd build\app_bundle
 Start-Process -FilePath "$tarx" -Wait -NoNewWindow -ArgumentList "-cJf ..\app_bundle.tar.xz *"
 

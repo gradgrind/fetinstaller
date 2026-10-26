@@ -1,21 +1,6 @@
-cmake_minimum_required(VERSION 3.28)
-project(app_uninstall LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Subdirectory "uninstaller"
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(CMAKE_INSTALL_BINDIR ".")
-    set(CMAKE_INSTALL_DATADIR ".")
-    set(CMAKE_INSTALL_LIBDIR ".")
-endif()
-
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Widgets)
-find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-
-set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_uninstall.rc")
-
-qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES de)
-set(CMAKE_AUTORCC ON)
+set(app_icon_resource_windows "${CMAKE_CURRENT_SOURCE_DIR}/icons/app_uninstall.rc")
 
 qt_add_executable(app_uninstall
     WIN32 MACOSX_BUNDLE
@@ -44,9 +29,6 @@ target_link_libraries(app_uninstall
 )
 
 install(TARGETS app_uninstall
-    BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
