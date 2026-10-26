@@ -35,6 +35,8 @@ SCRIPT=$(readlink -f "$0")
 BASEDIR=$(dirname "$SCRIPT")
 cd $BASEDIR
 
+install_prefix="app_bundle"
+
 # Build app, assuming it is in the parent directory
 echo "Starting build process ..."
 echo
@@ -57,14 +59,14 @@ echo
 echo "Build the installer components ..."
 echo
 
-cmake -B build/QAIFUS -DCMAKE_PREFIX_PATH=$QTDIR/$QTVERSION/gcc_64 -DCMAKE_INSTALL_PREFIX=build/app_bundle
+cmake -B "build/QAIFUS" -DCMAKE_PREFIX_PATH="$QTDIR/$QTVERSION/gcc_64" -DCMAKE_INSTALL_PREFIX="build/$install_prefix"
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** installer components' configuration failed"
     exit 1
 fi
 
-cmake --build build/QAIFUS --target install --parallel 6
+cmake --build "build/QAIFUS" --target install --parallel 6
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** installer components build failed"
@@ -72,18 +74,18 @@ if [ $? -ne 0 ]; then
 fi
 
 # Ensure that the "_installer_" directory exists
-mkdir -p build/app_bundle/_installer_
+mkdir -p "build/$install_prefix/_installer_"
 # Move the installer executable and copy qt.conf
-mv build/app_bundle/bin/app_install build/app_bundle/_installer_
-cp -p build/app_bundle/bin/qt.conf build/app_bundle/_installer_
+mv "build/$install_prefix/bin/app_install" "build/$install_prefix/_installer_"
+cp -p "build/$install_prefix/bin/qt.conf" "build/$install_prefix/_installer_"
 # Add the installer app-configuration file
-sed "s/%VERSION%/$APPVERSION/g;s/%APPNAME%/$APPNAME/g" $APPDIR/app.conf > build/app_bundle/_installer_/app.conf
+sed "s/%VERSION%/$APPVERSION/g;s/%APPNAME%/$APPNAME/g" "$APPDIR/app.conf" > "build/$install_prefix/_installer_/app.conf"
 
 echo
 echo "Create app bundle archive: build/app_bundle.tar.xz"
 echo
 
-cd build/app_bundle
+cd "build/$install_prefix"
 tar -cJf ../app_bundle.tar.xz *
 
 if [ $? -ne 0 ]; then

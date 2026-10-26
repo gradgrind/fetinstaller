@@ -477,7 +477,7 @@ void Installer::handleCopyFailed(QString filepath)
 void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
 {
     progressOne();
-    print_line("+ " + app_dir.filePath(filepaths.second));
+    print_line("+ " + app_dir.filePath(filepaths.first));
 }
 
 void Installer::handleLinkFailed(QPair<QString, QString> filepaths)
