@@ -59,7 +59,10 @@ echo
 echo "Build the installer components ..."
 echo
 
-cmake -B "build/QAIFUS" -DCMAKE_PREFIX_PATH="$QTDIR/$QTVERSION/gcc_64" -DCMAKE_INSTALL_PREFIX="build/$install_prefix"
+cmake -B "build/QAIFUS" \
+    -DCMAKE_PREFIX_PATH="$QTDIR/$QTVERSION/gcc_64" \
+    -DCMAKE_INSTALL_LIBDIR="lib" \
+    -DCMAKE_INSTALL_PREFIX="build/$install_prefix"
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** installer components' configuration failed"

@@ -3,7 +3,10 @@ APPVERSION=$(<../VERSION)
 echo "Building $APPNAME-$APPVERSION ..."
 echo
 
-cmake -B "build/$APPNAME" -S .. -DCMAKE_PREFIX_PATH="$QTDIR/$QTVERSION/gcc_64" -DCMAKE_INSTALL_PREFIX="build/$install_prefix"
+cmake -B "build/$APPNAME" -S .. \
+    -DCMAKE_PREFIX_PATH="$QTDIR/$QTVERSION/gcc_64" \
+    -DCMAKE_INSTALL_LIBDIR="lib" \
+    -DCMAKE_INSTALL_PREFIX="build/$install_prefix"
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** $APPNAME configuration failed"
