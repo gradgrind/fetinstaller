@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=app_install
+GenericName=Installer application for the QAIFUS installer collection
+GenericName[de]=Installationsanwendung für das QAIFUS Installationssammlung
+Icon=app_install
+Exec=app_install
+Terminal=false
+StartupNotify=true
+Categories=Programming;Development;Qt;

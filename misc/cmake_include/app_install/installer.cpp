@@ -1,0 +1,578 @@
+#include "installer.h"
+#include "ui_installer.h"
+#include "copythread.h"
+#include <QDirListing>
+#include <QPushButton>
+#include <QFileDialog>
+#include <QTimer>
+#include <QStandardPaths>
+#include <QMessageBox>
+
+#define TMP_NAME "gradgrind_QAIFUS"
+
+static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
+  Please check that your installer has not been corrupted.<br>
+  If necessary, contact the distributor.)");
+
+static const char *ALREADY_INSTALLED = QT_TRANSLATE_NOOP("Installer", R"(
+%1 is already installed.<br>
+To proceed, uninstall the existing app.)");
+
+void Installer::closeEvent(QCloseEvent *event)
+{
+    if ( installationPartial ) { // set to true during file copying, etc.
+        event->ignore(); // don't close the window
+    } else {
+        event->accept();
+    }
+}
+
+Installer::Installer(QLocale locale, QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::Installer)
+{
+    ui->setupUi(this);
+    ui->stackedWidget->setCurrentIndex(0);
+
+    if ( !appinfo.init(locale) ) {
+        return;
+    }
+    app_initialized = true;
+    versioned_app = appinfo.APPNAME + "-" + appinfo.APPVERSION;
+
+    src_dir = appinfo.SOURCE_DIR;
+
+    setWindowIcon(QIcon(":/icons/installer.svg"));
+
+    // Set application name in GUI
+    ui->label_title->setText(ui->label_title->text().arg(versioned_app, appinfo.APPLONGNAME));
+    ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.APPNAME));
+    ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.APPNAME));
+    ui->removeExisting->setText(ui->removeExisting->text().arg(appinfo.APPNAME));
+    ui->launch->setText(ui->launch->text().arg(appinfo.APPNAME));
+
+    // *** Connect signals ***
+
+    // page switching
+    connect(ui->buttonBox_0, &QDialogButtonBox::accepted, this, &Installer::page_1);
+    connect(ui->buttonBox_0, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
+    connect(ui->buttonBox_1, &QDialogButtonBox::accepted, this, &Installer::page_2);
+    connect(ui->buttonBox_1, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
+    connect(ui->buttonBox_2, &QDialogButtonBox::accepted, this, &Installer::page_3);
+    connect(ui->buttonBox_2, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
+    connect(ui->buttonBox_3, &QDialogButtonBox::accepted, this, &Installer::page_4);
+    connect(ui->buttonBox_4, &QDialogButtonBox::accepted, qApp, &QApplication::quit);
+
+    // select destination directory
+    connect(ui->refresh_2, &QPushButton::clicked, this, &Installer::refreshView);
+    connect(ui->setDefaultPath, &QPushButton::clicked, this, &Installer::selectDefaultDir);
+    connect(ui->installPathBrowse, &QToolButton::clicked, this, &Installer::selectInstallDir);
+    connect(ui->removeExisting, &QPushButton::clicked, this, &Installer::uninstallExisting);
+    connect(ui->versioned, &QCheckBox::toggled, this, &Installer::refreshView);
+    connect(ui->unpack_only, &QCheckBox::toggled, this, &Installer::refreshView);
+
+    //NOTE: If the time is too short, a blank window might get shown at first ...
+    QTimer::singleShot(100, this, &Installer::page_0);
+}
+
+Installer::~Installer() {
+    workerThread.quit();
+    workerThread.wait();
+    delete ui;
+}
+
+void addBoldLine(QPlainTextEdit* e, QString line)
+{
+    e->appendHtml("<b>" + line + "</b");
+}
+
+void Installer::page_0()
+{
+    // This runs quickly enough not to be run in a background thread. It sets a busy cursor,
+    // but the processing should be so quick that this is not be visible.
+
+    ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(false);
+    scanComplete =false;
+    scanOk = false;
+
+    // Collect the files here for copying later: their paths are relative to the source root.
+    // In general, all files, except from the "_installer_" directory (and the installer itself
+    // on Windows, where it is not in the "_installer_" directory), are copied.
+    QStringList installationFiles;
+    QStringList uninstallerFiles;
+    QStringList installationDirs;
+    QList<QPair<QString, QString>> installationLinks; // only relative symlinks within package (not Windows)
+
+    // A simple check that the source directory is valid (contains an install bundle for the app)
+    if ( !QFileInfo{get_execpath(src_dir)}.isExecutable() ) {
+        addBoldLine(ui->messages_0, "BUG: installation files not found.");
+        addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
+        return;
+    }
+
+    // Collect files to be installed
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+    // Recursive search, but don't recurse into symlinked directories.
+    int badfiles{0};
+    int warnings{0};
+    for ( const auto &dirEntry : QDirListing(
+            src_dir.path(),
+            QDirListing::IteratorFlag::Recursive | QDirListing::IteratorFlag::IncludeHidden) ) {
+        QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
+        if ( rpath.startsWith("_installer_") )
+            continue;
+#if defined Q_OS_WIN
+        // The installer is in the root directory
+        if ( rpath.startsWith(QCoreApplication::applicationName()) )
+            continue;
+#endif
+        linktest slink{testLink(rpath)};
+        if ( !slink.message.isEmpty() ) {
+            // link: error or warning
+            if ( slink.link.isEmpty() ) {
+                // error
+                badfiles++;
+                addBoldLine(ui->messages_0, slink.message);
+                ui->messages_0->appendPlainText("");
+            } else {
+                // warning
+                warnings++;
+                ui->messages_0->appendPlainText(slink.message);
+                ui->messages_0->appendPlainText("");
+                installationLinks.append({slink.link, slink.target});
+            }
+        } else if ( !slink.link.isEmpty() ) {
+            // valid link
+            installationLinks.append({slink.link, slink.target});
+        } else {
+            // Normal file or directory?
+            const QFileInfo finfo = dirEntry.fileInfo();
+            if ( finfo.isDir() ) {
+                // directory
+                installationDirs.append(rpath);
+            } else if ( finfo.isFile() ){
+                // normal file
+                if ( finfo.isReadable() ) {
+                    if ( finfo.fileName().startsWith("app_uninstall") ) {
+                        uninstallerFiles.append(rpath);
+                    } else {
+                        installationFiles.append(rpath);
+                    }
+                } else {
+                    addBoldLine(
+                        ui->messages_0,
+                        tr("ERROR, file not readable: %1").arg(rpath));
+                    badfiles++;
+                }
+            } else {
+                // something else!
+                addBoldLine(
+                    ui->messages_0,
+                    tr("ERROR, invalid 'file': %1").arg(rpath));
+                badfiles++;
+            }
+        }
+    }
+    // Save results
+    installFiles.installationFiles = installationFiles;
+    installFiles.uninstallerFiles = uninstallerFiles;
+    // Sort alphabetically, so parent directories always come before their children:
+    installationDirs.sort();
+    installFiles.installationDirs = installationDirs;
+    installFiles.installationLinks = installationLinks;
+
+    QApplication::restoreOverrideCursor();
+    scanOk = badfiles == 0;
+    if (scanOk) {
+        // Allow continuation
+        ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(true);
+    } else {
+        addBoldLine(
+            ui->messages_0,
+            "–––––>>>");
+        if ( src_dir.exists("_installer_/allow_file_errors") ) {
+            addBoldLine(
+                ui->messages_0,
+                tr("%1 invalid files – installation is not recommended, rather fix the source!")
+                    .arg(badfiles));
+            ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(true);
+        } else {
+            addBoldLine(
+                ui->messages_0,
+                tr("%1 invalid files – please fix the source!")
+                    .arg(badfiles));
+        }
+    }
+    scanComplete = true;
+
+    if ( scanOk && warnings == 0 )
+        // If there is nothing to report, jump straight to the next page
+        page_1();
+}
+
+void Installer::page_1()
+{
+    ui->stackedWidget->setCurrentIndex(1);
+
+    // Default installation path
+#ifdef Q_OS_WIN
+    defaultInstallationPath = QDir::home().absoluteFilePath("AppData/Local/Programs");
+#else
+    defaultInstallationPath = QDir::home().absoluteFilePath(".local/apps");
+#endif
+}
+
+void Installer::page_2()
+{
+    connect(&uninstall_process, &QProcess::finished, this, &Installer::uninstallDone);
+    connect(&uninstall_process, &QProcess::errorOccurred, this, &Installer::uninstallFailed);
+
+    ui->stackedWidget->setCurrentIndex(2);
+    textOutput = ui->check_destination;
+    setInstallPath(defaultInstallationPath);
+}
+
+void Installer::selectDefaultDir()
+{
+    setInstallPath(defaultInstallationPath);
+}
+
+void Installer::selectInstallDir()
+{
+    QString p0{ui->installPath->text()};
+    QString dir = QFileDialog::getExistingDirectory(
+        this, tr("Open Directory"),
+        p0 == defaultInstallationPath ? QDir::homePath() : p0,
+        QFileDialog::ShowDirsOnly);
+    if ( !dir.isEmpty() )
+        setInstallPath(dir);
+}
+
+void Installer::setInstallPath(QString ipath)
+{
+    ui->check_destination->clear();
+    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(false);
+    uninstall_exe.clear();
+    ui->removeExisting->hide();
+    if ( ipath.isEmpty() ) {
+        // Reentering setInstallpath, use existing path
+        ipath = dst_dir.absolutePath();
+    } else {
+        ui->installPath->setText(ipath);
+        dst_dir = ipath;
+    }
+
+    QString app_dstdir{dst_dir.absoluteFilePath(versioned_app)};
+    if ( QFileInfo::exists(app_dstdir) ) {
+        if ( !QFileInfo{app_dstdir}.isDir() ) {
+            print_line(tr("Destination not a folder: %1").arg(app_dstdir), true);
+            return;
+        }
+    } else {
+        dst_dir.mkpath(app_dstdir);
+    }
+    ui->setDefaultPath->setEnabled(ipath != defaultInstallationPath);
+
+    // *** Check destination ***
+    // Destination writable? (not reliable on Windows?)
+    if ( !QFileInfo{app_dstdir}.isWritable() ) {
+        print_line(tr("Destination not writable: %1").arg(app_dstdir), true);
+        return;
+    }
+    // If doing an actual installation, check for an existing one
+    if ( !ui->unpack_only->isChecked() && isInstalled() ) {
+        ui->removeExisting->show();
+        if ( ui->versioned->isChecked() ) {
+            print_line(tr(ALREADY_INSTALLED).arg(versioned_app), true);
+        } else {
+            print_line(tr(ALREADY_INSTALLED).arg(appinfo.APPNAME), true);
+            print_line(tr("A 'versioned' installation might, however, be possible."));
+        }
+        return;
+    }
+    // Check that the installation directory is empty
+    app_dir = app_dstdir;
+    if ( !app_dir.isEmpty() ) {
+        print_line(tr("Destination not empty: %1").arg(app_dir.path()), true);
+        // Check for app uninstaller.
+        if ( isInstalled(app_dir.path()) ) {
+            ui->removeExisting->show();
+            print_line(tr("To use the destination, uninstall the existing app."), true);
+        }
+        return;
+    }
+    // Check registration possible, if required
+    if ( ui->unpack_only->isChecked() ) {
+        // no "registration" of any sort
+        print_line("");
+        print_line(tr("Warning: the app will be unpacked only, there will be no system integration."), true);
+    } else {
+        if ( !preRegister() ) {
+            print_line("");
+            print_line(tr("--> 'Registration' not possible."), true);
+            return;
+        }
+        if ( ui->versioned->isChecked() && missingFileTypeAssociation() ) {
+            print_line(tr("Warning: this 'versioned' installation will have no file-type association"), true);
+        }
+    }
+    ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
+}
+
+void Installer::uninstallExisting()
+{
+    // Try to remove the installation in app_dir.
+
+#if defined Q_OS_WIN
+    // The first stage, the copying, should be pretty quick, so I can use QProcess::execute.
+    int e = QProcess::execute(uninstall_exe, QStringList{"--copy-only"});
+    if ( e != 0 ) {
+        print_line(tr("Failed: copying the uninstaller: '%1'").arg(uninstall_exe), true);
+        return;
+    } else {
+        QDir tmpdir0{QDir::temp()};
+        QString tmpPath{tmpdir0.absoluteFilePath(QString{TMP_NAME} + "/app_uninstall.exe")};
+        if ( QFileInfo::exists(tmpPath) ) {
+            uninstall_process.startCommand(tmpPath);
+            // The path to the installation to be removed should be available in the temporary directory.
+        } else {
+            print_line(tr("Failed: starting the uninstaller: '%1'").arg(tmpPath), true);
+            return;
+        }
+    }
+#else
+    uninstall_process.startCommand(uninstall_exe);
+    // The uninstaller should be running ... wait for the "finished" signal (-> uninstallDone())
+#endif
+    // Disable GUI, set busy cursor ...
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    setEnabled(false);
+    installationPartial = true;
+}
+
+void Installer::uninstallFailed(QProcess::ProcessError error)
+{
+    QApplication::restoreOverrideCursor();
+    installationPartial = false;
+    setEnabled(true);
+    print_line(tr("Failed: uninstall (%1)").arg(uninstall_process.error()), true);
+}
+
+void Installer::uninstallDone(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    // Reset cursor, reenable GUI ...
+    QApplication::restoreOverrideCursor();
+    installationPartial = false;
+    setEnabled(true);
+    setInstallPath();   // refresh displayed info
+}
+
+
+void Installer::refreshView()
+{
+    // Use this after manual changes to destination folder, etc.
+    setInstallPath();
+}
+
+void Installer::page_3()
+{
+    textOutput = ui->installDetails;
+    ui->installProgress->setMinimum(0);
+    ui->installProgress->setValue(0);
+    // Disable the checkboxes and OK button until the copying has finished
+    ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(false);
+    ui->launch->setEnabled(false);
+
+    ui->stackedWidget->setCurrentIndex(3);
+
+    installationPartial = true;
+
+    // Use background thread to perform copying
+
+    copyWorker = new CopyWorker;
+    copyWorker->moveToThread(&workerThread);
+
+    // Connect signals
+    connect(&workerThread, &QThread::finished, copyWorker, &QObject::deleteLater);
+    connect(this, &Installer::doCopy, copyWorker, &CopyWorker::copyDirectory);
+
+    connect(copyWorker, &CopyWorker::number_of_files, this, &Installer::handleNumberOfFiles);
+
+    connect(copyWorker, &CopyWorker::dir_exists, this, &Installer::handleDirExists);
+    connect(copyWorker, &CopyWorker::dir_written, this, &Installer::handleDirWritten);
+    connect(copyWorker, &CopyWorker::dir_failed_write, this, &Installer::handleDirWriteFailed);
+
+    connect(copyWorker, &CopyWorker::file_copied, this, &Installer::handleFileCopied);
+    connect(copyWorker, &CopyWorker::failed_copy, this, &Installer::handleCopyFailed);
+    connect(copyWorker, &CopyWorker::link_copied, this, &Installer::handleLinkCopied);
+    connect(copyWorker, &CopyWorker::failed_link, this, &Installer::handleLinkFailed);
+
+    connect(copyWorker, &CopyWorker::copying_done, this, &Installer::handleCopyingFinished);
+
+    workerThread.start();
+
+    // Start copying
+    copyErrors.clear();
+    installFiles.with_uninstaller = !ui->unpack_only->isChecked();
+    emit doCopy(src_dir, app_dir, installFiles);
+}
+
+// In the slots below, the filepath arguments are all relative to the destination base
+
+void Installer::handleNumberOfFiles(int n)
+{
+    ui->installProgress->setMaximum(n);
+}
+
+void Installer::handleDirWritten(QString filepath)
+{
+    progressOne();
+    print_line("+ " + app_dir.filePath(filepath) + "/");
+}
+
+void Installer::handleDirExists(QString filepath)
+{
+    copyErrors.append(tr("ERROR, directory exists already: %1").arg(app_dir.filePath(filepath)));
+}
+
+void Installer::handleDirWriteFailed(QString filepath)
+{
+    copyErrors.append(tr("ERROR, could not create directory: %1").arg(app_dir.filePath(filepath)));
+}
+
+void Installer::print_line(QString line, bool bold)
+{
+    if ( !bugflag ) {
+        if ( bold )
+            addBoldLine(textOutput, line);
+        else
+            textOutput->appendPlainText(line);
+    }
+}
+
+void Installer::progressOne()
+{
+    int p = ui->installProgress->value();
+    int max = ui->installProgress->maximum();
+    if ( p < max ) {
+        ui->installProgress->setValue(p + 1);
+    } else if ( !bugflag ) {
+        print_line("\nBUG: progress > 100%", true);
+        bugflag = true; // suppress further reports
+    }
+}
+
+void Installer::handleFileCopied(QString filepath)
+{
+    progressOne();
+    print_line("+ " + app_dir.filePath(filepath));
+}
+
+void Installer::handleCopyFailed(QString filepath)
+{
+    copyErrors.append(tr("ERROR, could not copy file to: %1").arg(app_dir.filePath(filepath)));
+}
+
+void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
+{
+    progressOne();
+    print_line("+ " + app_dir.filePath(filepaths.second));
+}
+
+void Installer::handleLinkFailed(QPair<QString, QString> filepaths)
+{
+    copyErrors.append(
+        tr("ERROR, could not link '%1' to: %2")
+            .arg(app_dir.filePath(filepaths.first),
+                app_dir.filePath(filepaths.second)));
+}
+
+void Installer::handleCopyingFinished()
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    print_line("");
+    if ( copyErrors.isEmpty() ) {
+        if ( ui->unpack_only->isChecked() ) {
+            installationPartial = false; // for page_4 handler => don't show page 4
+            print_line(tr("Unpacking successful!"));
+            ui->launch->setEnabled(true);
+        } else {
+            bool fail{false};
+            if ( registerApp() ) {
+                // Open file to record files installed outside the installation directory.
+                QFile file_log{app_dir.absoluteFilePath("system_files")};
+                if ( file_log.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
+                    QTextStream log_stream(&file_log);
+                    for ( const auto& f : std:: as_const(localfiles) ) {
+                        log_stream << f << "\n";
+                        // If a file-type association is to be set up, finalize it:
+                        if ( f.startsWith("+++file-type:") ) addedFileType();
+                    }
+                    file_log.close();
+
+                    update_desktop_database();
+
+                    installationPartial = false; // for page_4 handler => don't show page 4
+                    print_line(tr("Installation successful!"));
+                    ui->launch->setEnabled(true);
+                } else {
+                    print_line(tr("ERROR, could not create the 'system_files' list"), true);
+                    fail = true;
+                }
+            } else {
+                print_line(tr("App registration failed."), true);
+                fail = true;
+            }
+            if ( fail ) {
+                for ( const auto& f : std:: as_const(localfiles) ) {
+                    if ( f.startsWith("+++") ) {
+                        if ( removeSpecial(f) ) continue;
+                    } else if ( QFile::remove(f) ) continue;
+                    print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
+                }
+                ui->launch->setChecked(false);
+            }
+        }
+    } else {
+        for ( const auto& e : std::as_const(copyErrors) ) {
+            print_line(e, true);
+        }
+        print_line("");
+        print_line("–––––>>>", true);
+        print_line(tr("%1 installation errors").arg(copyErrors.length()), true);
+        ui->launch->setChecked(false);
+    }
+    QApplication::restoreOverrideCursor();
+    ui->buttonBox_3->button(QDialogButtonBox::Ok)->setEnabled(true);
+}
+
+void Installer::page_4()
+{
+    if ( installationPartial ) {
+        // Installation incomplete, go to the additional page to tidy up
+        ui->stackedWidget->setCurrentIndex(4);
+        ui->buttonBox_4->button(QDialogButtonBox::Ok)->setEnabled(false);
+
+        // Remove installed files and directories
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        if ( app_dir.removeRecursively() ) {
+            ui->uninstall->appendPlainText(tr("Partial installation removed successfully"));
+        } else {
+            ui->uninstall->appendPlainText(
+                tr("Partial installation could not be fully removed: '%1'").arg(app_dir.absolutePath()));
+        }
+
+        QApplication::restoreOverrideCursor();
+        ui->buttonBox_4->button(QDialogButtonBox::Ok)->setEnabled(true);
+        installationPartial = false;
+    } else {
+        // Installation complete, don't switch to the additional page
+        if ( ui->launch->isChecked() ) {
+            QProcess runapp;
+            runapp.setProgram(get_execpath(app_dir));
+            runapp.startDetached();
+        }
+        qApp->quit();
+    }
+}
