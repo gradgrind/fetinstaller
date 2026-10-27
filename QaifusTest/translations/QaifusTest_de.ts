@@ -11,7 +11,7 @@
     <message>
         <location filename="../widget.ui" line="22"/>
         <source># Test Application</source>
-        <translation>Testanwendung</translation>
+        <translation># Testanwendung</translation>
     </message>
     <message>
         <location filename="../widget.ui" line="72"/>

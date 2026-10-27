@@ -19,7 +19,7 @@ Widget::Widget(QWidget *parent)
         QString filepath{args.at(1)};
         QFile f{filepath};
         if( !f.open(QIODevice::ReadOnly) ) {
-            msg = f.errorString();
+            msg = filepath + ":\n   " + f.errorString();
         } else {
             QTextStream in(&f);
             msg = in.readAll().replace("%f", filepath);
