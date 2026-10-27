@@ -391,6 +391,9 @@ bool Installer::preRegister()
                     {app_dir.absoluteFilePath(iconpathx), dpath, tr("Add icon file: '%1'").arg(dpath), R_LINK});
             }
         }
+        if ( !icons.isEmpty() ) {
+            localfiles.append("+++icons"); // uninstaller flag
+        }
 
         // man page link(s)
         QDir mansource{src_dir.absoluteFilePath("share/man")};
@@ -522,10 +525,14 @@ bool Installer::registerApp()
     return true;
 }
 
-void Installer::addedFileType()
+void Installer::addedIcons()
 {
     print_line(tr("Update icon cache"));
     QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
+}
+
+void Installer::addedFileType()
+{
     print_line(tr("Update mime database"));
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
     QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});

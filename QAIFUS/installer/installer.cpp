@@ -508,6 +508,8 @@ void Installer::handleCopyingFinished()
                         log_stream << f << "\n";
                         // If a file-type association is to be set up, finalize it:
                         if ( f.startsWith("+++file-type:") ) addedFileType();
+                        // Update icon cache:
+                        if ( f.startsWith("+++icons") ) addedIcons();
                     }
                     file_log.close();
 
