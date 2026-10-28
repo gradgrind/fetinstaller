@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>icons/installer.svg</file>
-    </qresource>
-</RCC>

@@ -1,26 +1,7 @@
-$APPVERSION = Get-Content  -ErrorAction Stop "..\VERSION"
-$DESKTOP_FILE = "..\QaifusTest.desktop"
+# Build the app which is to be packaged.
 
-Write-Host "Building $APPNAME-$APPVERSION ..."
-Write-Host
+$APPLICATION_VERSION = Get-Content  -ErrorAction Stop "$APPDIR\VERSION"
 
-cmake -B "build\$APPNAME" -S .. `
-    -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" `
-    -DCMAKE_INSTALL_BINDIR="." `
-    -DCMAKE_GENERATOR="MinGW Makefiles" `
-    -DCMAKE_INSTALL_PREFIX="build\$install_prefix"
+$DESKTOP = "$APPDIR\$APPNAME.desktop"
 
-if ( !$? )
-{
-    Write-Host "***!!!*** $APPNAME configuration failed"
-    exit 1
-}
-
-cmake --build "build\$APPNAME" --target install --parallel 6
-
-if ( !$? )
-{
-    Write-Host "***!!!*** $APPNAME build failed"
-    exit 1
-}
-
+. ".\common_build.ps1"
