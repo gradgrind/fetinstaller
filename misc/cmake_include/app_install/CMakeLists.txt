@@ -2,6 +2,9 @@ set(this_target "app_install")
 cmake_minimum_required(VERSION 3.28)
 project(${this_target} LANGUAGES CXX)
 
+if (NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(CMAKE_INSTALL_BINDIR "_installer_")
+endif()
 include(../common1.cmake)
 
 set(app_icon_resource_windows "${CMAKE_SOURCE_DIR}/icons/app_install.rc")
