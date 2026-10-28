@@ -56,8 +56,8 @@ APPDIR="$APPNAME"
 # Ensure that the "_installer_" directory exists
 mkdir -p "$BUILDDIR/$INSTALLDIR/_installer_"
 # Add the installer app-configuration file
-sed "s/%VERSION%/$APPLICATION_VERSION/g;s/%APPNAME%/$APPLICATION_NAME/g" "$APPDIR/app.conf" \
-    > "$BUILDDIR/$INSTALLDIR/_installer_/app.conf"
+sed "s/%VERSION%/$APPLICATION_VERSION/g;s/%APPNAME%/$APPLICATION_NAME/g" \
+    "$QAIFUS_APPDIR/app.conf" > "$BUILDDIR/$INSTALLDIR/_installer_/app.conf"
 
 echo
 echo "Create app bundle archive: build/app_bundle.tar.xz"
