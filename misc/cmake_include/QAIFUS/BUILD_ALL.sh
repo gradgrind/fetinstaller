@@ -31,10 +31,10 @@ if [ -z "$APPLICATION_NAME" ]; then
     echo "Application name missing, use: ./$(basename "$SCRIPT") APPLICATION_NAME"
     exit 1
 fi
-QAIFUS_APPDIR=$(readlink -f "../QAIFUS_$APPLICATION_NAME")
+APPDIR=".."
+QAIFUS_APPDIR=$(readlink -f "$APPDIR/QAIFUS_$APPLICATION_NAME")
 if [ -f "$QAIFUS_APPDIR/BUILD.sh" ]; then
     APPNAME="$APPLICATION_NAME"
-    APPDIR=".."
     . "$QAIFUS_APPDIR/BUILD.sh"
 else
     echo "File not found: $QAIFUS_APPDIR/BUILD.sh"
@@ -54,10 +54,11 @@ APPDIR="$APPNAME"
 . "common_build.sh"
 
 # Ensure that the "_installer_" directory exists
-mkdir -p "$BUILDDIR/$INSTALLDIR/_installer_"
+installerdir="$BUILDDIR/$INSTALLDIR/_installer_"
+mkdir -p "$installerdir"
 # Add the installer app-configuration file
 sed "s/%VERSION%/$APPLICATION_VERSION/g;s/%APPNAME%/$APPLICATION_NAME/g" \
-    "$QAIFUS_APPDIR/app.conf" > "$BUILDDIR/$INSTALLDIR/_installer_/app.conf"
+    "$QAIFUS_APPDIR/app.conf" > "$installerdir/app.conf"
 
 echo
 echo "Create app bundle archive: build/app_bundle.tar.xz"
