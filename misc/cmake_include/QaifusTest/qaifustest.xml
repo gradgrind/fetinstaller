@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+  <mime-type type="application/vnd.qaifustest.file">
+    <comment>QaifusTest file</comment>
+    <sub-class-of type="text/plain"/>
+    <glob pattern="*.qaifustest"/>
+    <icon name="QaifusTest"/>
+    <generic-icon name="QaifusTest"/>
+  </mime-type>
+</mime-info>
