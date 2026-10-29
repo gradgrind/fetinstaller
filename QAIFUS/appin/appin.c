@@ -1,3 +1,8 @@
+// Linux version ...
+
+// Compile with:
+//   musl-gcc -static -o appin appin.c
+
 //#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,6 +18,7 @@ INCBIN(App, "../build/app_bundle.tar.xz");
 
 char* tmpdir = NULL;
 char* msg = NULL;
+int msg_free = 0;
 int childstate = 0;
 
 void fatal();
@@ -37,6 +43,7 @@ int main(int argc, char **argv)
         asprintf(&tmpdir, "%s/%s_gradgrind_AppIn_", tmp0, user);
         if ( mkdir(tmpdir, 0700) != 0 ) {
             asprintf(&msg, "Temporary directory unavailable: %s\n", tmpdir);
+            msg_free = 1;
             free(tmpdir);
             tmpdir = NULL;
             fatal();
@@ -130,6 +137,7 @@ void fatal()
     free(e0);
     if ( msg ) {
         free(msg);
+        msg_free = 0;
     }
     tidy();
     exit(1);
@@ -148,6 +156,7 @@ void tidy()
         if ( sysrc != 0 ) {
             const char* msg0 = "Couldn't remove temporary directory: %s\n";
             asprintf(&msg, msg0, tmpdir);
+            msg_free = 1;
             tmpdir = NULL;
             fatal();
         }
