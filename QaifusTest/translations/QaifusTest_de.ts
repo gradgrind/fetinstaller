@@ -20,7 +20,7 @@
 It doesn&apos;t really serve any other purpose at all ...</source>
         <translation>Diese Anwendung ist ein kleiner Test für das QAIFUS-Installationsprogramm.
 
-Sie hat sonst keine andere Daseinsberechtigung ...</translation>
+Sie hat sonst keine Daseinsberechtigung ...</translation>
     </message>
     <message>
         <location filename="../widget.ui" line="96"/>

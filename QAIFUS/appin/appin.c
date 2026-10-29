@@ -16,71 +16,41 @@ char* msg = NULL;
 int childstate = 0;
 
 void fatal();
-
-void tidy()
-{
-    // Tidy up: remove temporary directory
-    if ( tmpdir ) {
-        char *cmd = NULL;
-        const char *cmd0 = "rm -r \"%s\"";
-        asprintf(&cmd, cmd0, tmpdir);
-        //printf("%s\n", cmd);
-        int sysrc = system(cmd);
-        //printf("System -> %d\n", sysrc);
-        if ( sysrc != 0 ) {
-            const char* msg0 = "Couldn't remove temporary directory: %s\n";
-            asprintf(&msg, msg0, tmpdir);
-            tmpdir = NULL;
-            fatal();
-        }
-        free( cmd );
-        free (tmpdir);
-    }
-}
-
-void fatal()
-{
-    if ( errno != 0 ) {
-        const char* emsg = strerror(errno);
-        fprintf(stderr, emsg);
-        fprintf(stderr, "\n");
-    }
-
-    if ( msg ) {
-        fprintf(stderr, msg);
-        fprintf(stderr, "\n");
-    }
-
-    // Desktop notification
-    //TODO: Also app being installed? 
-    //char* e = NULL;
-    const char* e0 = "notify-send \"AppIn\" \"Installation failed, more details in terminal.\" -i error";
-    //asprintf(&e, e0, emsg, msg);
-    //system(e);
-    //free(e);
-    system(e0);
-    tidy();
-    exit(1);
-}
+void tidy();
 
 int main(int argc, char **argv)
 {
-    // Note, the compiler may issue a security warning, e.g. GCC:
-    // "warning: the use of `tempnam' is dangerous, better use `mkstemp'"
-    tmpdir = tempnam(NULL, "AppIn");
-    //printf("temporary file name: %s\n", tmpdir);
-    if (mkdir(tmpdir, 0700) != 0) {
-        const char *msg0 = "Failed to create temporary directory: %s\n";
-        asprintf(&msg, msg0, tmpdir);
-        fatal();
+    // Create a temporary directory to receive the unpacked installer.
+    // The following code assumes that only one installer should be active
+    // at any time (for any one user). If a second installer is started,
+    // "app_install" can detect this by means of the trailing "_" on the
+    // path name, so it can report the situation, but otherwise be unhindered.
+    // A further attempt to start an installer will fail.
+    char* tmp0 = getenv("TMPDIR");
+    if ( tmp0 == NULL || strlen(tmp0) < 4 ) {
+        tmp0 = "/tmp";
+    }
+    char* user = getlogin();
+    asprintf(&tmpdir, "%s/%s_gradgrind_AppIn", tmp0, user);
+    if ( mkdir(tmpdir, 0700) != 0 ) {
+        free(tmpdir);
+        asprintf(&tmpdir, "%s/%s_gradgrind_AppIn_", tmp0, user);
+        if ( mkdir(tmpdir, 0700) != 0 ) {
+            asprintf(&msg, "Temporary directory unavailable: %s\n", tmpdir);
+            free(tmpdir);
+            tmpdir = NULL;
+            fatal();
+        }
+        // In this case, app_install should comment on this, actually
+        // there should be only one instance per user.
     }
 
     //printf("%p %u %p\n", &gAppData[0], gAppSize, &gAppEnd);
     //printf("%p\n", &gAppData[gAppSize]);
     //assert(&gAppData[gAppSize] == (const unsigned char*) &gAppEnd);
 
-    // A pipe to send data to the child process
-    // In a pipe, xx[0] is for reading, xx[1] is for writing
+    // A pipe to send data to the child process.
+    // In a pipe, xx[0] is for reading, xx[1] is for writing.
     int fd1[2];
     if (pipe(fd1) == -1) {
         msg = "Pipe Failed.";
@@ -96,27 +66,22 @@ int main(int argc, char **argv)
 
     // Parent process
     if (p > 0) {
-        //printf("Spawned 'tar -xJ' as a child process at pid %d\n", p);
-
+        //printf("Spawned 'tar -xJ ...' as a child process at pid %d\n", p);
         close(fd1[0]); // Close reading end of pipe
-
         // Write input string and close writing end of first pipe.
         write(fd1[1], &gAppData[0], gAppSize);
         close(fd1[1]);
-
         // Wait for child to finish
         wait(NULL);
     }
 
     // Child process
     else {
-        // Close stdin
+        // Close stdin.
         close(0);
-        // Make the pipe the new stdin
+        // Make the pipe the new stdin.
         dup2(fd1[0],0);
-
-        close(fd1[1]); // Close writing end of pipe
-
+        close(fd1[1]); // Close writing end of pipe.
         // Hand control over to the 'tar' binary
         execlp("tar", "tar", "-xJf", "-", "-C", tmpdir, (char*)NULL);
         msg = "Unpacking app bundle failed.";
@@ -136,4 +101,57 @@ int main(int argc, char **argv)
 
     tidy();
     return 0;
+}
+
+void fatal()
+{
+    char* emsg = "";
+    if ( errno != 0 ) {
+        emsg = strerror(errno);
+        
+        //fprintf(stderr, emsg);
+        //fprintf(stderr, "\n");
+    }
+
+    char* msg0 = "";
+    if ( msg ) {
+        msg0 = msg;
+        //fprintf(stderr, msg);
+        //fprintf(stderr, "\n");
+    }
+
+    char* e0 = NULL;
+    asprintf(&e0, "Couldn't start installer ...\n%s\n%s", emsg, msg0);
+    char* en = NULL;
+    asprintf(&en, "notify-send \"AppIn\" \"%s\" -i error", e0);
+    fprintf(stderr, "%s\n", e0);
+    system(en);
+    free(en);
+    free(e0);
+    if ( msg ) {
+        free(msg);
+    }
+    tidy();
+    exit(1);
+}
+
+void tidy()
+{
+    // Tidy up: remove temporary directory
+    if ( tmpdir ) {
+        char *cmd = NULL;
+        const char *cmd0 = "rm -r \"%s\"";
+        asprintf(&cmd, cmd0, tmpdir);
+        //printf("%s\n", cmd);
+        int sysrc = system(cmd);
+        //printf("System -> %d\n", sysrc);
+        if ( sysrc != 0 ) {
+            const char* msg0 = "Couldn't remove temporary directory: %s\n";
+            asprintf(&msg, msg0, tmpdir);
+            tmpdir = NULL;
+            fatal();
+        }
+        free (cmd);
+        free (tmpdir);
+    }
 }
