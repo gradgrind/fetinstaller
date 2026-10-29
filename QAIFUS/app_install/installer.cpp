@@ -10,9 +10,23 @@
 
 #define TMP_NAME "gradgrind_QAIFUS"
 
+static const char *UNPACKING_ERROR = QT_TRANSLATE_NOOP("Installer", R"(
+There seems to be another installer running.<br>
+This framework doesn't support parallel installation processes.<br>
+Please check that any other installers have completed before installing this package.<br><br>
+
+It is possible that the temporary folder<br><br>
+%1<br><br>
+was created by a previous, faulty, installation process.<br>
+It is very unlikely – but not impossible – that a completely different application may be
+using the same temporary folder.<br><br>
+
+If you are sure this folder is no longer needed, please delete it before trying the
+installation again.)");
+
 static const char *BAD_INSTALLER = QT_TRANSLATE_NOOP("Installer", R"(
-  Please check that your installer has not been corrupted.<br>
-  If necessary, contact the distributor.)");
+Please check that your installer has not been corrupted.<br>
+If necessary, contact the distributor.)");
 
 static const char *ALREADY_INSTALLED = QT_TRANSLATE_NOOP("Installer", R"(
 %1 is already installed.<br>
@@ -88,10 +102,20 @@ void addBoldLine(QPlainTextEdit* e, QString line)
 
 void Installer::page_0()
 {
-    // This runs quickly enough not to be run in a background thread. It sets a busy cursor,
+    // The scan runs quickly enough not to be run in a background thread. It sets a busy cursor,
     // but the processing should be so quick that this is not be visible.
 
     ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(false);
+
+    // Check that this is not running from a directory ending with "_". That is used by the
+    // unpacker to signal that there may be another installer running. Strip the "_" to get the
+    // directory in question.
+    if ( src_dir.absolutePath().endsWith('_') ) {
+        addBoldLine(ui->messages_0, tr(UNPACKING_ERROR).arg(src_dir.absolutePath().removeLast()));
+        return;
+    }
+
+    // Scan the app bundle.
     scanComplete =false;
     scanOk = false;
 
