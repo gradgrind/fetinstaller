@@ -13,7 +13,7 @@
 #include <unistd.h>
 #endif
 
-#define TMP_NAME "gradgrind_QAIFUS"
+#define TMP_NAME "gradgrind_AppUnIn"
 
 static const char* TMP_BUSY = QT_TRANSLATE_NOOP("Uninstall0", R"(
 The temporary folder '%1' is already in use.
