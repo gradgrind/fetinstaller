@@ -1,5 +1,6 @@
 qt_add_translations(
     TARGETS ${this_target}
+    SOURCE_TARGETS ${this_target}
     MERGE_QT_TRANSLATIONS
     TS_FILE_DIR translations
     # Do not embed generated .qm files.

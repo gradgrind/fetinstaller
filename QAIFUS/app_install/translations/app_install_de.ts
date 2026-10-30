@@ -135,14 +135,6 @@ Es ist auch möglich den Anwendungsordner einfach zu entpacken, ohne die Anwendu
         <translation>### Unvollständige Installation entfernen</translation>
     </message>
     <message>
-        <source>
-  Please check that your installer has not been corrupted.&lt;br&gt;
-  If necessary, contact the distributor.</source>
-        <translation type="vanished">
-  Bitte kontrollieren, ob das Installationspaket korrumpiert wurde.&lt;br&gt;
-  Gegebenenfalls den Auslieferer kontaktieren.</translation>
-    </message>
-    <message>
         <location filename="../installer.cpp" line="31"/>
         <source>
 %1 is already installed.&lt;br&gt;
