@@ -1,6 +1,9 @@
 #!/bin/bash
 #NOTE: This is just here for "completeness". It can't work because this app
 # is for Windows only.
+PROJECT_VERSION=$(<../VERSION)
+
+PROJECTNAME="AppUninstall0"
 APPNAME="app_uninstall0"
 
 # If necessary, it will change its working directory to run in the

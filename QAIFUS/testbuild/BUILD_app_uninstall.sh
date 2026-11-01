@@ -1,5 +1,8 @@
 #!/bin/bash
 
+PROJECT_VERSION=$(<../VERSION)
+
+PROJECTNAME="AppUninstall"
 APPNAME="app_uninstall"
 
 # If necessary, it will change its working directory to run in the

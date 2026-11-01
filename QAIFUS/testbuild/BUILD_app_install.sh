@@ -1,7 +1,9 @@
 #!/bin/bash
 
+PROJECT_VERSION=$(<../VERSION)
+
+PROJECTNAME="AppInstall"
 APPNAME="app_install"
-APPVERSION="1.0.0"
 
 # If necessary, it will change its working directory to run in the
 # directory containing this script.
@@ -16,7 +18,7 @@ APPDIR="../$APPNAME"
 
 ########### FOR TEST PURPOSES ###########
 # Add the app conf file
-sed "s/%VERSION%/$APPVERSION/g;s/%APPNAME%/$APPNAME/g" "app.conf" > \
+sed "s/%VERSION%/$PROJECT_VERSION/g;s/%PROJECT%/$PROJECTNAME/g" "app.conf" > \
     "$BUILDDIR/$INSTALLDIR/_installer_/app.conf"
 # Add the "desktop" file
 mkdir -p "$BUILDDIR/$INSTALLDIR/share/applications"

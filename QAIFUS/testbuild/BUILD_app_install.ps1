@@ -1,7 +1,9 @@
 cd "$PSScriptRoot"
 
+$PROJECT_VERSION = Get-Content  -ErrorAction Stop "..\VERSION"
+
+$PROJECTNAME = "AppInstall"
 $APPNAME = "app_install"
-$APPVERSION = "1.0.0"
 
 $APPDIR = "..\$APPNAME"
 $DESKTOP = "$APPNAME.desktop"

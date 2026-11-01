@@ -35,6 +35,16 @@ This compiles "MyApp", the installer and the uninstaller to a "build" directory.
 
 The installation package in "build/app_bundle" is then compressed and embedded in a "starter" app, "appin" to produce a runnable installer "MyApp-X.Y.Z.run", where "X.Y.Z" is the version.
 
+### Requirements
+
+ - Qt development files from the Qt Online Installer (in their default installation location) – only the base libraries, CMake and Ninja are required.
+
+ - Something like "build-essential" (Debian/Ubuntu), for gcc, make, etc..
+
+ - "musl", with "musl-gcc" – something like "musl-tools" (Debian/Ubuntu).
+
+It is also possible that the odd support library might be missing, but that is very dependent on the distribution and what else is installed.
+
 ## Windows
 
 Executables and libraries should end up in the root directory, Qt plugins in root "plugins".
@@ -47,3 +57,9 @@ The build scripts are written for `Powershell`. Run:
 This compiles "MyApp", the installer and the uninstaller ("app_uninstall0" and "app_uninstall") to a "build" directory.
 
 The installation package in "build/app_bundle" is then compressed and embedded in a "starter" app, "appin" to produce a runnable installer "MyApp-X.Y.Z.exe", where "X.Y.Z" is the version.
+
+### Requirements
+
+ - Qt development files from the Qt Online Installer (in their default installation location) – only the base libraries, CMake and Mingw (currently version 1310, see file `common_base.ps1`) are required.
+
+ - A `tar` command with support for "xz" compression – the built-in version on Windows 11 should be adequate, otherwise `bsdtar` can be installed.

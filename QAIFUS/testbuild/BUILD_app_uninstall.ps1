@@ -1,5 +1,8 @@
 cd "$PSScriptRoot"
 
+$PROJECT_VERSION = Get-Content  -ErrorAction Stop "..\VERSION"
+
+$PROJECTNAME = "AppUninstall"
 $APPNAME = "app_uninstall"
 
 $APPDIR = "..\$APPNAME"
