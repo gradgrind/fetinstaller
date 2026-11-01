@@ -99,12 +99,12 @@ private:
     void progressOne();
     bool isInstalled(QString version = {});
     bool preRegister();
-    bool desktop_icon(QString &icon);
+    bool desktop_icon(QString &icon, QString execbase);
     bool registerApp();
     void addedFileType();
     bool removeSpecial(QString item);
-    bool missingFileTypeAssociation();
-    QString get_execpath(QDir dir);
+    bool hasFileTypeAssociation();
+    bool isInstallBundle(QDir dir);
     void update_desktop_database();
     bool execInPath(QString xname);
 
@@ -113,13 +113,11 @@ private:
     QString defaultInstallationPath;
     InstallFiles installFiles; // files and directories to be installed
     QList<registerItem> registrationList;
-    QString desktopName;
-    QString desktopPath;
     QStringList localfiles;
     QDir src_dir;
     QDir dst_dir;
     QDir app_dir; // within dst_dir, the actual installation directory
-    QString versioned_app; // app name + "-" + app version
+    QString versioned_project; // app name + "-" + app version
     QString uninstall_exe;
     bool bugflag{false};
     bool scanComplete;

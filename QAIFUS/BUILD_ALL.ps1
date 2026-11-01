@@ -6,10 +6,10 @@
 # This build script uses a standard Qt installation set up by the
 # Qt online installer.
 
-# Place the "QAIFUS" folder and a suitable "QAIFUS_$APPLICATION_NAME" folder
+# Place the "QAIFUS" folder and a suitable "QAIFUS_$PROJECT_NAME" folder
 # in the root folder of the application's source code.
 # Then run this script, e.g.:
-#    powershell -ExecutionPolicy Bypass -File BUILD_ALL.ps1 -Argument-List APPLICATION_NAME
+#    powershell -ExecutionPolicy Bypass -File BUILD_ALL.ps1 -Argument-List PROJECT_NAME
 
 # If necessary, the working directory will be changed to run in the directory
 # containing this script.
@@ -18,18 +18,18 @@ cd "$PSScriptRoot"
 . ".\common_base.ps1"
 
 # Read the application name and include its build script
-$APPLICATION_NAME = $args[1]
-if ( [string]::IsNullOrEmpty($APPLICATION_NAME) )
+$PROJECT_NAME = $args[1]
+if ( [string]::IsNullOrEmpty($PROJECT_NAME) )
 {
     Write-Host "Application name missing, use:"
     $name = $MyInvocation.MyCommand.Name
-    Write-Host "  powershell -ExecutionPolicy Bypass -File $name -Argument-List APPLICATION_NAME"
+    Write-Host "  powershell -ExecutionPolicy Bypass -File $name -Argument-List PROJECT_NAME"
     exit 1
 }
 $APPDIR = ".."
-$QAIFUS_APPDIR = Resolve-Path -Path "$APPDIR\QAIFUS_$APPLICATION_NAME"
+$QAIFUS_APPDIR = Resolve-Path -Path "$APPDIR\QAIFUS_$PROJECT_NAME"
 if ( Test-Path -path "$QAIFUS_APPDIR\BUILD.ps1" ) {
-    $APPNAME = "$APPLICATION_NAME"
+    $APPNAME = "$PROJECT_NAME"
     . "$QAIFUS_APPDIR\BUILD.ps1"
 }
 else
@@ -61,11 +61,9 @@ if ( -not ( Test-Path -Path "$installerdir" ) ) {
 }
 # Add the installer app-configuration file
 (Get-Content "$QAIFUS_APPDIR\app.conf") `
-    -replace '%VERSION%', "$APPLICATION_VERSION" `
-    -replace '%APPNAME%', "$APPLICATION_NAME" |
+    -replace '%VERSION%', "$PROJECT_VERSION" `
+    -replace '%PROJECT%', "$PROJECT_NAME" |
     Set-Content "$installerdir\app.conf"
-
-Copy-Item "$DESKTOP" -Destination "$installerdir\desktop"
 
 Write-Host
 Write-Host "Create app bundle archive: build\app_bundle.tar.xz"
@@ -98,11 +96,11 @@ if ( !$? )
 }
 
 Write-Host
-Write-Host "Build app installer: $APPLICATION_NAME-$APPLICATION_VERSION.exe"
+Write-Host "Build app installer: $PROJECT_NAME-$PROJECT_VERSION.exe"
 Write-Host
 
 cd "..\..\appin"
-gcc -mwindows -o "..\$APPLICATION_NAME-$APPLICATION_VERSION.exe" appinw.c
+gcc -mwindows -o "..\$PROJECT_NAME-$PROJECT_VERSION.exe" appinw.c
 
 if ( !$? )
 {

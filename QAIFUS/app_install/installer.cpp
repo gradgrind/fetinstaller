@@ -19,7 +19,7 @@ It is possible that the temporary folder<br><br>
 %1<br><br>
 was created by a previous, faulty, installation process.<br>
 It is very unlikely – but not impossible – that a completely different application may be
-using the same temporary folder.<br><br>
+using the same temporary folder.<br>
 
 If you are sure this folder is no longer needed, please delete it before trying the
 installation again.)");
@@ -52,18 +52,25 @@ Installer::Installer(QLocale locale, QWidget *parent)
         return;
     }
     app_initialized = true;
-    versioned_app = appinfo.APPNAME + "-" + appinfo.APPVERSION;
+    versioned_project = appinfo.PROJECTNAME + "-" + appinfo.PROJECTVERSION;
 
     src_dir = appinfo.SOURCE_DIR;
 
     setWindowIcon(QIcon(":/icons/installer.svg"));
 
     // Set application name in GUI
-    ui->label_title->setText(ui->label_title->text().arg(versioned_app, appinfo.APPLONGNAME));
-    ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.APPNAME));
-    ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.APPNAME));
-    ui->removeExisting->setText(ui->removeExisting->text().arg(appinfo.APPNAME));
-    ui->launch->setText(ui->launch->text().arg(appinfo.APPNAME));
+    ui->label_title->setText(ui->label_title->text().arg(versioned_project, appinfo.PROJECTLONGNAME));
+    ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.PROJECTNAME));
+    ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.PROJECTNAME));
+    ui->removeExisting->setText(ui->removeExisting->text().arg(appinfo.PROJECTNAME));
+    // If LAUNCH is set in app.conf, offer to launch its value (app name).
+    if ( appinfo.LAUNCH.isEmpty() ) {
+        ui->launch->setChecked(false);
+        ui->launch->hide();
+    } else {
+        QString lname{appinfo.EXECUTABLES.value(appinfo.LAUNCH).execName};
+        ui->launch->setText(ui->launch->text().arg(lname));
+    }
 
     // *** Connect signals ***
 
@@ -127,8 +134,8 @@ void Installer::page_0()
     QStringList installationDirs;
     QList<QPair<QString, QString>> installationLinks; // only relative symlinks within package (not Windows)
 
-    // A simple check that the source directory is valid (contains an install bundle for the app)
-    if ( !QFileInfo{get_execpath(src_dir)}.isExecutable() ) {
+    // Check that the source directory is valid (contains an install bundle for the app)
+    if ( !isInstallBundle(src_dir) ) {
         addBoldLine(ui->messages_0, "BUG: installation files not found.");
         addBoldLine(ui->messages_0, tr(BAD_INSTALLER));
         return;
@@ -287,36 +294,28 @@ void Installer::setInstallPath(QString ipath)
         dst_dir = ipath;
     }
 
-    QString app_dstdir{dst_dir.absoluteFilePath(versioned_app)};
+    QString app_dstdir{dst_dir.absoluteFilePath(versioned_project)};
     if ( QFileInfo::exists(app_dstdir) ) {
         if ( !QFileInfo{app_dstdir}.isDir() ) {
             print_line(tr("Destination not a folder: %1").arg(app_dstdir), true);
             return;
         }
-    } else {
-        dst_dir.mkpath(app_dstdir);
     }
     ui->setDefaultPath->setEnabled(ipath != defaultInstallationPath);
 
-    // *** Check destination ***
-    // Destination writable? (not reliable on Windows?)
-    if ( !QFileInfo{app_dstdir}.isWritable() ) {
-        print_line(tr("Destination not writable: %1").arg(app_dstdir), true);
-        return;
-    }
     // If doing an actual installation, check for an existing one
     if ( !ui->unpack_only->isChecked() && isInstalled() ) {
         ui->removeExisting->show();
         if ( ui->versioned->isChecked() ) {
-            print_line(tr(ALREADY_INSTALLED).arg(versioned_app), true);
+            print_line(tr(ALREADY_INSTALLED).arg(versioned_project), true);
         } else {
-            print_line(tr(ALREADY_INSTALLED).arg(appinfo.APPNAME), true);
+            print_line(tr(ALREADY_INSTALLED).arg(appinfo.PROJECTNAME), true);
             print_line(tr("A 'versioned' installation might, however, be possible."));
         }
         return;
     }
     // Check that the installation directory is empty
-    app_dir = app_dstdir;
+    app_dir.setPath(app_dstdir);
     if ( !app_dir.isEmpty() ) {
         print_line(tr("Destination not empty: %1").arg(app_dir.path()), true);
         // Check for app uninstaller.
@@ -337,8 +336,8 @@ void Installer::setInstallPath(QString ipath)
             print_line(tr("--> 'Registration' not possible."), true);
             return;
         }
-        if ( ui->versioned->isChecked() && missingFileTypeAssociation() ) {
-            print_line(tr("Warning: this 'versioned' installation will have no file-type association"), true);
+        if ( ui->versioned->isChecked() && hasFileTypeAssociation() ) {
+            print_line(tr("Warning: this 'versioned' installation will add no file-type association"), true);
         }
     }
     ui->buttonBox_2->button(QDialogButtonBox::Ok)->setEnabled(true);
@@ -401,6 +400,17 @@ void Installer::refreshView()
 
 void Installer::page_3()
 {
+    // Create installation directory.
+    if ( !dst_dir.mkpath(app_dir.absolutePath()) ) {
+        print_line(tr("Destination not writable: %1").arg(app_dir.absolutePath()), true);
+        return;
+    }
+    if ( !app_dir.isEmpty() ) {
+        // Stay on page_2.
+        setInstallPath(app_dir.absolutePath());
+        return;
+    }
+
     textOutput = ui->installDetails;
     ui->installProgress->setMinimum(0);
     ui->installProgress->setValue(0);
@@ -594,7 +604,14 @@ void Installer::page_4()
         // Installation complete, don't switch to the additional page
         if ( ui->launch->isChecked() ) {
             QProcess runapp;
-            runapp.setProgram(get_execpath(app_dir));
+            QString prog{appinfo.LAUNCH + appinfo.EXECUTABLES.value(appinfo.LAUNCH).extension};
+#if defined Q_OS_WIN
+            //qDebug() << "Launch:" << app_dir.absoluteFilePath(prog);
+            runapp.setProgram(app_dir.absoluteFilePath(prog));
+#else
+            //qDebug() << "Launch:" << app_dir.absoluteFilePath("bin/" + prog);
+            runapp.setProgram(app_dir.absoluteFilePath("bin/" + prog));
+#endif
             runapp.startDetached();
         }
         qApp->quit();

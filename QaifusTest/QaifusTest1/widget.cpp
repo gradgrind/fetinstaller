@@ -10,7 +10,7 @@ Widget::Widget(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowIcon(QIcon(":/icons/QaifusTest.svg"));
+    setWindowIcon(QIcon(":/icons/QaifusTest1.svg"));
 
     QStringList args = QCoreApplication::arguments();
     if ( args.length() > 1 ) {

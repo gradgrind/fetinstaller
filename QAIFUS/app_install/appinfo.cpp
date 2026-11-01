@@ -1,8 +1,6 @@
 #include "appinfo.h"
 #include <QCoreApplication>
-#include <QDir>
 #include <QFileInfo>
-#include <QSettings>
 #include <QMessageBox>
 
 AppInfo::AppInfo()
@@ -22,32 +20,48 @@ AppInfo::AppInfo()
     }
     // Path prefixes for OS-specific configuration items
 #if defined Q_OS_WIN
-    ostype = "Windows/";
+    ostype = "Windows";
 #elif defined Q_OS_LINUX
-    ostype = "Linux/";
+    ostype = "Linux";
 #endif
 }
 
-bool AppInfo::read(QString& var, QString key, bool critical)
+bool AppInfo::read0(QString& var, QString key, bool critical)
 {
-    auto val = appsettings->value(ostype + key);
+    auto val = appsettings->value(key);
     if ( val.isValid() ) {
         var = val.toString();
         return true;
-    } else {
-        val = appsettings->value(key);
-        if ( val.isValid() ) {
-            var = val.toString();
-            return true;
-        }
-        if ( critical ) {
-            QMessageBox::critical(
-                nullptr,
-                tr("Critical"),
-                tr("Configuration Error, no '%1': '%2'").arg(key, appconf));
-        }
-        return false;
     }
+    if ( critical ) {
+        QMessageBox::critical(
+            nullptr,
+            tr("Critical"),
+            tr("Configuration Error, no '%1': '%2'").arg(key, appconf));
+    }
+    return false;
+}
+
+bool AppInfo::reados(QString& var, QString key)
+// Read a setting from the `ostype` section.
+{
+    appsettings->beginGroup(ostype);
+    auto val = appsettings->value(key);
+    appsettings->endGroup();
+    if ( val.isValid() ) {
+        var = val.toString();
+        return true;
+    }
+    return false;
+}
+
+bool AppInfo::read(QString& var, QString key, bool critical)
+// Read a setting, trying the `ostype` section first, falling back to the top level.
+{
+    if ( reados(var, key) ) {
+        return true;
+    }
+    return read0(var, key, critical);
 }
 
 bool AppInfo::init(QLocale locale)
@@ -60,68 +74,55 @@ bool AppInfo::init(QLocale locale)
 
     appsettings = new QSettings(appconf, QSettings::IniFormat);
 
-    if ( !read(APPNAME, "APPNAME", true) )
+    if ( !read(PROJECTNAME, "PROJECT", true) )
         return false;
 
-    if ( !read(APPVERSION, "VERSION", true) )
+    if ( !read(PROJECTVERSION, "VERSION", true) )
         return false;
 
-    if ( !read(APPLICATION, "APPLICATION") ) {
-        APPLICATION = APPNAME;
-    }
-    if ( !read(APPEXEC, "APPEXEC") ) {
-        APPEXEC = APPLICATION;
-    }
-    read(APPMIME, "APPMIME");
-    read(APPICON, "APPICON");
-    QString binlinks;
-    if ( read(binlinks, "BINLINKS") ) {
-        BINLINKS = binlinks.split(',');
-    }
-#if defined Q_OS_WIN
-    read(ASSOC_EXT, "ASSOC_EXT");
-    read(ASSOC_PROGID, "ASSOC_PROGID");
-    read(Publisher, "Publisher");
-    read(WebLink, "WebLink");
-
-    // Get the long name for the application from the .desktop file.
-    QString dconf{SOURCE_DIR.filePath("_installer_/desktop")};
-#else
-    if ( !read(EXECLINE, "EXECLINE") ) {
-        //TODO: Versioned Exec lines not possible
-    }
-
-    // Get the long name for the application from the .desktop file.
-    QString dconf{SOURCE_DIR.filePath("share/applications/" + APPLICATION + ".desktop")};
-#endif
-    if ( !QFileInfo{dconf}.isFile() ) {
-        QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no 'desktop' file: %1").arg(dconf));
-        return false;
-    }
-    QSettings dsettings(dconf, QSettings::IniFormat);
-    dsettings.beginGroup("Desktop Entry");
-
-    // Check Name entry
-    auto val = dsettings.value("Name");
-    if ( val.toString() != APPNAME ) {
-        QMessageBox::critical(
-            nullptr,
-            tr("Critical"),
-            tr("APPNAME in app.conf doesn't match 'Name' in 'desktop' file: %1").arg(dconf));
-        return false;
-    }
-
-    // If possible, get a translated version.
-    auto l = locale.name();
-    val = dsettings.value("GenericName[" + l + "]");
-    if ( !val.isValid() ) {
-        l = QLocale::languageToCode(locale.language());
-        val = dsettings.value("GenericName[" + l + "]");
-        if ( !val.isValid() ) {
-            val = dsettings.value("GenericName");
+    // PROJECTLONGNAME is optional, if possible, get a translated version.
+    if ( !read(
+            PROJECTLONGNAME,
+            "GenericName[" + locale.name() + "]") ) {
+        if ( !read(
+                PROJECTLONGNAME,
+                "GenericName[" + QLocale::languageToCode(locale.language()) + "]") ) {
+            read(PROJECTLONGNAME, "GenericName");
         }
     }
-    APPLONGNAME = val.toString();
+
+    // Read the entries for the executables, only in the `ostype` section.
+    appsettings->beginGroup(ostype);
+    appsettings->beginGroup("EXEC");
+    for (const auto& k : appsettings->allKeys()) {
+        QString v{appsettings->value(k).toString().trimmed()};
+        QStringList vvv = v.split(':');
+        if ( vvv.length() != 3 ) {
+            QMessageBox::critical(
+                nullptr,
+                tr("Critical"),
+                tr("Invalid EXEC in app.conf: (%1) %2=%3").arg(ostype, k, v));
+            return false;
+        }
+        EXECUTABLES[k] = {vvv[0], vvv[1], vvv[2]};
+    }
+    appsettings->endGroup();
+    appsettings->endGroup();
+
+    // Get "LAUNCH" app.
+    if ( read(LAUNCH, "LAUNCH") ) {
+        if ( !EXECUTABLES.contains(LAUNCH) ) {
+            QMessageBox::critical(
+                nullptr,
+                tr("Critical"),
+                tr("No 'EXEC' for LAUNCH=%1 in app.conf.").arg(LAUNCH));
+            LAUNCH.clear();
+            return false;
+        }
+    }
+
+    read(Publisher, "Publisher");
+    read(WebLink, "WebLink");
 
     delete appsettings;
     appsettings = nullptr;

@@ -5,13 +5,13 @@
     <name>Widget</name>
     <message>
         <location filename="../widget.ui" line="14"/>
-        <source>QaifusTest</source>
+        <source>QaifusTest1</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../widget.ui" line="22"/>
         <source># Test Application</source>
-        <translation># Testanwendung</translation>
+        <translation># Testprogramm</translation>
     </message>
     <message>
         <location filename="../widget.ui" line="72"/>
@@ -20,12 +20,7 @@
 It doesn&apos;t really serve any other purpose at all ...</source>
         <translation>Diese Anwendung ist ein kleiner Test für das QAIFUS-Installationsprogramm.
 
-Sie hat sonst keine Daseinsberechtigung ...</translation>
-    </message>
-    <message>
-        <location filename="../widget.ui" line="96"/>
-        <source>OK</source>
-        <translation></translation>
+Sie erfüllt sonst keinen Zweck ...</translation>
     </message>
 </context>
 </TS>

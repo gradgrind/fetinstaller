@@ -15,7 +15,6 @@
 
 INCBIN(App, "../build/app_bundle.tar.xz");
 
-char* tmpdir = NULL;
 char* compose(char* fmt, ...);
 void error(char* msg);
 int unpack(char* dir);
@@ -23,30 +22,21 @@ int xsystem(char* cmd);
 
 int main(int argc, char **argv)
 {
-    // Create a temporary directory to receive the unpacked installer.
-    // The following code assumes that only one installer should be active
-    // at any time (for any one user). If a second installer is started,
-    // "app_install" can detect this by means of the trailing "_" on the
-    // path name, so it can report the situation, but otherwise be unhindered.
-    // A further attempt to start an installer will fail.
-    char* tmp0 = getenv("TMP");
-    if ( tmp0 == NULL ) {
-        error("TMP environment variable not set.");
-        return 1;
+    // Get a suitable path for the temporary directory.
+    char* tmpdir = _tempnam(NULL, "AppIn");
+    if (!tmpdir)
+    {
+       error("Error occurred creating unique filename.");
+       return 1;
     }
-    tmpdir = compose("%s/gradgrind_AppIn", tmp0);
+    //printf( "%s is safe to use as a temporary file.\n", tmpdir );
+
+    // Create the temporary directory.
     if ( _mkdir(tmpdir) != 0 ) {
-        free(tmpdir);
-        tmpdir = compose("%s/gradgrind_AppIn_", tmp0);
-        if ( _mkdir(tmpdir) != 0 ) {
-            char* msg = compose("Temporary directory unavailable: '%s'", tmpdir);
-            error(msg);
-            free(msg);
-            free(tmpdir);
-            return 1;
-        }
-        // In this case, app_install should comment on this, actually
-        // there should be only one instance per user.
+        char* msg = compose("Failed: Create temporary directory '%s'", tmpdir);
+        error(msg);
+        free(msg);
+        return 1;
     }
 
     // Unpack the app bundle.

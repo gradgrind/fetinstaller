@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=QaifusTest2
+GenericName=Test application for the QAIFUS installer program
+GenericName[de]=Testanwendung für das QAIFUS-Installationsprogramm
+Icon=QaifusTest2
+Exec=QaifusTest2 %f
+Terminal=false
+StartupNotify=true
+Categories=Programming;Development;Qt;
+MimeType=application/vnd.qaifustest2.file;
