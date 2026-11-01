@@ -10,13 +10,13 @@ This project is directed specifically at C++/Qt GUI applications which compile t
 
  - creates a Start-Menu entry
 
- - can register a file-ending ("mime-type" on Linux)
+ - can register file-endings ("mime-types" on Linux)
 
- - also a "versioned" installation installation is possible, allowing multiple versions to be installed, but this doesn't do the file-ending registration
+ - also a "versioned" installation is possible, allowing multiple versions to be installed, but this doesn't do the file-ending registration
 
- - optional desktop starter link
+ - optional desktop starter links
 
- - on Linux, the application is added to the PATH
+ - on Linux, the applications are added to the PATH
 
  - graphical uninstaller
 
@@ -29,3 +29,21 @@ The reason to restrict the scope to C++/Qt GUI applications is that the installe
 Using basically the same framework for building the installer as is used for the application itself should make the whole process easier to learn and more transparent, when compared to using other tools with obscure configuration languages (e.g. NSIS). It should be relatively straightforward to customise the installer/uninstaller to suit the needs of a particular application.
 
 The installer and uninstaller are built using CMAKE, which is the standard tool for Qt, so this should also be the preferred tool for building the application itself. It should then be easy to ensure that the libraries, plugins, etc., get stored in the correct places.
+
+## Linux
+
+On Linux, a sort of standard installation location would be "~/.local", but because of possible conflicts (especially libraries), a direct installation here would not be a good idea. I have chosen to make the default installation directory "~/.local/apps", each installation package putting its application bundle (directory) here.
+
+To add entries in the desktop applications menu ("start menu"), file-type associations and icons, files are linked from or copied to their standard locations within "~/.local". The uninstaller removes these as well as the application bundle itself, to ensure a thorough tidying up.
+
+## Windows
+
+On Windows I have chosen "C:\Users\<User-Name>\AppData\Local\Programs" as the standard location for installation packages. Entries in the "start menu" and file-type associations are done in the registry (in the user-writable section). Also an entry for the uninstaller is placed in the registry, so that it can be uninstalled in the "normal" ways.
+
+## Building the installer package
+
+See [Building](docs/BUILD.md).
+
+For additional details see [Notes](docs/NOTES.md).
+
+`QaifusTest` is a moderately simple (though it does include two GUI apps and a command-line app in one package!) test project to demonstrate the installer.
