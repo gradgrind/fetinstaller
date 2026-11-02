@@ -7,7 +7,9 @@ bool DeleteWorker::removeDirectory(const QString &dirPath) {
     // Loop through the directory contents
     for ( const auto &dirEntry : QDirListing(dirPath, QDirListing::IteratorFlag::IncludeHidden) ) {
         QString fpath{dirEntry.absoluteFilePath()};
-        if (dirEntry.isDir()) {
+        if ( dirEntry.isSymLink() ) {
+            emit deletedFile(fpath, QFile::remove(fpath));
+        } else if ( dirEntry.isDir() ) {
             removeDirectory(fpath);
         } else {
             emit deletedFile(fpath, QFile::remove(fpath));
