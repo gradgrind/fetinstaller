@@ -57,10 +57,12 @@ $APPDIR = "$APPNAME"
 # Ensure that the "_installer_" directory exists
 $installerdir = "$BUILDDIR\$INSTALLDIR\_installer_"
 if ( -not ( Test-Path -Path "$installerdir" ) ) {
-    New-Item -Path "$installerdir" -ItemType Directory
+    New-Item -Path "$installerdir" -ItemType Directory -ErrorAction Stop
 }
+# Add the ABOUT_QAIFUS file
+Copy-Item "ABOUT_QAIFUS" -Destination "$installerdir" -ErrorAction Stop
 # Add the installer app-configuration file
-(Get-Content "$QAIFUS_APPDIR\app.conf") `
+(Get-Content "$QAIFUS_APPDIR\app.conf" -ErrorAction Stop) `
     -replace '%VERSION%', "$PROJECT_VERSION" `
     -replace '%PROJECT%', "$PROJECT_NAME" |
     Set-Content "$installerdir\app.conf"

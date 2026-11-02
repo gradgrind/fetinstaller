@@ -60,6 +60,9 @@ Installer::Installer(QLocale locale, QWidget *parent)
 
     // Set application name in GUI
     ui->label_title->setText(ui->label_title->text().arg(versioned_project, appinfo.PROJECTLONGNAME));
+    ui->label_qaifus_version->setText(ui->label_qaifus_version->text().arg(appinfo.QAIFUS_VERSION));
+    ui->label_qaifus_info->setText(ui->label_qaifus_info->text().arg(appinfo.QAIFUS_INFO));
+
     ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.PROJECTNAME));
     ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.PROJECTNAME));
     ui->removeExisting->setText(ui->removeExisting->text().arg(appinfo.PROJECTNAME));
@@ -151,13 +154,17 @@ void Installer::page_0()
             src_dir.path(),
             QDirListing::IteratorFlag::Recursive | QDirListing::IteratorFlag::IncludeHidden) ) {
         QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
-        if ( rpath.startsWith("_installer_") )
+
+        if ( dirEntry.baseName().startsWith("app_install") ) {
             continue;
-#if defined Q_OS_WIN
-        // The installer is in the root directory
-        if ( rpath.startsWith(QCoreApplication::applicationName()) )
+        }
+        if ( rpath.startsWith("_installer_") ) {
+            if ( dirEntry.isFile() ) {
+                uninstallerFiles.append(rpath);
+            }
             continue;
-#endif
+        }
+
         linktest slink{testLink(rpath)};
         if ( !slink.message.isEmpty() ) {
             // link: error or warning

@@ -34,6 +34,7 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
 
     // Copy the uninstaller files
     if ( iFiles.with_uninstaller ) {
+        dstDir.mkdir("_installer_");
         for ( const auto& f : iFiles.uninstallerFiles ) {
             if ( QFile::copy(srcDir.filePath(f), dstDir.filePath(f)) ) {
                 emit file_copied(f);

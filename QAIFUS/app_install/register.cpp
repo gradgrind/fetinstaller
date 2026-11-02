@@ -228,16 +228,16 @@ bool Installer::isInstalled(QString dir)
                 return false; // only if this is a symlink can the app count as "installed"
             }
             // Seek installation directory, and hence uninstaller.
-            uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "/app_uninstall"};
+            uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "../_installer_/app_uninstall"};
             if ( uinfo.isExecutable() ) {
-                uninstall_exe = uinfo.filePath();
+                uninstall_exe = uinfo.absoluteFilePath();
                 // The app counts as "installed" if this exists and is executable.
                 return true;
             }
         }
         return false;
     }
-    uinfo = QFileInfo{dir + "/bin/app_uninstall"};
+    uinfo = QFileInfo{dir + "/_installer_/app_uninstall"};
     uninstall_exe = uinfo.filePath();
     // The app counts as "installed" only if this exists and is executable.
     return uinfo.isExecutable();
@@ -594,7 +594,7 @@ bool Installer::removeSpecial(QString item)
 
 bool Installer::isInstallBundle(QDir dir)
 {
-    return dir.exists("bin/app_uninstall");
+    return dir.exists("_installer_/app_uninstall");
 }
 
 void Installer::update_desktop_database()

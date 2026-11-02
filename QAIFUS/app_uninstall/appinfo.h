@@ -11,8 +11,9 @@ class AppInfo : QObject
 public:
     AppInfo();
     bool init();
-    bool uninstaller2tmp(); // needed only on Windows
-    bool copyfile(QString frel);
+
+    QString QAIFUS_VERSION;
+    QString QAIFUS_INFO;
 
     QDir appdir;    // root of running app
     QDir basedir;   // root of installation

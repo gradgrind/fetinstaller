@@ -6,7 +6,6 @@
 
 #if defined Q_OS_WIN
 #include <process.h>
-#endif
 
 // A Powershell command to remove the temporary directory, reporting an error if it didn't work.
 const QString PSCMD{R"(
@@ -17,6 +16,8 @@ if ( Test-Path -Path '%1' ) {
         [System.Windows.MessageBox]::Show('%3', '%2', 0, 16);
     }
 })"};
+
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -52,34 +53,34 @@ int main(int argc, char *argv[])
         Uninstaller w(appinfo);
         w.show();
         cc = QApplication::exec();
-#if defined Q_OS_WIN
-        // Remove temporary directory.
-        QString dpath{QDir::toNativeSeparators(appinfo.appdir.absolutePath())};
-        QString emsg{QCoreApplication::translate("main", "Failed: delete folder \"%1\"").arg(dpath)};
-        QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg)};
-        QByteArray cmdbytes{cmd.toLocal8Bit()};
-        const char* cmdx = cmdbytes.constData();
-        /*
-        QMessageBox::information(
-            nullptr,
-            QCoreApplication::translate("main", "Powershell"),
-            cmd);
-        */
-        _execlp("powershell", "powershell", "-WindowStyle", "Hidden", "-Command", cmdx, (char*) NULL);
-        //_execlp("powershell", "powershell", "-NoExit", "-Command", cmdx, (char*) NULL);
-        // Shouldn't return!
-        QMessageBox::critical(
-            nullptr,
-            QCoreApplication::translate("main", "Tidying"),
-            QCoreApplication::translate("main", "Removing the temporary folder failed: '%1'")
-                .arg(dpath));
-        cc = 100;
-#endif
     } else {
         QMessageBox::critical(
             nullptr,
             QCoreApplication::translate("main", "Critical Error"),
             appinfo.error);
     }
+#if defined Q_OS_WIN
+    // Remove temporary directory.
+    QString dpath{QDir::toNativeSeparators(appinfo.appdir.absolutePath())};
+    QString emsg{QCoreApplication::translate("main", "Failed: delete folder \"%1\"").arg(dpath)};
+    QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg)};
+    QByteArray cmdbytes{cmd.toLocal8Bit()};
+    const char* cmdx = cmdbytes.constData();
+    /*
+        QMessageBox::information(
+            nullptr,
+            QCoreApplication::translate("main", "Powershell"),
+            cmd);
+        */
+    _execlp("powershell", "powershell", "-WindowStyle", "Hidden", "-Command", cmdx, (char*) NULL);
+    //_execlp("powershell", "powershell", "-NoExit", "-Command", cmdx, (char*) NULL);
+    // Shouldn't return!
+    QMessageBox::critical(
+        nullptr,
+        QCoreApplication::translate("main", "Tidying"),
+        QCoreApplication::translate("main", "Failed: Remove the temporary folder, '%1'")
+            .arg(dpath));
+    cc = 100;
+#endif
     return cc;
 }

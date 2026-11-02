@@ -37,7 +37,6 @@ private slots:
 private:
     Ui::Uninstaller *ui;
 
-    bool uninstaller2tmp(QString& installpath, QString& tmppath, QString &error);
     void print_line(QString line, bool bold = false);
     void progressOne();
     void unregisterApp();

@@ -56,6 +56,8 @@ APPDIR="$APPNAME"
 # Ensure that the "_installer_" directory exists
 installerdir="$BUILDDIR/$INSTALLDIR/_installer_"
 mkdir -p "$installerdir"
+# Add the ABOUT_QAIFUS file
+cp ABOUT_QAIFUS "$installerdir"
 # Add the installer app-configuration file
 sed "s/%VERSION%/$PROJECT_VERSION/g;s/%PROJECT%/$PROJECT_NAME/g" \
     "$QAIFUS_APPDIR/app.conf" > "$installerdir/app.conf"
@@ -65,7 +67,7 @@ echo "Create app bundle archive: build/app_bundle.tar.xz"
 echo
 
 cd "$BUILDDIR/$INSTALLDIR"
-tar -cJf ../app_bundle.tar.xz *
+tar --owner=root --group=root -cJf ../app_bundle.tar.xz *
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** app bundle compression failed"

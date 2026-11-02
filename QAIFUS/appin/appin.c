@@ -12,7 +12,8 @@
 INCBIN(App, "../build/app_bundle.tar.xz");
 
 char* tmpdir = NULL;
-char* msg = NULL;
+char* msg = NULL; // constant strings, don't free
+char* msgx = NULL; // needs freeing
 int childstate = 0;
 
 void fatal();
@@ -30,7 +31,7 @@ int main(int argc, char **argv)
         free(tmpdir);
         asprintf(&tmpdir, "%s/%s_gradgrind_AppIn_", tmp0, user);
         if ( mkdir(tmpdir, 0700) != 0 ) {
-            asprintf(&msg, "Temporary directory unavailable: %s\n", tmpdir);
+            asprintf(&msgx, "Temporary directory unavailable: %s\n", tmpdir);
             free(tmpdir);
             tmpdir = NULL;
             fatal();
@@ -102,16 +103,13 @@ void fatal()
     char* emsg = "";
     if ( errno != 0 ) {
         emsg = strerror(errno);
-        
-        //fprintf(stderr, emsg);
-        //fprintf(stderr, "\n");
     }
 
     char* msg0 = "";
     if ( msg ) {
         msg0 = msg;
-        //fprintf(stderr, msg);
-        //fprintf(stderr, "\n");
+    } else if ( msgx ) {
+        msg0 = msgx;
     }
 
     char* e0 = NULL;
@@ -122,8 +120,8 @@ void fatal()
     system(en);
     free(en);
     free(e0);
-    if ( msg ) {
-        free(msg);
+    if ( msgx ) {
+        free(msgx);
     }
     tidy();
     exit(1);
@@ -141,7 +139,7 @@ void tidy()
         //printf("System -> %d\n", sysrc);
         if ( sysrc != 0 ) {
             const char* msg0 = "Couldn't remove temporary directory: %s\n";
-            asprintf(&msg, msg0, tmpdir);
+            asprintf(&msgx, msg0, tmpdir);
             tmpdir = NULL;
             fatal();
         }

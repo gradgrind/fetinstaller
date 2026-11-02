@@ -26,9 +26,9 @@ AppInfo::AppInfo()
 #endif
 }
 
-bool AppInfo::read0(QString& var, QString key, bool critical)
+bool AppInfo::read0(QSettings& appsettings, QString& var, QString key, bool critical)
 {
-    auto val = appsettings->value(key);
+    auto val = appsettings.value(key);
     if ( val.isValid() ) {
         var = val.toString();
         return true;
@@ -42,12 +42,12 @@ bool AppInfo::read0(QString& var, QString key, bool critical)
     return false;
 }
 
-bool AppInfo::reados(QString& var, QString key)
+bool AppInfo::reados(QSettings& appsettings, QString& var, QString key)
 // Read a setting from the `ostype` section.
 {
-    appsettings->beginGroup(ostype);
-    auto val = appsettings->value(key);
-    appsettings->endGroup();
+    appsettings.beginGroup(ostype);
+    auto val = appsettings.value(key);
+    appsettings.endGroup();
     if ( val.isValid() ) {
         var = val.toString();
         return true;
@@ -55,47 +55,71 @@ bool AppInfo::reados(QString& var, QString key)
     return false;
 }
 
-bool AppInfo::read(QString& var, QString key, bool critical)
+bool AppInfo::read(QSettings& appsettings, QString& var, QString key, bool critical)
 // Read a setting, trying the `ostype` section first, falling back to the top level.
 {
-    if ( reados(var, key) ) {
+    if ( reados(appsettings, var, key) ) {
         return true;
     }
-    return read0(var, key, critical);
+    return read0(appsettings, var, key, critical);
 }
 
 bool AppInfo::init(QLocale locale)
 {
+    QString about_qaifus = SOURCE_DIR.filePath("_installer_/ABOUT_QAIFUS");
+    if ( !QFileInfo{about_qaifus}.isFile() ) {
+        QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no ABOUT_QAIFUS file: %1").arg(about_qaifus));
+        return false;
+    }
+    QSettings qinfo{about_qaifus, QSettings::IniFormat};
+    {
+        auto val = qinfo.value("QAIFUS_VERSION");
+        if ( val.isValid() ) {
+            QAIFUS_VERSION = val.toString();
+        } else {
+            QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no QAIFUS_VERSION: %1").arg(about_qaifus));
+            return false;
+        }
+        val = qinfo.value("QAIFUS_INFO");
+        if ( val.isValid() ) {
+            QAIFUS_INFO = val.toString();
+        } else {
+            QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no QAIFUS_INFO: %1").arg(about_qaifus));
+            return false;
+        }
+    }
+
     appconf = SOURCE_DIR.filePath("_installer_/app.conf");
     if ( !QFileInfo{appconf}.isFile() ) {
         QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no application configuration: %1").arg(appconf));
         return false;
     }
+    QSettings appsettings{appconf, QSettings::IniFormat};
 
-    appsettings = new QSettings(appconf, QSettings::IniFormat);
-
-    if ( !read(PROJECTNAME, "PROJECT", true) )
+    if ( !read(appsettings, PROJECTNAME, "PROJECT", true) )
         return false;
 
-    if ( !read(PROJECTVERSION, "VERSION", true) )
+    if ( !read(appsettings, PROJECTVERSION, "VERSION", true) )
         return false;
 
     // PROJECTLONGNAME is optional, if possible, get a translated version.
     if ( !read(
+            appsettings,
             PROJECTLONGNAME,
             "GenericName[" + locale.name() + "]") ) {
         if ( !read(
+                appsettings,
                 PROJECTLONGNAME,
                 "GenericName[" + QLocale::languageToCode(locale.language()) + "]") ) {
-            read(PROJECTLONGNAME, "GenericName");
+            read(appsettings, PROJECTLONGNAME, "GenericName");
         }
     }
 
     // Read the entries for the executables, only in the `ostype` section.
-    appsettings->beginGroup(ostype);
-    appsettings->beginGroup("EXEC");
-    for (const auto& k : appsettings->allKeys()) {
-        QString v{appsettings->value(k).toString().trimmed()};
+    appsettings.beginGroup(ostype);
+    appsettings.beginGroup("EXEC");
+    for (const auto& k : appsettings.allKeys()) {
+        QString v{appsettings.value(k).toString().trimmed()};
         QStringList vvv = v.split(':');
         if ( vvv.length() != 3 ) {
             QMessageBox::critical(
@@ -106,11 +130,11 @@ bool AppInfo::init(QLocale locale)
         }
         EXECUTABLES[k] = {vvv[0], vvv[1], vvv[2]};
     }
-    appsettings->endGroup();
-    appsettings->endGroup();
+    appsettings.endGroup();
+    appsettings.endGroup();
 
     // Get "LAUNCH" app.
-    if ( read(LAUNCH, "LAUNCH") ) {
+    if ( read(appsettings, LAUNCH, "LAUNCH") ) {
         if ( !EXECUTABLES.contains(LAUNCH) ) {
             QMessageBox::critical(
                 nullptr,
@@ -121,10 +145,8 @@ bool AppInfo::init(QLocale locale)
         }
     }
 
-    read(Publisher, "Publisher");
-    read(WebLink, "WebLink");
+    read(appsettings, Publisher, "Publisher");
+    read(appsettings, WebLink, "WebLink");
 
-    delete appsettings;
-    appsettings = nullptr;
     return true;
 }

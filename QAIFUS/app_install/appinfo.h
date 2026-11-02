@@ -18,21 +18,19 @@ class AppInfo : QObject
 {
     Q_OBJECT
 
-    bool read0(QString& var, QString key, bool critical=false);
-    bool reados(QString& var, QString key);
-    bool read(QString& var, QString key, bool critical=false);
-    QSettings* appsettings;
+    bool read0(QSettings& appsettings, QString& var, QString key, bool critical=false);
+    bool reados(QSettings &appsettings, QString& var, QString key);
+    bool read(QSettings& appsettings, QString& var, QString key, bool critical=false);
     QString appconf; // configuration file (full path)
     QString ostype;
 
 public:
     AppInfo();
-    ~AppInfo() {
-        delete appsettings;
-    }
     bool init(QLocale locale);
 
     QDir SOURCE_DIR;
+    QString QAIFUS_VERSION;
+    QString QAIFUS_INFO;
     QString PROJECTNAME;
     QString PROJECTLONGNAME;
     QString PROJECTVERSION;

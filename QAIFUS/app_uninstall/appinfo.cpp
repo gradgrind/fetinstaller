@@ -1,9 +1,7 @@
 #include "appinfo.h"
 #include <QCoreApplication>
 #include <QMessageBox>
-#include <QTemporaryDir>
-#include <QProcess>
-#include <QRandomGenerator>
+#include <QSettings>
 
 #if defined Q_OS_WIN
 #include <process.h>
@@ -27,7 +25,7 @@ bool AppInfo::init()
 #if defined Q_OS_WIN
     // The uninstaller is expected to be in the root directory of the installation.
 #else
-    // The uninstaller is expected to be in the "bin" directory of the installation.
+    // The uninstaller is expected to be in the "_installer_" directory of the installation.
     appdir.cdUp();
 #endif
 
@@ -56,63 +54,29 @@ bool AppInfo::init()
         return false;
     }
     basename = basedir.dirName();
-    return true;
-}
 
-bool AppInfo::copyfile(QString frel)
-// Copy from appdir to basedir, the file has a relative path.
-{
-    QString dst{basedir.absoluteFilePath(frel)};
-    // Ensure the oarent directory exists.
-    QFileInfo dinfo{QFileInfo{dst}.absolutePath()};
-    if ( !dinfo.isDir() ) {
-        basedir.mkpath(dinfo.absoluteFilePath());
-    }
-    if ( !QFile::copy(appdir.absoluteFilePath(frel), dst) ) {
-        error = tr("Failed: copying file to temporary folder: '%1'").arg(dst);
+    QString about_qaifus = basedir.filePath("_installer_/ABOUT_QAIFUS");
+    if ( !QFileInfo{about_qaifus}.isFile() ) {
+        QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no ABOUT_QAIFUS file: %1").arg(about_qaifus));
         return false;
     }
-    return true;
-}
-
-bool AppInfo::uninstaller2tmp()
-{
-    // Create a temporary directory.
-    QDir tmpdir0{QDir::temp()};
-    QString tmprel{QString{"AppUnIn%1"}.arg(QRandomGenerator::global()->generate())};
-    if ( !tmpdir0.mkdir(tmprel) ) {
-        error = QCoreApplication::translate(
-                    "Uninstall0", "Failed: create temporary folder: '%1'")
-                    .arg(tmpdir0.absoluteFilePath(tmprel));
-        return false;
-    }
-    basedir.setPath(tmpdir0.absoluteFilePath(tmprel));
-    // Copy the uninstaller and supporting libraries to the temporary directory.
-    if ( !copyfile("app_install.exe") ) {
-        return false;
-    }
-    if ( !copyfile("qt.conf") ) {
-        return false;
-    }
-    for ( const auto &dirEntry : QDirListing(
-             appdir.absolutePath(),
-             QDirListing::IteratorFlag::FilesOnly ) ) {
-        // Only regular files ...
-        const QString fileName = dirEntry.fileName();
-        if ( fileName.endsWith(".dll") ) {
-            if ( !copyfile(fileName) ) {
-                return false;
-            }
+    QSettings qinfo{about_qaifus, QSettings::IniFormat};
+    {
+        auto val = qinfo.value("QAIFUS_VERSION");
+        if ( val.isValid() ) {
+            QAIFUS_VERSION = val.toString();
+        } else {
+            QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no QAIFUS_VERSION: %1").arg(about_qaifus));
+            return false;
         }
-    }
-    // Add plugins
-    for ( const auto &dirEntry : QDirListing(
-             appdir.absoluteFilePath("plugins"),
-             QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive) ) {
-        // Only regular files ...
-        if ( !copyfile(appdir.relativeFilePath(dirEntry.absoluteFilePath())) ) {
+        val = qinfo.value("QAIFUS_INFO");
+        if ( val.isValid() ) {
+            QAIFUS_INFO = val.toString();
+        } else {
+            QMessageBox::critical(nullptr, tr("Critical"), tr("BUG, no QAIFUS_INFO: %1").arg(about_qaifus));
             return false;
         }
     }
+
     return true;
 }

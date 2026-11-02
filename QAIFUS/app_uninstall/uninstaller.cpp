@@ -26,6 +26,7 @@ Uninstaller::Uninstaller(AppInfo& app_info, QWidget *parent)
 
     // Set application name in GUI
     ui->label_title->setText(ui->label_title->text().arg(app_info.basename));
+    ui->label_qaifus_version->setText(ui->label_qaifus_version->text().arg(app_info.QAIFUS_VERSION));
     ui->label_page_1->setText(ui->label_page_1->text().arg(app_info.basename));
 
     // Connect signals
