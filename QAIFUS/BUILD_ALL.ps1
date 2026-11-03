@@ -45,14 +45,26 @@ Write-Host
 $APPNAME = "app_install"
 $APPDIR = "$APPNAME"
 . ".\common_build.ps1"
+if ( !$? )
+{
+    exit 1
+}
 
 $APPNAME = "app_uninstall0"
 $APPDIR = "$APPNAME"
 . ".\common_build.ps1"
+if ( !$? )
+{
+    exit 1
+}
 
 $APPNAME = "app_uninstall"
 $APPDIR = "$APPNAME"
 . ".\common_build.ps1"
+if ( !$? )
+{
+    exit 1
+}
 
 # Ensure that the "_installer_" directory exists
 $installerdir = "$BUILDDIR\$INSTALLDIR\_installer_"

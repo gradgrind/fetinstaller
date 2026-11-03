@@ -127,6 +127,28 @@ bool Installer::registerApp()
 
     // Start menu entries
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
+
+    // If more than one entry, make a group.
+    { bool sme{false};
+        for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
+            if ( !i.value().execName.isEmpty() ) {
+                if ( sme ) {
+                    // Make a start menu group.
+                    if ( appsDir.mkdir(proj) ) {
+                        appsDir.cd(proj);
+                        localfiles.append("+++dir:" + appsDir.absolutePath());
+                        break;
+                    }
+                    print_line(tr("Couldn't create start menu group: '%1'")
+                        .arg(appsDir.absoluteFilePath(proj)), true);
+                    return false;
+                } else {
+                    sme = true;
+                }
+            }
+        }
+    }
+
     for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
         QString exec = i.key();
         auto execval = i.value();
@@ -207,28 +229,26 @@ Apparently it has already been installed in some other way.)");
 
 bool Installer::isInstalled(QString dir)
 {
-    // Assume an uninstaller is in the same directory as the app executable.
+    // Assume an uninstaller is in the _installer_ directory.
     QFileInfo uinfo;
     if ( dir.isEmpty() ) {
         // Check each of the EXECUTABLES:
         //   - Is it a symlink? No: not interesting.
-        //   - Yes: check for uninstaller in its target's directory.
+        //   - Yes: check for uninstaller in its target.
         for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
             QString exec = i.key();
             if ( ui->versioned->isChecked() ) {
                 exec += "-" + appinfo.PROJECTVERSION;
             }
             auto execval = i.value();
-            if ( !execval.extension.isEmpty() ) {
-                exec += execval.extension;
-            }
+            exec += execval.extension;
             QString execpath{QDir::home().absoluteFilePath(".local/bin/" + exec)};
             QString xpath{QFileInfo{execpath}.readSymLink()};
             if ( xpath.isEmpty() ) {
                 return false; // only if this is a symlink can the app count as "installed"
             }
             // Seek installation directory, and hence uninstaller.
-            uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "../_installer_/app_uninstall"};
+            uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "/../_installer_/app_uninstall"};
             if ( uinfo.isExecutable() ) {
                 uninstall_exe = uinfo.absoluteFilePath();
                 // The app counts as "installed" if this exists and is executable.

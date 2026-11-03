@@ -4,34 +4,43 @@
 <context>
     <name>AppInfo</name>
     <message>
-        <location filename="../appinfo.cpp" line="40"/>
+        <location filename="../appinfo.cpp" line="38"/>
         <source>Missing link: &apos;%1&apos;</source>
         <translation>Fehlende Verknüpfung: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="47"/>
+        <location filename="../appinfo.cpp" line="45"/>
         <source>Invalid application folder: &apos;%1&apos;</source>
         <translation>Ungültiger Anwendungsordner: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="55"/>
+        <location filename="../appinfo.cpp" line="53"/>
         <source>Invalid command line:
   - %1</source>
         <translation>Ungültige Befehlszeile:
   - %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="72"/>
-        <source>Failed: copying file to temporary folder: &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Datei nach Zwischenordner kopieren: &apos;%1&apos;</translation>
+        <location filename="../appinfo.cpp" line="60"/>
+        <location filename="../appinfo.cpp" line="69"/>
+        <location filename="../appinfo.cpp" line="76"/>
+        <source>Critical</source>
+        <translation>Schwerwiegender Fahler</translation>
     </message>
-</context>
-<context>
-    <name>Uninstall0</name>
     <message>
-        <location filename="../appinfo.cpp" line="84"/>
-        <source>Failed: create temporary folder: &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Zwischenordner erstellen: &apos;%1&apos;</translation>
+        <location filename="../appinfo.cpp" line="60"/>
+        <source>BUG, no ABOUT_QAIFUS file: %1</source>
+        <translation>Programmfehler, ABOUT_QAIFUS-Datei fehlt: %1</translation>
+    </message>
+    <message>
+        <location filename="../appinfo.cpp" line="69"/>
+        <source>BUG, no QAIFUS_VERSION: %1</source>
+        <translation>Programmfehler, keine QAIFUS_VERSION: %1</translation>
+    </message>
+    <message>
+        <location filename="../appinfo.cpp" line="76"/>
+        <source>BUG, no QAIFUS_INFO: %1</source>
+        <translation>Programmfehler, keine QAIFUS_INFO: %1</translation>
     </message>
 </context>
 <context>
@@ -52,9 +61,14 @@
         <translation>Soll %1 wirklich deinstalliert werden?</translation>
     </message>
     <message>
-        <location filename="../uninstaller.ui" line="165"/>
+        <location filename="../uninstaller.ui" line="155"/>
         <source>## Uninstall %1</source>
         <translation>## %1 deinstallieren</translation>
+    </message>
+    <message>
+        <location filename="../uninstaller.ui" line="168"/>
+        <source>QAIFUS Installer Framework, Version %1</source>
+        <translation>QAIFUS Installationswerkzeug, Version %1</translation>
     </message>
     <message>
         <location filename="../uninstaller.cpp" line="9"/>
@@ -74,22 +88,22 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
 </translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="102"/>
+        <location filename="../uninstaller.cpp" line="103"/>
         <source>*** Remove installation files ***</source>
         <translation>*** Installationsdateien löschen ***</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="149"/>
+        <location filename="../uninstaller.cpp" line="150"/>
         <source>App successfully uninstalled.</source>
         <translation>Anwendung erfolgreich entfernt.</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="151"/>
+        <location filename="../uninstaller.cpp" line="152"/>
         <source>System files not uninstalled:</source>
         <translation>Systemdateien nicht entfernt:</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="153"/>
+        <location filename="../uninstaller.cpp" line="154"/>
         <source> - Couldn&apos;t remove %1</source>
         <translation> - %1 konnte nicht entfernt werden</translation>
     </message>
@@ -100,21 +114,22 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
     </message>
     <message>
         <location filename="../unregister.cpp" line="32"/>
+        <location filename="../unregister.cpp" line="68"/>
         <source>Removed %1</source>
         <translation>%1 wurde entfernt</translation>
     </message>
     <message>
-        <location filename="../unregister.cpp" line="79"/>
+        <location filename="../unregister.cpp" line="93"/>
         <source>Update icon cache</source>
         <translation>Icon-Cache aktualisieren</translation>
     </message>
     <message>
-        <location filename="../unregister.cpp" line="81"/>
+        <location filename="../unregister.cpp" line="95"/>
         <source>Update mime database</source>
         <translation>Die Dateityp-Datenbank wird aktualisiert</translation>
     </message>
     <message>
-        <location filename="../unregister.cpp" line="86"/>
+        <location filename="../unregister.cpp" line="100"/>
         <source>Update desktop database</source>
         <translation>Schreibtisch-Datenbank aktualisieren</translation>
     </message>
@@ -122,41 +137,37 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
 <context>
     <name>main</name>
     <message>
-        <location filename="../app_uninstall.cpp" line="43"/>
+        <location filename="../app_uninstall.cpp" line="44"/>
         <source>ADMIN user</source>
         <translation>Administrator</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="44"/>
+        <location filename="../app_uninstall.cpp" line="45"/>
         <source>The installer must be run as a normal user.</source>
         <translation>Das Installationsprogramm muss vom normalen Benutzer ohne Admin-Rechte gestartet werden.</translation>
     </message>
     <message>
+        <location filename="../app_uninstall.cpp" line="65"/>
         <source>Failed: delete folder &quot;%1&quot;</source>
-        <translation type="obsolete">Fehlgeschlagen: Ordner &apos;%1&apos; löschen</translation>
-    </message>
-    <message>
-        <location filename="../app_uninstall.cpp" line="58"/>
-        <source>Failed: delete folder &apos;%1&apos;</source>
         <translation>Fehlgeschlagen: Ordner &apos;%1&apos; löschen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="59"/>
+        <location filename="../app_uninstall.cpp" line="81"/>
+        <source>Failed: Remove the temporary folder, &apos;%1&apos;</source>
+        <translation>Fehlgeschlagen: Zwischenordner &apos;%1&apos; entfernen</translation>
+    </message>
+    <message>
+        <location filename="../app_uninstall.cpp" line="66"/>
         <source>Error</source>
         <translation>Fehler</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="73"/>
+        <location filename="../app_uninstall.cpp" line="80"/>
         <source>Tidying</source>
         <translation>Aufräumen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="74"/>
-        <source>Removing the temporary folder failed: &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Zwischenordner löschen: &apos;%1&apos;</translation>
-    </message>
-    <message>
-        <location filename="../app_uninstall.cpp" line="81"/>
+        <location filename="../app_uninstall.cpp" line="59"/>
         <source>Critical Error</source>
         <translation>Schwerwiegender Fahler</translation>
     </message>

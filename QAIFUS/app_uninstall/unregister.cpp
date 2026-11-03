@@ -8,7 +8,7 @@
 void Uninstaller::unregisterApp()
 {
     // Read the list of files installed outside the app bundle and also "special" entries.
-    QString installed_files_path{base_dir.filePath("system_files")};
+    QString installed_files_path{base_dir.filePath("_installer_/system_files")};
     QFile textFile{installed_files_path};
     if ( !textFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
         print_line(tr("App installed no system files"));
@@ -23,7 +23,7 @@ void Uninstaller::unregisterApp()
     while ( !in.atEnd() )
     {
         QString line = in.readLine();
-        qDebug() << "???" << line;
+        //qDebug() << "???" << line;
         QString fpath{line.trimmed()};
         if ( !fpath.isEmpty() ) {
             if ( fpath.startsWith("+++") ) {
@@ -49,12 +49,26 @@ void Uninstaller::unregisterApp()
 void Uninstaller::removeSpecials(const QStringList specials)
 {
     bool shchangenotify{false};
+    QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
     for ( const auto& line : specials ) {
         if ( line.startsWith("+++reg:") ) {
-            QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
             regsettings.remove(line.sliced(7));
         } else if ( line.startsWith("+++file-type:") ) {
+            QString key{"Classes/" + line.sliced(13)};
+            regsettings.beginGroup(key + "/OpenWithProgIds");
+            bool empty{regsettings.childKeys().isEmpty()};
+            regsettings.endGroup();
+            if ( empty && !regsettings.value(key + "/.").isValid() ) {
+                regsettings.remove(key);
+            }
             shchangenotify = true;
+        } else if ( line.startsWith("+++dir:") ) {
+            QString dirPath{line.sliced(7)};
+            if ( QDir{}.rmdir(dirPath) ) {
+                print_line(tr("Removed %1").arg(dirPath));
+            } else {
+                unregister_failed.append(dirPath);
+            }
         }
     }
     if ( shchangenotify ) {

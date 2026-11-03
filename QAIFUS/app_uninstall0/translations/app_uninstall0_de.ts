@@ -15,13 +15,14 @@ The folder might have been left by a faulty run of the uninstaller.
 Only if you are sure it is no longer in use should you delete it.
 
 Delete this folder?</source>
-        <translation>Der Zwischenordner &apos;%1&apos; existiert schon.
-Gegebenenfalls wird er von einem anderen Installationsprogramm benutzt. Wenn das der Fall ist, nicht löschen!
-Auch wenn er von einer völlig anderen Anwendung benutzt wird (was unwahrscheinlich ist), nicht löschen!
+        <translation>
+Der Zwischenordner &apos;%1&apos; existiert schon.
+Gegebenenfalls wird er von einem anderen Deinstallationsprozess verwendet – in dem Fall, nicht löschen!
+Auch wenn der Ordner von einer völlig anderen Anwendung benutzt wird (unwahrscheinlich), nicht löschen!
 
-Der Ordner könnte aus einem vergangenen, fehlgeschlagenen Installationsvorgang stammen.
+Der Ordner könnte eventuell von einer fehlgeschlagenen Deinstallation stammen.
 
-Nur wenn du ganz sicher bist, dass er nicht mehr gebraucht wird, solltest du ihn löschen.
+Nur wenn es wirklich klar ist, dass der Ordner nicht mehr gebraucht wird, sollte er gelöscht werden.
 
 Diesen Ordner löschen?</translation>
     </message>
@@ -33,7 +34,7 @@ Diesen Ordner löschen?</translation>
     <message>
         <location filename="../app_uninstall0.cpp" line="63"/>
         <source>The installer must be run as a normal user.</source>
-        <translation>Das Installationsprogramm muss als nicht-Administrator ausgeführt werden.</translation>
+        <translation>Die Installation muss als normaler Benutzer gestartet werden.</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="75"/>
@@ -45,7 +46,7 @@ Diesen Ordner löschen?</translation>
     <message>
         <location filename="../app_uninstall0.cpp" line="97"/>
         <source>Delete Folder?</source>
-        <translation>Ordner Löschen?</translation>
+        <translation>Ordner löschen?</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="102"/>
@@ -60,12 +61,12 @@ Diesen Ordner löschen?</translation>
     <message>
         <location filename="../app_uninstall0.cpp" line="152"/>
         <source>Failed: link to target: &apos;%1&apos; -&gt; &apos;%2&apos;</source>
-        <translation>Fehlgeschlagen: Verknüpfung mit dem Ziel: &apos;%1&apos; -&gt; &apos;%2&apos;</translation>
+        <translation>Fehlgeschlagen: Verknüpfung erstellen: &apos;%1&apos; -&gt; &apos;%2&apos;</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="172"/>
         <source>Couldn&apos;t start uninstaller: &apos;%1&apos;</source>
-        <translation>Das Installationsprogramm konnte nicht gestartet werden: &apos;%1&apos;</translation>
+        <translation>Die Deinstallation konnte nicht starten: &apos;%1&apos;</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="182"/>
@@ -81,7 +82,7 @@ Diesen Ordner löschen?</translation>
         <location filename="../app_uninstall0.cpp" line="260"/>
         <source>Failed: copy file(s) to temporary folder:
  - %1</source>
-        <translation>Fehlgeschlagen: Datei(en) nach Zwischenordner kopieren:
+        <translation>Fehlgeschlagen: Datei(en) in den Zwischenordner kopieren:
  - %1</translation>
     </message>
 </context>

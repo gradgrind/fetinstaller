@@ -6,8 +6,11 @@
     <message>
         <location filename="../appinfo.cpp" line="39"/>
         <location filename="../appinfo.cpp" line="71"/>
-        <location filename="../appinfo.cpp" line="103"/>
-        <location filename="../appinfo.cpp" line="117"/>
+        <location filename="../appinfo.cpp" line="80"/>
+        <location filename="../appinfo.cpp" line="87"/>
+        <location filename="../appinfo.cpp" line="94"/>
+        <location filename="../appinfo.cpp" line="127"/>
+        <location filename="../appinfo.cpp" line="141"/>
         <source>Critical</source>
         <translation>Schwerwiegender Fehler</translation>
     </message>
@@ -18,16 +21,31 @@
     </message>
     <message>
         <location filename="../appinfo.cpp" line="71"/>
+        <source>BUG, no ABOUT_QAIFUS file: %1</source>
+        <translation>Programmfehler, keine ABOUT_QAIFUS-Datei: %1</translation>
+    </message>
+    <message>
+        <location filename="../appinfo.cpp" line="80"/>
+        <source>BUG, no QAIFUS_VERSION: %1</source>
+        <translation>Programmfehler, keine QAIFUS_VERSION: %1</translation>
+    </message>
+    <message>
+        <location filename="../appinfo.cpp" line="87"/>
+        <source>BUG, no QAIFUS_INFO: %1</source>
+        <translation>Programmfehler, keine QAIFUS_INFO: %1</translation>
+    </message>
+    <message>
+        <location filename="../appinfo.cpp" line="94"/>
         <source>BUG, no application configuration: %1</source>
         <translation>Programmfehler, keine Anwendungskonfiguration: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="104"/>
+        <location filename="../appinfo.cpp" line="128"/>
         <source>Invalid EXEC in app.conf: (%1) %2=%3</source>
         <translation>Ungültige EXEC-Zeile in app.conf: (%1) %2=%3</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="118"/>
+        <location filename="../appinfo.cpp" line="142"/>
         <source>No &apos;EXEC&apos; for LAUNCH=%1 in app.conf.</source>
         <translation>Keine &apos;EXEC&apos;-Zeile für LAUNCH=%1 in app.conf.</translation>
     </message>
@@ -40,17 +58,22 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="53"/>
+        <location filename="../installer.ui" line="43"/>
         <source>## %1: %2</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="114"/>
+        <location filename="../installer.ui" line="56"/>
+        <source>QAIFUS Installer Framework, Version %1</source>
+        <translation>QAIFUS-Installationswerkzeug, Version %1</translation>
+    </message>
+    <message>
+        <location filename="../installer.ui" line="113"/>
         <source>### %1 Installer: self-check</source>
         <translation>### %1 Installation: Daten überprüfen</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="155"/>
+        <location filename="../installer.ui" line="154"/>
         <source>### %1 Installer
 
 ####
@@ -71,62 +94,67 @@ Die Anwendung wird normalerweise als „%1“ registriert, der Name kann aber mi
 Es ist auch möglich den Anwendungsordner einfach zu entpacken, ohne die Anwendung irgendwie im System zu registrieren.</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="202"/>
+        <location filename="../installer.ui" line="188"/>
+        <source>QAIFUS: %1</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../installer.ui" line="208"/>
         <source>Install to:</source>
         <translation>Installationsordner</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="222"/>
+        <location filename="../installer.ui" line="228"/>
         <source>Default path</source>
         <translation>Standard</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="229"/>
+        <location filename="../installer.ui" line="235"/>
         <source>This may be necessary if manual changes have been made to the installation destination.</source>
         <translation>Dies könnte notwendig sein, wenn manuelle Änderungen zum Zielordner durchgeführt wurden.</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="232"/>
+        <location filename="../installer.ui" line="238"/>
         <source>Refresh view</source>
         <translation>Ansicht aktualisieren</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="250"/>
+        <location filename="../installer.ui" line="256"/>
         <source>Browse</source>
         <translation>Suchen</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="268"/>
+        <location filename="../installer.ui" line="274"/>
         <source>Remove existing %1 installation</source>
         <translation>Vorhandene %1-Installation entfernen</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="313"/>
+        <location filename="../installer.ui" line="319"/>
         <source>Unpack only</source>
         <translation>Nur entpacken</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="320"/>
+        <location filename="../installer.ui" line="326"/>
         <source>&quot;Versioned&quot; installation</source>
         <translation>Installation mit Versionsnummer</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="327"/>
+        <location filename="../installer.ui" line="333"/>
         <source>Install desktop link</source>
         <translation>Schreibtisch-Verknüpfung erstellen</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="345"/>
+        <location filename="../installer.ui" line="351"/>
         <source>Copying the files ...</source>
         <translation>Die Dateien werden kopiert ...</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="369"/>
+        <location filename="../installer.ui" line="375"/>
         <source>Launch %1</source>
         <translation>%1 starten</translation>
     </message>
     <message>
-        <location filename="../installer.ui" line="390"/>
+        <location filename="../installer.ui" line="396"/>
         <source>### Remove incomplete installation</source>
         <translation>### Unvollständige Installation entfernen</translation>
     </message>
@@ -140,122 +168,122 @@ To proceed, uninstall the existing app.</source>
 Um fortzufahren, muss die schon vorhandene Anwendung deinstalliert werden.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="196"/>
+        <location filename="../installer.cpp" line="212"/>
         <source>ERROR, file not readable: %1</source>
         <translation>FEHLER, Datei nicht lesbar: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="203"/>
+        <location filename="../installer.cpp" line="219"/>
         <source>ERROR, invalid &apos;file&apos;: %1</source>
         <translation>FEHLER, ungültige „Datei“: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="228"/>
+        <location filename="../installer.cpp" line="244"/>
         <source>%1 invalid files – installation is not recommended, rather fix the source!</source>
         <translation>%1 ungültige Dateien – lieber nicht installieren, sondern die Quellen reparieren!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="234"/>
+        <location filename="../installer.cpp" line="250"/>
         <source>%1 invalid files – please fix the source!</source>
         <translation>%1 ungültige Dateien – bitte die Quellen reparieren!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="276"/>
+        <location filename="../installer.cpp" line="292"/>
         <source>Open Directory</source>
         <translation>Ordner öffnen</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="300"/>
+        <location filename="../installer.cpp" line="316"/>
         <source>Destination not a folder: %1</source>
         <translation>Das Ziel ist kein Ordner: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="313"/>
+        <location filename="../installer.cpp" line="329"/>
         <source>A &apos;versioned&apos; installation might, however, be possible.</source>
         <translation>Eine mit Versionsnummer versehene Installation wäre u.U. möglich.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="320"/>
+        <location filename="../installer.cpp" line="336"/>
         <source>Destination not empty: %1</source>
         <translation>Das Ziel ist nicht leer: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="324"/>
+        <location filename="../installer.cpp" line="340"/>
         <source>To use the destination, uninstall the existing app.</source>
         <translation>Um dieses Ziel zu verwenden, muss die schon vorhandene Anwendung deinstalliert werden.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="332"/>
+        <location filename="../installer.cpp" line="348"/>
         <source>Warning: the app will be unpacked only, there will be no system integration.</source>
         <translation>Warnung: Die Anwendung wird nur entpackt, es erfolgt keinerlei Systemintegration.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="336"/>
+        <location filename="../installer.cpp" line="352"/>
         <source>--&gt; &apos;Registration&apos; not possible.</source>
         <translation>--&gt; Eine „Registrierung“ ist nicht möglich.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="354"/>
+        <location filename="../installer.cpp" line="370"/>
         <source>Failed: copying the uninstaller: &apos;%1&apos;</source>
         <translation>Fehlgeschlagen: das Installationsprogramm kopieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="363"/>
+        <location filename="../installer.cpp" line="379"/>
         <source>Failed: starting the uninstaller: &apos;%1&apos;</source>
         <translation>Fehlgeschlagen: Das Installationsprogramm starten: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="382"/>
+        <location filename="../installer.cpp" line="398"/>
         <source>Failed: uninstall (%1)</source>
         <translation>Fehlgeschlagen: Deinstallieren (%1)</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="470"/>
+        <location filename="../installer.cpp" line="486"/>
         <source>ERROR, directory exists already: %1</source>
         <translation>FEHLER, Ordner existiert schon: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="532"/>
+        <location filename="../installer.cpp" line="548"/>
         <source>Unpacking successful!</source>
         <translation>Entpacken erfolgreich!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="551"/>
+        <location filename="../installer.cpp" line="567"/>
         <source>Installation successful!</source>
         <translation>Installation erfolgreich!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="554"/>
+        <location filename="../installer.cpp" line="570"/>
         <source>ERROR, could not create the &apos;system_files&apos; list</source>
         <translation>FEHLER, die Listendatei „system_files“ konnte nicht erstellt werden</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="558"/>
+        <location filename="../installer.cpp" line="574"/>
         <source>App registration failed.</source>
         <translation>Anwendungsregistrierung schlug fehl.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="566"/>
+        <location filename="../installer.cpp" line="582"/>
         <source>(Recovery:) Removal failed: %1</source>
         <translation>(Wiederherstellung:) Entfernung schlug fehl: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="577"/>
+        <location filename="../installer.cpp" line="593"/>
         <source>%1 installation errors</source>
         <translation>%1 Installationsfehler</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="594"/>
+        <location filename="../installer.cpp" line="610"/>
         <source>Partial installation removed successfully</source>
         <translation>Teilinstallation erfolgreich entfernt</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="597"/>
+        <location filename="../installer.cpp" line="613"/>
         <source>Partial installation could not be fully removed: &apos;%1&apos;</source>
         <translation>Teilinstallation konnte nicht vollständig entfernt werden: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="405"/>
+        <location filename="../installer.cpp" line="421"/>
         <source>Destination not writable: %1</source>
         <translation>Ziel nicht schreibbar: %1</translation>
     </message>
@@ -295,137 +323,147 @@ Bitte überprüfen, ob das Installationspaket korrumpiert wurde.&lt;br&gt;
 Gegebenenfalls den Auslieferer kontaktieren.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="340"/>
+        <location filename="../installer.cpp" line="356"/>
         <source>Warning: this &apos;versioned&apos; installation will add no file-type association</source>
         <translation>Warnung: eine mit Versionsnummer versehenen Installation wird keine Dateientyp-Endung registrieren.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="475"/>
+        <location filename="../installer.cpp" line="491"/>
         <source>ERROR, could not create directory: %1</source>
         <translation>FEHLER, Ordner konnte nicht erstellt werden: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="508"/>
+        <location filename="../installer.cpp" line="524"/>
         <source>ERROR, could not copy file to: %1</source>
         <translation>FEHLER, Datei konnte nicht kopiert werden. Ziel: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="520"/>
+        <location filename="../installer.cpp" line="536"/>
         <source>ERROR, could not link &apos;%1&apos; to: %2</source>
         <translation>FEHLER, Verknüpfung konnte nicht erstellt werden: %1 -&gt; %2</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="111"/>
+        <location filename="../register.cpp" line="169"/>
         <source>Couldn&apos;t install start menu entry: &apos;%1&apos;</source>
         <translation>Start-Menü-Eintrag konnte nicht erstellt werden : &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="123"/>
-        <location filename="../register.cpp" line="538"/>
+        <location filename="../register.cpp" line="181"/>
+        <location filename="../register.cpp" line="596"/>
         <source>Couldn&apos;t install desktop starter: &apos;%1&apos;</source>
         <translation>Schreibtisch Verknüpfung konnte nicht erstellt werden: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="256"/>
-        <location filename="../register.cpp" line="323"/>
+        <location filename="../register.cpp" line="314"/>
+        <location filename="../register.cpp" line="381"/>
         <source>Executable missing in installation bundle: &apos;%1&apos;</source>
         <translation>Ausführbare Datei fehlt im Installationspaket: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="261"/>
-        <location filename="../register.cpp" line="328"/>
+        <location filename="../register.cpp" line="319"/>
+        <location filename="../register.cpp" line="386"/>
         <source>Add executable to PATH: &apos;%1&apos;</source>
         <translation>Anwendung in „PATH“ installieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="402"/>
+        <location filename="../register.cpp" line="460"/>
         <source>Icon missing in installation bundle: &apos;%1&apos;</source>
         <translation>Icon fehlt im Installationspaket: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="304"/>
-        <location filename="../register.cpp" line="341"/>
+        <location filename="../register.cpp" line="362"/>
+        <location filename="../register.cpp" line="399"/>
         <source>Add &apos;Start&apos; menu entry: &apos;%1&apos;</source>
         <translation>Start-Menü Eintrag erstellen: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="357"/>
+        <location filename="../register.cpp" line="71"/>
+        <source>Register project and uninstaller</source>
+        <translation>Projekt und Deinstallierer registrieren</translation>
+    </message>
+    <message>
+        <location filename="../register.cpp" line="103"/>
+        <source>Invalid EXEC entry in app.conf: %1=%2:%3:%4</source>
+        <translation>Ungültiger EXEC-Eintrag in app.conf: %1=%2:%3:%4</translation>
+    </message>
+    <message>
+        <location filename="../register.cpp" line="109"/>
+        <source>Register file-type association for &apos;%1&apos;</source>
+        <translation>Dateityp registrieren für &apos;%1&apos;</translation>
+    </message>
+    <message>
+        <location filename="../register.cpp" line="142"/>
+        <source>Couldn&apos;t create start menu group: &apos;%1&apos;</source>
+        <translation>Start-Menü-Gruppe konnte nicht erstellt werden : &apos;%1&apos;</translation>
+    </message>
+    <message>
+        <location filename="../register.cpp" line="415"/>
         <source>Couldn&apos;t read mime-type file in installation bundle: &apos;%1&apos;</source>
         <translation>Mime-Typ-Datei im Installationspaket konnte nicht gelesen werden: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="372"/>
+        <location filename="../register.cpp" line="430"/>
         <source>Invalid mime-type file in installation bundle: &apos;%1&apos;</source>
         <translation>Ungültige Mime-Typ-Datei im Installationspaket: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="373"/>
+        <location filename="../register.cpp" line="431"/>
         <source>  ... in line %1: %2</source>
         <translation>  ... in Zeile %1: %2</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="379"/>
+        <location filename="../register.cpp" line="437"/>
         <source>Install mime file: &apos;%1&apos;</source>
         <translation>Mime-Typ-Datei installieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="407"/>
+        <location filename="../register.cpp" line="465"/>
         <source>Add icon file: &apos;%1&apos;</source>
         <translation>Icon-Datei installieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="422"/>
+        <location filename="../register.cpp" line="480"/>
         <source>Add man file: &apos;%1&apos;</source>
         <translation>„Man“-Datei installieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="428"/>
+        <location filename="../register.cpp" line="486"/>
         <source>Can&apos;t install item to: &apos;%1&apos;</source>
         <translation>&apos;%1&apos; nicht schreibbar</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="444"/>
+        <location filename="../register.cpp" line="502"/>
         <source>&apos;Desktop&apos; file missing in installation bundle: &apos;%1&apos;</source>
         <translation>„Desktop“-Datei fehlt im Installationspaket: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="450"/>
+        <location filename="../register.cpp" line="508"/>
         <source>Couldn&apos;t read &apos;desktop&apos; file in installation bundle: &apos;%1&apos;</source>
         <translation>„Desktop“-Datei im Installationspaket nicht lesbar: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="464"/>
+        <location filename="../register.cpp" line="522"/>
         <source>Warning, icon missing in installation bundle: &apos;%1&apos;</source>
         <translation>Warnung, Icon fehlt im Installationspaket: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="512"/>
+        <location filename="../register.cpp" line="570"/>
         <source>Failed: </source>
         <translation>Fehlgeschlagen: </translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="120"/>
-        <location filename="../register.cpp" line="524"/>
+        <location filename="../register.cpp" line="178"/>
+        <location filename="../register.cpp" line="582"/>
         <source>Install desktop starter: &apos;%1&apos;</source>
         <translation>Schreibtisch-Shortcut installieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="62"/>
-        <source>Register app and uninstaller</source>
-        <translation>Anwendung und Deinstallationsprogramm registrieren</translation>
-    </message>
-    <message>
-        <location filename="../register.cpp" line="84"/>
-        <source>Register file-type association</source>
-        <translation>Dateityp registrieren</translation>
-    </message>
-    <message>
-        <location filename="../register.cpp" line="108"/>
+        <location filename="../register.cpp" line="166"/>
         <source>Install start menu entry: &apos;%1&apos;</source>
         <translation>Start-Menü-Eintrag installieren: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="167"/>
+        <location filename="../register.cpp" line="225"/>
         <source>
 &apos;%1&apos; is already in the PATH: &apos;%2&apos;
 
@@ -436,22 +474,22 @@ Apparently it has already been installed in some other way.</source>
 Anscheinend ist die Anwendung schon anderweitig installiert.</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="534"/>
+        <location filename="../register.cpp" line="592"/>
         <source>Failed to make desktop starter executable: &apos;%1&apos;</source>
         <translation>Schreibtisch-shortcut konnte nicht ausführbar gemacht werden: &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="547"/>
+        <location filename="../register.cpp" line="605"/>
         <source>Update icon cache</source>
         <translation>Icon-Cache aktualisieren</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="549"/>
+        <location filename="../register.cpp" line="607"/>
         <source>Update mime database</source>
         <translation>Mime-Datenbank aktualisieren</translation>
     </message>
     <message>
-        <location filename="../register.cpp" line="566"/>
+        <location filename="../register.cpp" line="624"/>
         <source>Update desktop database</source>
         <translation>Schreibtisch-Datenbank aktualisieren</translation>
     </message>

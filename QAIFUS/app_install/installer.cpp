@@ -155,6 +155,15 @@ void Installer::page_0()
             QDirListing::IteratorFlag::Recursive | QDirListing::IteratorFlag::IncludeHidden) ) {
         QString rpath = src_dir.relativeFilePath(dirEntry.filePath());
 
+        //if ( rpath.startsWith("_installer_") )
+        //    continue;
+
+#if defined Q_OS_WIN
+        // The installer is in the root directory
+        //if ( rpath.startsWith(QCoreApplication::applicationName()) )
+        //    continue;
+#endif
+
         if ( dirEntry.baseName().startsWith("app_install") ) {
             continue;
         }
@@ -542,7 +551,7 @@ void Installer::handleCopyingFinished()
             bool fail{false};
             if ( registerApp() ) {
                 // Open file to record files installed outside the installation directory.
-                QFile file_log{app_dir.absoluteFilePath("system_files")};
+                QFile file_log{app_dir.absoluteFilePath("_installer_/system_files")};
                 if ( file_log.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
                     QTextStream log_stream(&file_log);
                     for ( const auto& f : std:: as_const(localfiles) ) {
