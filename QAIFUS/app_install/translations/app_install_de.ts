@@ -302,8 +302,8 @@ using the same temporary folder.&lt;br&gt;
 
 If you are sure this folder is no longer needed, please delete it before trying the
 installation again.</source>
-        <translation>Anscheinend läuft eine anderer Installationsprozess.&lt;br&gt;
-Diese Software unterstützt keine gleichzeitigen Installationen.&lt;br&gt;
+        <translation>Anscheinend läuft ein anderer Installationsprozess.&lt;br&gt;
+Diese Software unterstützt gleichzeitige Installationsvorgänge nicht.&lt;br&gt;
 Bitte sicherstellen, dass andere Installationsprozesse abgeschlossen sind, bevor dieser Vorgang wiederholt wird.&lt;br&gt;&lt;br&gt;
 
 Es ist möglich, dass der Zwischenordner&lt;br&gt;&lt;br&gt;

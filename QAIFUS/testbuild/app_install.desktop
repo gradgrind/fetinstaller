@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
 Name=AppInstall
-GenericName=Installer application for the QAIFUS installer collection
-GenericName[de]=Installationsanwendung für das QAIFUS Installationssammlung
+GenericName=Installer application for the QAIFUS installer framework
+GenericName[de]=Installationsanwendung für das QAIFUS Installationswerkzeug
 Icon=app_install
 Exec=app_install
 Terminal=false

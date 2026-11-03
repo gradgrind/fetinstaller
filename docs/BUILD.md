@@ -2,7 +2,7 @@
 
 QAIFUS is designed to be built from source, separately for each application package it is used to build. There are no binary packages. This is inherent in its nature, there would be no sense to binary packages. The idea is that the installer is built together with the application to be packaged, using the same Qt libraries.
 
-The installer is designed to work without needing administrator privileges, which basically means installing to the user's home directory.
+The installer is designed to work without needing administrator privileges, which more or less implies installing to the user's home directory.
 
 The basic steps to build an installer are:
 
@@ -62,4 +62,4 @@ The installation package in "build/app_bundle" is then compressed and embedded i
 
  - Qt development files from the Qt Online Installer (in their default installation location) – only the base libraries, CMake and Mingw (currently version 1310, see file `common_base.ps1`) are required.
 
- - A `tar` command with support for "xz" compression – the built-in version on Windows 11 should be adequate, otherwise `bsdtar` can be installed.
+ - A `tar` command with support for "xz" compression – the built-in version on Windows 11 should be adequate. Otherwise `bsdtar` can be installed – if the script finds `bsdtar` it "prefers" it to `tar`.
