@@ -149,20 +149,21 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
     <message>
         <location filename="../app_uninstall.cpp" line="65"/>
         <source>Failed: delete folder &quot;%1&quot;</source>
-        <translation>Fehlgeschlagen: Ordner &apos;%1&apos; löschen</translation>
+        <comment>Do not use apostrophe, it will break the Powershell script!</comment>
+        <translation>Fehlgeschlagen: Ordner &quot;%1&quot; löschen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="81"/>
+        <location filename="../app_uninstall.cpp" line="84"/>
         <source>Failed: Remove the temporary folder, &apos;%1&apos;</source>
         <translation>Fehlgeschlagen: Zwischenordner &apos;%1&apos; entfernen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="66"/>
+        <location filename="../app_uninstall.cpp" line="69"/>
         <source>Error</source>
         <translation>Fehler</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="80"/>
+        <location filename="../app_uninstall.cpp" line="83"/>
         <source>Tidying</source>
         <translation>Aufräumen</translation>
     </message>
