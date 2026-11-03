@@ -22,21 +22,30 @@ int xsystem(char* cmd);
 
 int main(int argc, char **argv)
 {
-    // Get a suitable path for the temporary directory.
-    char* tmpdir = _tempnam(NULL, "AppIn");
-    if (!tmpdir)
-    {
-       error("Error occurred creating unique filename.");
-       return 1;
+    // Get a suitable base path for the temporary directory.
+    char* tmp0 = getenv("TMP");
+    if ( !tmp0 )
+        tmp0 = getenv("TEMP");
+    if ( !tmp0 ) {
+        error("Temporary folder not found.");
+        return 1;
     }
-    //printf( "%s is safe to use as a temporary file.\n", tmpdir );
 
     // Create the temporary directory.
+    char* tmpdir = compose("%s\\gradgrind_AppIn", tmp0);
     if ( _mkdir(tmpdir) != 0 ) {
-        char* msg = compose("Failed: Create temporary directory '%s'", tmpdir);
-        error(msg);
-        free(msg);
-        return 1;
+        free(tmpdir);
+        tmpdir = compose("%s\\gradgrind_AppIn_", tmp0);
+        if ( _mkdir(tmpdir) != 0 ) {
+            char* msgx = compose("Temporary directory unavailable: %s\n", tmpdir);
+            free(tmpdir);
+            tmpdir = NULL;
+            error(msgx);
+            free(msgx);
+            return 1;
+        }
+        // In this case, app_install should comment on this, actually
+        // there should be only one instance per user.
     }
 
     // Unpack the app bundle.
@@ -241,14 +250,16 @@ char* compose(char* fmt, ...)
 
 void error(char *msg)
 {
+    char* msg0 = msg;
     char* msg2 = NULL;
     if ( errno != 0 ) {
         const char* emsg = strerror(errno);
         msg2 = compose("*** %s ***\n%s", emsg, msg);
+        msg0 = msg2;
     }
     MessageBox(
         0,          /*   [in, optional] HWND    hWnd,      */
-        msg,        /*   [in, optional] LPCTSTR lpText,    */
+        msg0,       /*   [in, optional] LPCTSTR lpText,    */
         "AppIn",    /*   [in, optional] LPCTSTR lpCaption, */
         //MB_ICONWARNING | MB_CANCELTRYCONTINUE | MB_DEFBUTTON2
         MB_ICONERROR);

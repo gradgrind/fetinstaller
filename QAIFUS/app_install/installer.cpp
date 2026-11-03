@@ -8,7 +8,7 @@
 #include <QStandardPaths>
 #include <QMessageBox>
 
-#define TMP_NAME "gradgrind_QAIFUS"
+#define TMP_NAME "gradgrind_AppUnin"
 
 static const char *UNPACKING_ERROR = QT_TRANSLATE_NOOP("Installer", R"(
 There seems to be another installer running.<br>

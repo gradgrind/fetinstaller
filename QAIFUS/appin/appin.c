@@ -1,3 +1,6 @@
+// Compile with:
+// musl-gcc -static -o appin appin.c
+
 //#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -87,7 +90,7 @@ int main(int argc, char **argv)
     if ( childstate != 0 ) {
         return 1;
     }
-    
+
     chdir(tmpdir);
     if ( system("_installer_/app_install") != 0 ) {
         msg = "Installer failed.";
