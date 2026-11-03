@@ -32,9 +32,9 @@ The installer and uninstaller are built using CMAKE, which is the standard tool 
 
 ## Linux
 
-On Linux, a user-specific application might be stored in "~/.local", but because of possible conflicts (especially libraries), a direct installation here would not be a good idea. I have chosen to make the default installation directory "~/.local/apps", each installation package putting its application bundle (directory) here.
+On Linux, a user-specific application might be stored in `~/.local`, but because of possible conflicts (especially libraries), a direct installation here would not be a good idea. I have chosen to make the default installation directory `~/.local/apps`, each installation package putting its application bundle (directory) here.
 
-To add entries in the desktop applications menu ("start menu"), file-type associations and icons, files are linked from or copied to their standard locations within "~/.local". The uninstaller removes these as well as the application bundle itself, to ensure a thorough tidying up when a package is uninstalled.
+To add entries in the desktop applications menu ("start menu"), file-type associations and icons, files are linked from or copied to their standard locations within `~/.local`. The uninstaller removes these as well as the application bundle itself, to ensure a thorough tidying up when a package is uninstalled.
 
 ## Windows
 
