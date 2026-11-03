@@ -30,6 +30,12 @@ Using basically the same framework for building the installer as is used for the
 
 The installer and uninstaller are built using CMAKE, which is the standard tool for Qt, so this should also be the preferred tool for building the application itself. It should then be easy to ensure that the libraries, plugins, etc., get stored in the correct places.
 
+## Including the application package together with installer in an executable unpacker
+
+Having experimented with `makeself` on Linux and `7-Zip` on Windows I found [incbin](https://github.com/graphitemaster/incbin), which works on both and seems very nice. Thanks, Dale!
+
+To compile this part to a truly static binary on Linux, `musl-gcc` is used, so thanks to the [musl project](https://musl.libc.org/).
+
 ## Linux
 
 On Linux, a user-specific application might be stored in `~/.local`, but because of possible conflicts (especially libraries), a direct installation here would not be a good idea. I have chosen to make the default installation directory `~/.local/apps`, each installation package putting its application bundle (directory) here.

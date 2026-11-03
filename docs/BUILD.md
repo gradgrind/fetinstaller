@@ -16,7 +16,7 @@ Of these the first step is likely to be the most complicated, depending on the n
 
 The "app.conf" in "QAIFUS_QaifusTest" can be used as a starting point. It contains some documentation.
 
-The "BUILD" scripts can be simple (like those in "QAIFUS_QaifusTest") if the application/project to be packaged is a fairly standard CMAKE build. If the application doesn't use CMAKE, or does something non-standard, this may be more complicated. The main thing is that the executables and libraries end up in the correct places for QAIFUS.
+The "BUILD" scripts for the application to be installed can be simple (like those in "QAIFUS_QaifusTest") if the application/project to be packaged is a fairly standard CMAKE build. If the application doesn't use CMAKE, or does something non-standard, this may be more complicated. The main thing is that the executables and libraries end up in the correct places for QAIFUS.
 
 ## Linux
 
@@ -33,7 +33,7 @@ path/to/QAIFUS/BUILD_ALL.sh MyApp
 ```
 This compiles "MyApp", the installer and the uninstaller to a "build" directory.
 
-The installation package in "build/app_bundle" is then compressed and embedded in a "starter" app, "appin" to produce a runnable installer "MyApp-X.Y.Z.run", where "X.Y.Z" is the version.
+The installation package in "build/app_bundle" is then compressed ("tar.xz") and then embedded in a "starter" app, "appin", to produce a runnable installer "MyApp-X.Y.Z.run", where "X.Y.Z" is the version.
 
 ### Requirements
 
@@ -56,7 +56,7 @@ The build scripts are written for `Powershell`. Run:
 ```
 This compiles "MyApp", the installer and the uninstaller ("app_uninstall0" and "app_uninstall") to a "build" directory.
 
-The installation package in "build/app_bundle" is then compressed and embedded in a "starter" app, "appin" to produce a runnable installer "MyApp-X.Y.Z.exe", where "X.Y.Z" is the version.
+The installation package in "build/app_bundle" is then compressed ("tar.xz") and then and embedded in a "starter" app, "appin", to produce a runnable installer "MyApp-X.Y.Z.exe", where "X.Y.Z" is the version.
 
 ### Requirements
 
