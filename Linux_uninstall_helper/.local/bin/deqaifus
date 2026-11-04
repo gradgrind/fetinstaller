@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Seek packages installed by QAIFUS and offer a list from which one can be
+# chosen to be uninstalled.
+# Requires "zenity".
+
+declare -A apps
+
+for file in ~/.local/bin/*
+do
+  if [ -L $file ]; then
+    target=$( readlink -f $file )
+    d0=$( dirname $( dirname $target ) )
+    if [ -x "$d0/_installer_/app_uninstall" ]; then
+        apps["$( basename $d0 )"]="$d0/_installer_/app_uninstall"
+    fi
+  fi
+done
+
+# Suppress gtk warnings
+exec 2> >(grep -v Gtk-WARNING >&2)
+
+task=$( zenity --list  \
+  --title="Uninstall QAIFUS Package" \
+  --text="Choose package to uninstall:" \
+  --icon=uninstaller \
+  --column="Package" \
+  --hide-header \
+  ${!apps[@]} )
+
+if [ -n "$task" ]; then
+  #echo ${apps["$task"]}
+  ${apps["$task"]}
+fi

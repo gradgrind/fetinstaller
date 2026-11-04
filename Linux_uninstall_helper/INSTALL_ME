@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SCRIPT=$(readlink -f "$0")
+BASEDIR=$(dirname "$SCRIPT")
+cd $BASEDIR
+
+cp -r .local $HOME
+
+xdg-icon-resource forceupdate
+update-desktop-database $HOME/.local/share/applications

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=DeQAIFUS
+GenericName=Choose an application package to uninstall
+Comment=A helper script to find packages using QAIFUS installer framework
+Icon=uninstaller
+Exec=deqaifus
+Terminal=false
+StartupNotify=false
+Categories=Administration;System;Software;
