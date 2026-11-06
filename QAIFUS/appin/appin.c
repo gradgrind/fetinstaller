@@ -4,6 +4,7 @@
 //#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <ftw.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -14,10 +15,10 @@
 
 INCBIN(App, "../build/app_bundle.tar.xz");
 
-char* tmpdir = NULL;
 char* msg = NULL; // constant strings, don't free
+char* childmsg = NULL; // constant strings, don't free
 char* msgx = NULL; // needs freeing
-int childstate = 0;
+char* tmpdir = NULL; // needs freeing
 
 void fatal();
 void tidy();
@@ -67,10 +68,20 @@ int main(int argc, char **argv)
         //printf("Spawned 'tar -xJ ...' as a child process at pid %d\n", p);
         close(fd1[0]); // Close reading end of pipe
         // Write input string and close writing end of first pipe.
-        write(fd1[1], &gAppData[0], gAppSize);
+        ssize_t s = write(fd1[1], &gAppData[0], gAppSize);
         close(fd1[1]);
+        
+        if ( s != gAppSize ) {
+            msg = "Failed: send package to unpacker";
+            // This will probably cause the child process to fail, too.
+        }
+        
         // Wait for child to finish
-        wait(NULL);
+        int stat;
+        wait(&stat);
+        if ( !WIFEXITED(stat) || WEXITSTATUS(stat) != 0 ) {
+            childmsg = "Failed: unpack process";
+        }
     }
 
     // Child process
@@ -82,13 +93,11 @@ int main(int argc, char **argv)
         close(fd1[1]); // Close writing end of pipe.
         // Hand control over to the 'tar' binary
         execlp("tar", "tar", "-xJf", "-", "-C", tmpdir, (char*)NULL);
-        msg = "Unpacking app bundle failed.";
-        childstate = -1;
-        fatal();
+        exit(1);
     }
 
-    if ( childstate != 0 ) {
-        return 1;
+    if ( childmsg || msg ) {
+        fatal();
     }
 
     chdir(tmpdir);
@@ -115,8 +124,11 @@ void fatal()
         msg0 = msgx;
     }
 
+    if ( !childmsg ) {
+        childmsg = "";
+    }
     char* e0 = NULL;
-    asprintf(&e0, "Couldn't start installer ...\n%s\n%s", emsg, msg0);
+    asprintf(&e0, "Couldn't start installer ...\n%s\n%s\n%s", emsg, msg0, childmsg);
     char* en = NULL;
     asprintf(&en, "notify-send \"AppIn\" \"%s\" -i error", e0);
     fprintf(stderr, "%s\n", e0);
@@ -130,23 +142,26 @@ void fatal()
     exit(1);
 }
 
+int del_item(
+    const char *path,
+    const struct stat *statbuf,
+    int type,
+    struct FTW *ftwb)
+{
+    return remove(path);
+}
+
 void tidy()
 {
     // Tidy up: remove temporary directory
     if ( tmpdir ) {
-        char *cmd = NULL;
-        const char *cmd0 = "rm -r \"%s\"";
-        asprintf(&cmd, cmd0, tmpdir);
-        //printf("%s\n", cmd);
-        int sysrc = system(cmd);
-        //printf("System -> %d\n", sysrc);
-        if ( sysrc != 0 ) {
-            const char* msg0 = "Couldn't remove temporary directory: %s\n";
+        if ( nftw(tmpdir, del_item, 20, FTW_DEPTH|FTW_MOUNT|FTW_PHYS) < 0 ) {
+            const char* msg0 = "Failed: remove temporary directory, %s";
             asprintf(&msgx, msg0, tmpdir);
+            free (tmpdir);
             tmpdir = NULL;
             fatal();
         }
-        free (cmd);
         free (tmpdir);
     }
 }

@@ -157,7 +157,7 @@ bool Installer::registerApp()
             continue;
         }
         if ( !ui->versioned->isChecked() ) {
-            desktopName + "-" + appinfo.PROJECTVERSION;
+            desktopName += "-" + appinfo.PROJECTVERSION;
         }
         desktopName += ".lnk";
         QString desktopPath{app_dir.absoluteFilePath(exec + execval.extension)};

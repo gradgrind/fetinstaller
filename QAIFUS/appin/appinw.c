@@ -1,7 +1,7 @@
 // Windows version ...
 
 // To suppress console window, compile with:
-//   gcc -mwindows -o appinw appinw0.c
+//   gcc -mwindows -o appinw appinw.c
 
 #include <stdlib.h>
 #include <stdio.h>

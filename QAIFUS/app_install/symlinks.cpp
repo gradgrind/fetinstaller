@@ -65,7 +65,7 @@ linktest Installer::testLink(QString rpath)
         }
     } else {
         // Absolute links are not acceptable.
-        return {tr(ABS_LINK).arg(rpath, linkPath), rpath, linkPath};
+        return {tr(ABS_LINK).arg(rpath, linkPath)};
     }
 }
 

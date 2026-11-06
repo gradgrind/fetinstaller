@@ -176,19 +176,20 @@ void Installer::page_0()
 
         linktest slink{testLink(rpath)};
         if ( !slink.message.isEmpty() ) {
-            // link: error or warning
-            if ( slink.link.isEmpty() ) {
+//TODO
+// link: error            // link: error or warning
+//            if ( slink.link.isEmpty() ) {
                 // error
-                badfiles++;
-                addBoldLine(ui->messages_0, slink.message);
-                ui->messages_0->appendPlainText("");
-            } else {
-                // warning
-                warnings++;
-                ui->messages_0->appendPlainText(slink.message);
-                ui->messages_0->appendPlainText("");
-                installationLinks.append({slink.link, slink.target});
-            }
+            badfiles++;
+            addBoldLine(ui->messages_0, slink.message);
+            ui->messages_0->appendPlainText("");
+//            } else {
+//                // warning
+//                warnings++;
+//                ui->messages_0->appendPlainText(slink.message);
+//                ui->messages_0->appendPlainText("");
+//                installationLinks.append({slink.link, slink.target});
+//            }
         } else if ( !slink.link.isEmpty() ) {
             // valid link
             installationLinks.append({slink.link, slink.target});
