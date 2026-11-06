@@ -1,4 +1,4 @@
-// Windows version ...
+// Windows version ... this is the original with char* strings.
 
 // To suppress console window, compile with:
 //   gcc -mwindows -o appinw appinw.c
@@ -15,36 +15,29 @@
 
 INCBIN(App, "../build/app_bundle.tar.xz");
 
-wchar_t* compose(wchar_t* fmt, ...);
-void error(wchar_t* msg);
-int unpack(wchar_t* dir);
-int xsystem(wchar_t* cmd);
+char* compose(char* fmt, ...);
+void error(char* msg);
+int unpack(char* dir);
+int xsystem(char* cmd);
 
-int wmain( int argc, wchar_t *argv[ ] )
+int main(int argc, char **argv)
 {
     // Get a suitable base path for the temporary directory.
-    wchar_t* tmp0 = _wgetenv(L"TMP");
+    char* tmp0 = getenv("TMP");
     if ( !tmp0 )
-        tmp0 = _wgetenv(L"TEMP");
+        tmp0 = getenv("TEMP");
     if ( !tmp0 ) {
-        error(L"Temporary folder not found.");
-        return 1;
-    }
-    // Check that there are no '"' in tmp0.
-    if ( wcsstr(tmp0, L"\"") ) {
-        wchar_t* msgx = compose(L"Invalid temporary directory: %s\n", tmp0);
-        error(msgx);
-        free(msgx);
+        error("Temporary folder not found.");
         return 1;
     }
 
     // Create the temporary directory.
-    wchar_t* tmpdir = compose(L"%s\\gradgrind_AppIn", tmp0);
-    if ( _wmkdir(tmpdir) != 0 ) {
+    char* tmpdir = compose("%s\\gradgrind_AppIn", tmp0);
+    if ( _mkdir(tmpdir) != 0 ) {
         free(tmpdir);
-        tmpdir = compose(L"%s\\gradgrind_AppIn_", tmp0);
-        if ( _wmkdir(tmpdir) != 0 ) {
-            wchar_t* msgx = compose(L"Temporary directory unavailable: %s\n", tmpdir);
+        tmpdir = compose("%s\\gradgrind_AppIn_", tmp0);
+        if ( _mkdir(tmpdir) != 0 ) {
+            char* msgx = compose("Temporary directory unavailable: %s\n", tmpdir);
             free(tmpdir);
             tmpdir = NULL;
             error(msgx);
@@ -62,11 +55,11 @@ int wmain( int argc, wchar_t *argv[ ] )
 
     // Run the installer.
 
-    wchar_t* cmd = compose(L"%s\\app_install.exe", tmpdir);
+    char *cmd = compose("%s\\app_install.exe", tmpdir);
     _flushall();
     int ok = xsystem(cmd);
     if ( ok != 0 ) {
-        wchar_t* msg = compose(L"Installation failed: '%s'", cmd);
+        char* msg = compose("Installation failed: '%s'", cmd);
         error(msg);
         free(msg);
     }
@@ -74,11 +67,11 @@ int wmain( int argc, wchar_t *argv[ ] )
 
     // Remove the temporary directory.
     // The path must be double-0 terminated ...
-    size_t len = wcslen(tmpdir) + 2;
-    wchar_t* buf = malloc(sizeof(wchar_t) * len);
+    size_t len = strlen(tmpdir) + 2;
+    char* buf = malloc(sizeof(char) * len);
     memcpy(buf, tmpdir, len - 1);
     buf[len - 1] = 0;
-    SHFILEOPSTRUCTW shfo = {
+    SHFILEOPSTRUCT shfo = {
         NULL,
         FO_DELETE,
         buf, // double-0 terminated!
@@ -87,9 +80,9 @@ int wmain( int argc, wchar_t *argv[ ] )
         FALSE,
         NULL,
         NULL };
-    int delrc = SHFileOperationW(&shfo);
+    int delrc = SHFileOperation(&shfo);
     if ( delrc != 0 ) {
-        wchar_t* msg = compose(L"Failed: Remove temporary directory '%s'", tmpdir);
+        char* msg = compose("Failed: Remove temporary directory '%s'", tmpdir);
         error(msg);
         free(msg);
     }
@@ -107,18 +100,18 @@ PROCESS_INFORMATION piProcInfo;
 int CreateChildProcess();
 void WriteToPipe();
 
-int unpack(wchar_t* dir)
+int unpack(char* dir)
 {
     // On older Windows versions the built-in "tar" might not support
     // xz archives. In that case it is necessary to install bsdtar.
     // This can be done by placing the executable "bsdtar.exe" in the
     // user's "AppData\Local\Microsoft\WindowsApps", which should already
     // be in the PATH.
-    wchar_t* cmd0 = L"%s -xJf - -C %s";
+    char* cmd0 = "%s -xJf - -C %s";
     _flushall();
-    wchar_t* tar = L"tar";
-    if ( xsystem(L"where bsdtar >nul 2>nul") == 0 ) {
-        tar = L"bsdtar";
+    char* tar = "tar";
+    if ( xsystem("where bsdtar >nul 2>nul") == 0 ) {
+        tar = "bsdtar";
     }
 
     SECURITY_ATTRIBUTES saAttr;
@@ -129,20 +122,20 @@ int unpack(wchar_t* dir)
 
     // Create a pipe for the child process's STDIN.
     if ( !CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0) ) {
-        error(L"Failed: Stdin CreatePipe");
+        error("Failed: Stdin CreatePipe");
         return -1;
     }
 
     // Ensure the write handle to the pipe for STDIN is not inherited.
     if ( !SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) ) {
-        error(L"Failed: Stdin SetHandleInformation");
+        error("Failed: Stdin SetHandleInformation");
         return -1;
     }
 
     // Create the child process.
-    wchar_t* cmd = compose(cmd0, tar, dir);
+    char* cmd = compose(cmd0, tar, dir);
     if ( CreateChildProcess(cmd) != 0 ) {
-        wchar_t* msg = compose(L"Failed: Create child process (%s)", cmd);
+        char* msg = compose("Failed: Create child process (%s)", cmd);
         error(msg);
         free(msg);
         free(cmd);
@@ -158,40 +151,40 @@ int unpack(wchar_t* dir)
     WaitForSingleObject(piProcInfo.hProcess, INFINITE);
     DWORD child_cc;
     if ( !GetExitCodeProcess(piProcInfo.hProcess, &child_cc) ) {
-        error(L"Failed: unpacking the app bundle");
+        error("Failed: unpacking the app bundle");
         free(cmd);
         return -1;
     }
-    //wprintf(L"CHILD cc: %d\n", child_cc);
-    //wprintf(L"Archive written to child STDIN pipe.\n");
+    //printf("CHILD cc: %d\n", child_cc);
+    //printf("Archive written to child STDIN pipe.\n");
 
     CloseHandle(piProcInfo.hProcess);
     CloseHandle(piProcInfo.hThread);
 
-    //wprintf(L"\n->End of parent execution.\n");
+    //printf("\n->End of parent execution.\n");
     free(cmd);
     return 0;
 }
 
-int CreateChildProcess(wchar_t* cmdline)
+int CreateChildProcess(char* cmdline)
 {
     // Create a child process that uses the previously created pipes for STDIN and STDOUT.
-    STARTUPINFOW siStartInfo;
+    STARTUPINFO siStartInfo;
 
     // Set up members of the PROCESS_INFORMATION structure.
     ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
 
-    // Set up members of the STARTUPINFOW structure.
+    // Set up members of the STARTUPINFO structure.
     // This structure specifies the STDIN and STDOUT handles for redirection.
-    ZeroMemory( &siStartInfo, sizeof(STARTUPINFOW) );
-    siStartInfo.cb = sizeof(STARTUPINFOW);
+    ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
+    siStartInfo.cb = sizeof(STARTUPINFO);
     siStartInfo.hStdError = GetStdHandle(STD_OUTPUT_HANDLE);
     siStartInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     siStartInfo.hStdInput = g_hChildStd_IN_Rd;
     siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
     // Create the child process.
-    if ( !CreateProcessW(NULL,
+    if ( !CreateProcess(NULL,
         cmdline,            // command line
         NULL,               // process security attributes
         NULL,               // primary thread security attributes
@@ -218,64 +211,64 @@ void WriteToPipe()
     // Write the archive to the pipe for the child's STDIN.
     // Stop when there is no more data.
     DWORD bytesWritten;
-    //wprintf(L"%p %u %p\n", &gAppData[0], gAppSize, &gAppEnd);
-    //wprintf(L"%p\n", &gAppData[gAppSize]);
+    //printf("%p %u %p\n", &gAppData[0], gAppSize, &gAppEnd);
+    //printf("%p\n", &gAppData[gAppSize]);
     if ( !WriteFile(
             g_hChildStd_IN_Wr,
             &gAppData[0],
             gAppSize,
             &bytesWritten,
             NULL) ) {
-        error(L"Failed: Pass archive to unpacker subprocess");
+        error("Failed: Pass archive to unpacker subprocess");
         ExitProcess(1);
     }
 
     // Close the pipe handle so the child process stops reading.
     if ( !CloseHandle(g_hChildStd_IN_Wr) ) {
-        error(L"Failed: StdInWr CloseHandle");
+        error("Failed: StdInWr CloseHandle");
         ExitProcess(1);
     }
 }
 
 // Variadic function to compose strings.
 // This works like printf, but returns a string – whose memory must be freed.
-wchar_t* compose(wchar_t* fmt, ...)
+char* compose(char* fmt, ...)
 {
     int count;
     int size;
-    wchar_t* cmps = NULL;
+    char* cmps = NULL;
     va_list args;
     va_start(args, fmt);
-    count = _vscwprintf(fmt, args);
+    count = _vscprintf(fmt, args);
     size = count + 1; // the string will need one more char for the null terminator
     cmps = malloc(sizeof(char) * size);
-    vswprintf_s(cmps, size, fmt, args);
-    //wprintf(L"%s\n", cmps);
+    vsprintf_s(cmps, size, fmt, args);
+    //printf("%s\n", cmps);
     return cmps;
     //free(cmps);
 }
 
-void error(wchar_t* msg)
+void error(char *msg)
 {
-    wchar_t* msg0 = msg;
-    wchar_t* msg2 = NULL;
+    char* msg0 = msg;
+    char* msg2 = NULL;
     if ( errno != 0 ) {
-        const wchar_t* emsg = _wcserror(errno);
-        msg2 = compose(L"*** %s ***\n%s", emsg, msg);
+        const char* emsg = strerror(errno);
+        msg2 = compose("*** %s ***\n%s", emsg, msg);
         msg0 = msg2;
     }
-    MessageBoxW(
+    MessageBox(
         0,          /*   [in, optional] HWND    hWnd,      */
-        msg0,       /*   [in, optional] LPCWSTR lpText,    */
-        L"AppIn",    /*   [in, optional] LPCWSTR lpCaption, */
+        msg0,       /*   [in, optional] LPCTSTR lpText,    */
+        "AppIn",    /*   [in, optional] LPCTSTR lpCaption, */
         //MB_ICONWARNING | MB_CANCELTRYCONTINUE | MB_DEFBUTTON2
         MB_ICONERROR);
     free(msg2);
 }
 
-int xsystem(wchar_t* cmd)
+int xsystem(char* cmd)
 {
-    STARTUPINFOW si;
+    STARTUPINFO si;
     PROCESS_INFORMATION pi;
 
     ZeroMemory(&si, sizeof(si));
@@ -283,7 +276,7 @@ int xsystem(wchar_t* cmd)
     ZeroMemory(&pi, sizeof(pi));
 
      // Start the child process.
-    if( !CreateProcessW(
+    if( !CreateProcess(
             NULL,               // No module name (use command line)
             cmd,                // Command line
             NULL,               // Process handle not inheritable
@@ -295,7 +288,7 @@ int xsystem(wchar_t* cmd)
             &si,                // Pointer to STARTUPINFO structure
             &pi)                // Pointer to PROCESS_INFORMATION structure
         ) {
-        //wprintf(L"CreateProcess failed (%s).\n", cmd);
+        //printf("CreateProcess failed (%s).\n", cmd);
         return -1;
     }
 
