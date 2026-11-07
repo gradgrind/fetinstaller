@@ -109,7 +109,7 @@ catch {
 }
 
 cd "$BUILDDIR\$INSTALLDIR"
-$process = Start-Process -FilePath "$tarx" -Wait -PassThru -NoNewWindow -ArgumentList "-cJf ..\app_bundle.tar.xz *"
+$process = Start-Process -FilePath "$tarx" -Wait -PassThru -NoNewWindow -ArgumentList "-cJf ..\app_bundle.tar.xz ."
 
 if ( $process.ExitCode -ne 0 )
 {

@@ -67,7 +67,7 @@ echo "Create app bundle archive: build/app_bundle.tar.xz"
 echo
 
 cd "$BUILDDIR/$INSTALLDIR"
-tar --owner=root --group=root -cJf ../app_bundle.tar.xz *
+tar --owner=root --group=root -cJf ../app_bundle.tar.xz .
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** app bundle compression failed"

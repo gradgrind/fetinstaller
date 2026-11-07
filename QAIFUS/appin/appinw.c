@@ -3,6 +3,12 @@
 // To suppress console window, compile with:
 //   gcc -mwindows -o appinw appinw.c
 
+// The various versions of "%s" in format strings are more than confusing.
+// It also seems rather inconsistent. I hope my using "%ls" here handles
+// the situation(s) correctly. I understand that Microsoft were in a difficult
+// position historically concerning these developments, but it is not nice.
+// The price of backward compatibility is high here.
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -17,7 +23,7 @@
 #include <fcntl.h>
 #include <io.h>
 
-INCBIN(App, "../build/app_bundle.tar.xz");
+INCBIN(App, "../build/app_bundle.tar.xz"); // apparently INCBIN needs UNIX separators
 
 wchar_t* compose(wchar_t* fmt, ...);
 void error(wchar_t* msg);
@@ -54,23 +60,23 @@ int main(void)
 tmpok:
 */
 
-    msgx = compose(L"Temporary directory: %s\n", tmp0);
+    msgx = compose(L"Temporary directory: %ls\n", tmp0);
 
     // Check that there are no quotation marks or apostrophes in tmp0.
     if ( wcsstr(tmp0, L"\"") || wcsstr(tmp0, L"'")) {
-        msgx = compose(L"Invalid temporary directory: %s\n", tmp0);
+        msgx = compose(L"Invalid temporary directory: %ls\n", tmp0);
         error(msgx);
         free(msgx);
         return 1;
     }
 
     // Create the temporary directory.
-    wchar_t* tmpdir = compose(L"%s\\gradgrind_AppIn", tmp0);
+    wchar_t* tmpdir = compose(L"%ls\\gradgrind_AppIn", tmp0);
     if ( _wmkdir(tmpdir) != 0 ) {
         free(tmpdir);
-        tmpdir = compose(L"%s\\gradgrind_AppIn_", tmp0);
+        tmpdir = compose(L"%ls\\gradgrind_AppIn_", tmp0);
         if ( _wmkdir(tmpdir) != 0 ) {
-            wchar_t* msgx = compose(L"Temporary directory unavailable: %s\n", tmpdir);
+            wchar_t* msgx = compose(L"Temporary directory unavailable: %ls\n", tmpdir);
             free(tmpdir);
             tmpdir = NULL;
             error(msgx);
@@ -87,11 +93,11 @@ tmpok:
     }
 
     // Run the installer.
-    wchar_t* cmd = compose(L"\"%s\\app_install.exe\"", tmpdir);
+    wchar_t* cmd = compose(L"\"%ls\\app_install.exe\"", tmpdir);
     _flushall();
     DWORD ok = xsystem(cmd);
     if ( ok != 0 ) {
-        wchar_t* msg = compose(L"Installation failed: '%s'", cmd);
+        wchar_t* msg = compose(L"Installation failed: '%ls'", cmd);
         error(msg);
         free(msg);
     }
@@ -115,7 +121,7 @@ tmpok:
         NULL };
     int delrc = SHFileOperationW(&shfo);
     if (delrc != 0) {
-        wchar_t* msg = compose(L"Failed: Remove temporary directory '%s'", tmpdir);
+        wchar_t* msg = compose(L"Failed: Remove temporary directory '%ls'", tmpdir);
         error(msg);
         free(msg);
     }
@@ -140,7 +146,7 @@ int unpack(wchar_t* dir)
     // This can be done by placing the executable "bsdtar.exe" in the
     // user's "AppData\Local\Microsoft\WindowsApps", which should already
     // be in the PATH.
-    wchar_t* cmd0 = L"%s -xJf - -C %s";
+    wchar_t* cmd0 = L"%ls -xJf - -C \"%ls\"";
     _flushall();
     wchar_t* tar = L"tar";
     // The command to CreateProcessW, here in xsystem, may not be a constant (see docs).
@@ -170,7 +176,7 @@ int unpack(wchar_t* dir)
     // Create the child process.
     wchar_t* cmd = compose(cmd0, tar, dir);
     if ( CreateChildProcess(cmd) != 0 ) {
-        wchar_t* msg = compose(L"Failed: Create child process (%s)", cmd);
+        wchar_t* msg = compose(L"Failed: Create child process (%ls)", cmd);
         error(msg);
         free(msg);
         free(cmd);
@@ -278,7 +284,6 @@ wchar_t* compose(wchar_t* fmt, ...)
     size = count + 1; // the string will need one more char for the null terminator
     cmps = malloc(sizeof(wchar_t) * size);
     vswprintf_s(cmps, size, fmt, args);
-    //wprintf(L"%S\n", cmps);
     va_end(args);
     return cmps;
     //free(cmps);
@@ -290,10 +295,10 @@ void error(wchar_t* msg)
     wchar_t* msg2 = NULL;
     if (errno != 0) {
         const wchar_t* emsg = _wcserror(errno);
-        msg2 = compose(L"*** %s ***\n%s", emsg, msg);
+        msg2 = compose(L"*** %ls ***\n%ls", emsg, msg);
         msg0 = msg2;
     }
-    wprintf(L"%S\n", msg0);
+    wprintf(L"%ls\n", msg0);
     MessageBoxW(
         0,          /*   [in, optional] HWND    hWnd,      */
         msg0,       /*   [in, optional] LPCWSTR lpText,    */
@@ -325,7 +330,7 @@ DWORD xsystem(wchar_t* cmd)
             &si,                // Pointer to STARTUPINFO structure
             &pi)                // Pointer to PROCESS_INFORMATION structure
         ) {
-        //wprintf(L"CreateProcess failed (%S).\n", cmd);
+        wprintf(L"CreateProcess failed (%ls).\n", cmd);
         return -1;
     }
 
