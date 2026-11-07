@@ -374,7 +374,11 @@ void Installer::uninstallExisting()
         QDir tmpdir0{QDir::temp()};
         QString tmpPath{tmpdir0.absoluteFilePath(QString{TMP_NAME} + "/app_uninstall.exe")};
         if ( QFileInfo::exists(tmpPath) ) {
-            uninstall_process.startCommand(tmpPath);
+            // Disable GUI, set busy cursor ...
+            QApplication::setOverrideCursor(Qt::WaitCursor);
+            setEnabled(false);
+            installationPartial = true;
+            uninstall_process.startCommand("\"" + tmpPath + "\"");
             // The path to the installation to be removed should be available in the temporary directory.
         } else {
             print_line(tr("Failed: starting the uninstaller: '%1'").arg(tmpPath), true);
@@ -382,13 +386,13 @@ void Installer::uninstallExisting()
         }
     }
 #else
-    uninstall_process.startCommand(uninstall_exe);
-    // The uninstaller should be running ... wait for the "finished" signal (-> uninstallDone())
-#endif
     // Disable GUI, set busy cursor ...
     QApplication::setOverrideCursor(Qt::WaitCursor);
     setEnabled(false);
     installationPartial = true;
+    uninstall_process.startCommand(uninstall_exe);
+    // The uninstaller should be running ... wait for the "finished" signal (-> uninstallDone())
+#endif
 }
 
 void Installer::uninstallFailed(QProcess::ProcessError error)

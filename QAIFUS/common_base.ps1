@@ -15,4 +15,4 @@ if ( [string]::IsNullOrEmpty($QTVERSION) )
 Write-Host "Using '$QTDIR\$QTVERSION'"
 Write-Host
 
-$env:Path = "$QTDIR\Tools\CMake_64\bin;$QTDIR\Tools\mingw1310_64\bin;" + $env:Path
+$env:Path = "$QTDIR\Tools\Ninja;$QTDIR\Tools\CMake_64\bin;$QTDIR\Tools\mingw1310_64\bin;" + $env:Path

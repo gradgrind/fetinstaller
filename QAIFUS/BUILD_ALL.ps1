@@ -16,6 +16,10 @@
 
 cd "$PSScriptRoot"
 . ".\common_base.ps1"
+if ( !$? )
+{
+    exit 1
+}
 
 # Read the application name and include its build script
 $PROJECT_NAME = $args[1]
@@ -31,6 +35,10 @@ $QAIFUS_APPDIR = Resolve-Path -Path "$APPDIR\QAIFUS_$PROJECT_NAME"
 if ( Test-Path -path "$QAIFUS_APPDIR\BUILD.ps1" ) {
     $APPNAME = "$PROJECT_NAME"
     . "$QAIFUS_APPDIR\BUILD.ps1"
+    if ( !$? )
+    {
+        exit 1
+    }
 }
 else
 {
@@ -101,9 +109,9 @@ catch {
 }
 
 cd "$BUILDDIR\$INSTALLDIR"
-Start-Process -FilePath "$tarx" -Wait -NoNewWindow -ArgumentList "-cJf ..\app_bundle.tar.xz *"
+$process = Start-Process -FilePath "$tarx" -Wait -PassThru -NoNewWindow -ArgumentList "-cJf ..\app_bundle.tar.xz *"
 
-if ( !$? )
+if ( $process.ExitCode -ne 0 )
 {
     Write-Host "***!!!*** app bundle compression failed"
     exit 1

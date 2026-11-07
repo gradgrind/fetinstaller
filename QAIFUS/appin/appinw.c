@@ -28,8 +28,6 @@ int main(void)
 {
     // Set console mode to UTF-16 wide characters
     _setmode(_fileno(stdout), _O_U16TEXT);
-    wprintf(L"HELLO\n");
-    wprintf(L"\U0001F625 \u00E4 Hällo € ßöüÖ\n"); //TODO: printing to the console ...
 
     wchar_t* msgx;
     // Get a suitable base path for the temporary directory.
@@ -89,7 +87,7 @@ tmpok:
     }
 
     // Run the installer.
-    wchar_t* cmd = compose(L"%s\\app_install.exe", tmpdir);
+    wchar_t* cmd = compose(L"\"%s\\app_install.exe\"", tmpdir);
     _flushall();
     DWORD ok = xsystem(cmd);
     if ( ok != 0 ) {
@@ -107,14 +105,14 @@ tmpok:
     wmemcpy_s(buf, len, tmpdir, len - 1);
     buf[len - 1] = 0;
     SHFILEOPSTRUCTW shfo = {
-     	NULL,
-     	FO_DELETE,
-     	buf, // double-0 terminated!
-     	NULL,
-     	FOF_SILENT | FOF_NOERRORUI | FOF_NOCONFIRMATION,
-     	FALSE,
-     	NULL,
-     	NULL };
+        NULL,
+        FO_DELETE,
+        buf, // double-0 terminated!
+        NULL,
+        FOF_SILENT | FOF_NOERRORUI | FOF_NOCONFIRMATION,
+        FALSE,
+        NULL,
+        NULL };
     int delrc = SHFileOperationW(&shfo);
     if (delrc != 0) {
         wchar_t* msg = compose(L"Failed: Remove temporary directory '%s'", tmpdir);

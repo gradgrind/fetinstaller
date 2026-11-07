@@ -4,10 +4,10 @@ Write-Host
 Write-Host "Building $APPNAME..."
 Write-Host
 
-cmake -B "$BUILDDIR\$APPNAME" -S "$APPDIR" `
+cmake -B "`"$BUILDDIR\$APPNAME`"" -S "`"$APPDIR`"" `
     -DCMAKE_PREFIX_PATH="$QTDIR\$QTVERSION\mingw_64" `
-    -DCMAKE_GENERATOR="MinGW Makefiles" `
-    -DCMAKE_INSTALL_PREFIX="$BUILDDIR\$INSTALLDIR"
+    -DCMAKE_GENERATOR="Ninja" `
+    -DCMAKE_INSTALL_PREFIX="`"$BUILDDIR\$INSTALLDIR`""
 
 if ( !$? )
 {
@@ -15,7 +15,7 @@ if ( !$? )
     exit 1
 }
 
-cmake --build "$BUILDDIR\$APPNAME" --target install --parallel 6
+cmake --build "`"$BUILDDIR\$APPNAME`"" --target install --parallel 6
 
 if ( !$? )
 {
