@@ -35,14 +35,14 @@ bool AppInfo::init()
         // Get target
         QString target{QFile::symLinkTarget(appdir.filePath("UNINSTALL_TARGET.lnk"))};
         if ( target.isEmpty() ) {
-            error = tr("Missing link: '%1'").arg(appdir.filePath("UNINSTALL_TARGET.lnk"));
+            error = tr("Missing link: %1").arg(appdir.filePath("UNINSTALL_TARGET.lnk"));
             return false;
         } else {
             // A simple test for an application folder:
             if ( QFileInfo::exists(target + "/app_uninstall.exe") ) {
                 basedir.setPath(target);
             } else {
-                error = tr("Invalid application folder: '%1'").arg(target);
+                error = tr("Invalid application folder: %1").arg(target);
                 return false;
             }
         }

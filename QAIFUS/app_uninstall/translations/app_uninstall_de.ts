@@ -5,13 +5,13 @@
     <name>AppInfo</name>
     <message>
         <location filename="../appinfo.cpp" line="38"/>
-        <source>Missing link: &apos;%1&apos;</source>
-        <translation>Fehlende Verknüpfung: &apos;%1&apos;</translation>
+        <source>Missing link: %1</source>
+        <translation>Fehlende Verknüpfung: %1</translation>
     </message>
     <message>
         <location filename="../appinfo.cpp" line="45"/>
-        <source>Invalid application folder: &apos;%1&apos;</source>
-        <translation>Ungültiger Anwendungsordner: &apos;%1&apos;</translation>
+        <source>Invalid application folder: %1</source>
+        <translation>Ungültiger Anwendungsordner: %1</translation>
     </message>
     <message>
         <location filename="../appinfo.cpp" line="53"/>
@@ -137,38 +137,44 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
 <context>
     <name>main</name>
     <message>
-        <location filename="../app_uninstall.cpp" line="44"/>
+        <location filename="../app_uninstall.cpp" line="47"/>
         <source>ADMIN user</source>
         <translation>Administrator</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="45"/>
+        <location filename="../app_uninstall.cpp" line="48"/>
         <source>The installer must be run as a normal user.</source>
         <translation>Das Installationsprogramm muss vom normalen Benutzer ohne Admin-Rechte gestartet werden.</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="65"/>
-        <source>Failed: delete folder &quot;%1&quot;</source>
-        <comment>Do not use apostrophe, it will break the Powershell script!</comment>
-        <translation>Fehlgeschlagen: Ordner &quot;%1&quot; löschen</translation>
-    </message>
-    <message>
-        <location filename="../app_uninstall.cpp" line="69"/>
+        <location filename="../app_uninstall.cpp" line="68"/>
         <source>Failed: Remove the temporary folder, %1</source>
         <translation>Fehlgeschlagen: Zwischenordner entfernen, %1</translation>
     </message>
     <message>
         <location filename="../app_uninstall.cpp" line="71"/>
+        <source>Failed: delete folder %1</source>
+        <comment>Do not use apostrophe, it will break the Powershell script!</comment>
+        <translation>Fehlgeschlagen: Ordner löschen, %1</translation>
+    </message>
+    <message>
+        <location filename="../app_uninstall.cpp" line="75"/>
+        <source>Temporary folder not found: %1</source>
+        <comment>Do not use apostrophe, it will break the Powershell script!</comment>
+        <translation>Zwischenordner nicht gefunden: %1</translation>
+    </message>
+    <message>
+        <location filename="../app_uninstall.cpp" line="79"/>
         <source>Error</source>
         <translation>Fehler</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="84"/>
+        <location filename="../app_uninstall.cpp" line="91"/>
         <source>Tidying</source>
         <translation>Aufräumen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="59"/>
+        <location filename="../app_uninstall.cpp" line="62"/>
         <source>Critical Error</source>
         <translation>Schwerwiegender Fahler</translation>
     </message>

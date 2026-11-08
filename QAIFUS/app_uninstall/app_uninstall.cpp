@@ -15,6 +15,9 @@ if ( Test-Path -LiteralPath '%1' ) {
         Add-Type -AssemblyName PresentationCore,PresentationFramework;
         [System.Windows.MessageBox]::Show('%3', '%2', 0, 16);
     }
+} else {
+    Add-Type -AssemblyName PresentationCore,PresentationFramework;
+    [System.Windows.MessageBox]::Show('%4', '%2', 0, 16);
 })"};
 
 #endif
@@ -67,9 +70,13 @@ int main(int argc, char *argv[])
     dpath.replace('\'', "''");    // escape apostrophes
     QString emsg{QCoreApplication::translate(
                      "main",
-                     "Failed: delete folder \"%1\"",
+                     "Failed: delete folder %1",
                      "Do not use apostrophe, it will break the Powershell script!").arg(dpath)};
-    QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg)};
+    QString emsg0{QCoreApplication::translate(
+                     "main",
+                     "Temporary folder not found: %1",
+                     "Do not use apostrophe, it will break the Powershell script!").arg(dpath)};
+    QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg, emsg0)};
     /*
         QMessageBox::information(
             nullptr,
