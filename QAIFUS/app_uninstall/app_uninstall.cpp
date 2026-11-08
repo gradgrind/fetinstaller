@@ -9,8 +9,8 @@
 
 // A Powershell command to remove the temporary directory, reporting an error if it didn't work.
 const QString PSCMD{R"(
-if ( Test-Path -Path '%1' ) {
-    Remove-Item '%1' -Recurse -Force;
+if ( Test-Path -LiteralPath '%1' ) {
+    Remove-Item -LiteralPath '%1' -Recurse -Force;
     if ( -not $? ) {
         Add-Type -AssemblyName PresentationCore,PresentationFramework;
         [System.Windows.MessageBox]::Show('%3', '%2', 0, 16);
@@ -62,27 +62,27 @@ int main(int argc, char *argv[])
 #if defined Q_OS_WIN
     // Remove temporary directory.
     QString dpath{QDir::toNativeSeparators(appinfo.appdir.absolutePath())};
+    QString msgFail{QCoreApplication::translate("main", "Failed: Remove the temporary folder, %1")
+            .arg(dpath)};
+    dpath.replace('\'', "''");    // escape apostrophes
     QString emsg{QCoreApplication::translate(
                      "main",
                      "Failed: delete folder \"%1\"",
                      "Do not use apostrophe, it will break the Powershell script!").arg(dpath)};
     QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg)};
-    QByteArray cmdbytes{cmd.toLocal8Bit()};
-    const char* cmdx = cmdbytes.constData();
     /*
         QMessageBox::information(
             nullptr,
             QCoreApplication::translate("main", "Powershell"),
             cmd);
-        */
-    _execlp("powershell", "powershell", "-WindowStyle", "Hidden", "-Command", cmdx, (char*) NULL);
-    //_execlp("powershell", "powershell", "-NoExit", "-Command", cmdx, (char*) NULL);
+    */
+    _wexeclp(L"powershell", L"powershell", L"-WindowStyle", L"Hidden", L"-Command", cmd.data(), (wchar_t*) NULL);
+    //_wexeclp(L"powershell", L"powershell", L"-NoExit", L"-Command", cmd.data(), (wchar_t*) NULL);
     // Shouldn't return!
     QMessageBox::critical(
         nullptr,
         QCoreApplication::translate("main", "Tidying"),
-        QCoreApplication::translate("main", "Failed: Remove the temporary folder, '%1'")
-            .arg(dpath));
+        msgFail);
     cc = 100;
 #endif
     return cc;

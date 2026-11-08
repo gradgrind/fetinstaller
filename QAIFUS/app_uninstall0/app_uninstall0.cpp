@@ -16,7 +16,7 @@
 #define TMP_NAME "gradgrind_AppUnin"
 
 static const char* TMP_BUSY = QT_TRANSLATE_NOOP("Uninstall0", R"(
-The temporary folder '%1' is already in use.
+The temporary folder is already in use: %1
 It could be in use by another uninstaller – if so, don't delete it!
 Also if it is in use by a completely different application (unlikely), don't delete it!
 
@@ -101,8 +101,8 @@ int main(int argc, char *argv[])
             if ( !QDir{tmpPath}.removeRecursively() ) {
                 error(QCoreApplication::translate(
                           "Uninstall0",
-                          "Failed: delete temporary folder: '%1'")
-                          .arg(QDir::toNativeSeparators(tmpPath)));
+                          "Failed: delete temporary folder: %1")
+                            .arg(QDir::toNativeSeparators(tmpPath)));
                 return 1;
             }
         } else {
@@ -114,12 +114,12 @@ int main(int argc, char *argv[])
     } else {
         error(QCoreApplication::translate(
                   "Uninstall0",
-                  "Failed: create temporary folder: '%1'")
-                  .arg(QDir::toNativeSeparators(tmpPath)));
+                  "Failed: create temporary folder: %1")
+                    .arg(QDir::toNativeSeparators(tmpPath)));
         return 1;
     }
 
-    /* This is a sketch allowing multiple temporary folders. The inserted number could be returned as
+ /* This is a sketch allowing multiple temporary folders. The inserted number could be returned as
  * completion code (for copy_only). Of course this is rather misusing the completion code idea,
  * but it is a rather simple way of handling the problem of how to return the temporary folder.
 
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     if ( nn == 0 ) {
         error(QCoreApplication::translate(
             "Uninstall0",
-            "Couldn't create temporary folder.\nPerhaps too many are already in use:\n  '%1'")
+            "Couldn't create temporary folder.\nPerhaps too many are already in use:\n  %1")
                 .arg(tmpdir0.absoluteFilePath(fmt.arg("nn"))));
         return 1;
     }
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
         if ( !QFile::link(appdir.absolutePath(), tmpdir.filePath("UNINSTALL_TARGET.lnk")) ) {
             error(QCoreApplication::translate(
                       "Uninstall0",
-                      "Failed: link to target: '%1' -> '%2'")
+                      "Failed: link to target: %1 -> %2")
                       .arg(QDir::toNativeSeparators(tmpdir.filePath("UNINSTALL_TARGET.lnk"))
                            , QDir::toNativeSeparators(appdir.absolutePath())));
             goto recover;
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
         }
         error(QCoreApplication::translate(
                   "Uninstall0",
-                  "Couldn't start uninstaller: '%1'").arg(QDir::toNativeSeparators(cmd)));
+                  "Couldn't start uninstaller: %1").arg(QDir::toNativeSeparators(cmd)));
 #else
         // The uninstaller is expected to be in the "bin" directory of the installation.
         QByteArray cmdbytes{tmpdir.absoluteFilePath("bin/app_uninstall.exe").toLocal8Bit()};
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
         // execl doesn't return, if it works.
         error(QCoreApplication::translate(
                   "Uninstall0",
-                  "Failed: switch to uninstaller in '%1'").arg(tmpdir.absolutePath()));
+                  "Failed: switch to uninstaller in %1").arg(tmpdir.absolutePath()));
 #endif
     }
 
@@ -198,8 +198,8 @@ bool delTmp() {
         return true;
     error(QCoreApplication::translate(
               "Uninstall0",
-              "Failed: Remove temporary folder: '%1'")
-              .arg(QDir::toNativeSeparators(tmpdir.absolutePath())));
+              "Failed: Remove temporary folder: %1")
+                .arg(QDir::toNativeSeparators(tmpdir.absolutePath())));
     return false;
 }
 
@@ -260,7 +260,7 @@ bool uninstaller2tmp()
     error(QCoreApplication::translate(
               "Uninstall0",
               "Failed: copy file(s) to temporary folder:\n - %1")
-              .arg(elist.join("\n - ")));
+                .arg(elist.join("\n - ")));
     return false;
 #else
     error("Not implemented: uninstaller2tmp()");

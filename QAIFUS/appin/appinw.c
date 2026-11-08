@@ -62,8 +62,8 @@ tmpok:
 
     msgx = compose(L"Temporary directory: %ls\n", tmp0);
 
-    // Check that there are no quotation marks or apostrophes in tmp0.
-    if ( wcsstr(tmp0, L"\"") || wcsstr(tmp0, L"'")) {
+    // Check that there are no quotation marks in tmp0.
+    if ( wcsstr(tmp0, L"\"") ) {
         msgx = compose(L"Invalid temporary directory: %ls\n", tmp0);
         error(msgx);
         free(msgx);
@@ -97,7 +97,7 @@ tmpok:
     _flushall();
     DWORD ok = xsystem(cmd);
     if ( ok != 0 ) {
-        wchar_t* msg = compose(L"Installation failed: '%ls'", cmd);
+        wchar_t* msg = compose(L"Installation failed: %ls", cmd);
         error(msg);
         free(msg);
     }
@@ -121,7 +121,7 @@ tmpok:
         NULL };
     int delrc = SHFileOperationW(&shfo);
     if (delrc != 0) {
-        wchar_t* msg = compose(L"Failed: Remove temporary directory '%ls'", tmpdir);
+        wchar_t* msg = compose(L"Failed to remove temporary directory: %ls", tmpdir);
         error(msg);
         free(msg);
     }

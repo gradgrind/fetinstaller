@@ -153,17 +153,17 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
         <translation>Fehlgeschlagen: Ordner &quot;%1&quot; löschen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="84"/>
-        <source>Failed: Remove the temporary folder, &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Zwischenordner &apos;%1&apos; entfernen</translation>
+        <location filename="../app_uninstall.cpp" line="69"/>
+        <source>Failed: Remove the temporary folder, %1</source>
+        <translation>Fehlgeschlagen: Zwischenordner entfernen, %1</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="69"/>
+        <location filename="../app_uninstall.cpp" line="71"/>
         <source>Error</source>
         <translation>Fehler</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="83"/>
+        <location filename="../app_uninstall.cpp" line="84"/>
         <source>Tidying</source>
         <translation>Aufräumen</translation>
     </message>

@@ -6,7 +6,7 @@
     <message>
         <location filename="../app_uninstall0.cpp" line="18"/>
         <source>
-The temporary folder &apos;%1&apos; is already in use.
+The temporary folder is already in use: %1
 It could be in use by another uninstaller – if so, don&apos;t delete it!
 Also if it is in use by a completely different application (unlikely), don&apos;t delete it!
 
@@ -16,7 +16,7 @@ Only if you are sure it is no longer in use should you delete it.
 
 Delete this folder?</source>
         <translation>
-Der Zwischenordner &apos;%1&apos; existiert schon.
+Der Zwischenordner existiert schon: %1
 Gegebenenfalls wird er von einem anderen Deinstallationsprozess verwendet – in dem Fall, nicht löschen!
 Auch wenn der Ordner von einer völlig anderen Anwendung benutzt wird (unwahrscheinlich), nicht löschen!
 
@@ -50,33 +50,33 @@ Diesen Ordner löschen?</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="102"/>
-        <source>Failed: delete temporary folder: &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Zwischenordner löschen: &apos;%1&apos;</translation>
+        <source>Failed: delete temporary folder: %1</source>
+        <translation>Fehlgeschlagen: Zwischenordner löschen: %1</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="115"/>
-        <source>Failed: create temporary folder: &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Zwischenordner erstellen: &apos;%1&apos;</translation>
+        <source>Failed: create temporary folder: %1</source>
+        <translation>Fehlgeschlagen: Zwischenordner erstellen: %1</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="152"/>
-        <source>Failed: link to target: &apos;%1&apos; -&gt; &apos;%2&apos;</source>
-        <translation>Fehlgeschlagen: Verknüpfung erstellen: &apos;%1&apos; -&gt; &apos;%2&apos;</translation>
+        <source>Failed: link to target: %1 -&gt; %2</source>
+        <translation>Fehlgeschlagen: Verknüpfung erstellen: %1 -&gt; %2</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="172"/>
-        <source>Couldn&apos;t start uninstaller: &apos;%1&apos;</source>
-        <translation>Die Deinstallation konnte nicht starten: &apos;%1&apos;</translation>
+        <source>Couldn&apos;t start uninstaller: %1</source>
+        <translation>Die Deinstallation konnte nicht starten: %1</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="182"/>
-        <source>Failed: switch to uninstaller in &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Wechseln zum Deinstallationsprogramm in &apos;%1&apos;</translation>
+        <source>Failed: switch to uninstaller in %1</source>
+        <translation>Fehlgeschlagen: Wechseln zum Deinstallationsprogramm in %1</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="199"/>
-        <source>Failed: Remove temporary folder: &apos;%1&apos;</source>
-        <translation>Fehlgeschlagen: Zwischenordner löschen: &apos;%1&apos;</translation>
+        <source>Failed: Remove temporary folder: %1</source>
+        <translation>Fehlgeschlagen: Zwischenordner löschen: %1</translation>
     </message>
     <message>
         <location filename="../app_uninstall0.cpp" line="260"/>
