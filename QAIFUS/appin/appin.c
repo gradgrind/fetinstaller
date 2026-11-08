@@ -30,6 +30,9 @@ int main(int argc, char **argv)
         tmp0 = "/tmp";
     }
     char* user = getlogin();
+    if ( !user ) {      // very unlikey
+        user = "___";   // not very critical anyway, just so that there is something
+    }
     asprintf(&tmpdir, "%s/%s_gradgrind_AppIn", tmp0, user);
     if ( mkdir(tmpdir, 0700) != 0 ) {
         free(tmpdir);
@@ -70,12 +73,12 @@ int main(int argc, char **argv)
         // Write input string and close writing end of first pipe.
         ssize_t s = write(fd1[1], &gAppData[0], gAppSize);
         close(fd1[1]);
-        
+
         if ( s != gAppSize ) {
             msg = "Failed: send package to unpacker";
             // This will probably cause the child process to fail, too.
         }
-        
+
         // Wait for child to finish
         int stat;
         wait(&stat);

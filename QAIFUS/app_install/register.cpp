@@ -190,23 +190,47 @@ void Installer::addedFileType()
 {
     // The SHChangeNotify function allows the association of the
     // icons with the file type to be changed immediately.
-        SHChangeNotify(
-            SHCNE_ASSOCCHANGED,     // Event ID
-            SHCNF_IDLIST,           // Flags
-            NULL,                   // Item that changed
-            NULL                    // Not used
-            );
+    SHChangeNotify(
+        SHCNE_ASSOCCHANGED,     // Event ID
+        SHCNF_IDLIST,           // Flags
+        NULL,                   // Item that changed
+        NULL                    // Not used
+        );
+    // There is no return value.
 }
 
-bool Installer::removeSpecial(QString item)
+QStringList Installer::removeSpecials(QStringList specials)
 {
-    if ( item.startsWith("+++reg:") ) {
-        QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
-        auto key = item.sliced(7);
-        regsettings.remove(key);
-        return !regsettings.contains(key);
+    QStringList failed;
+    QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
+    for ( const auto& line : specials ) {
+        if ( line.startsWith("+++reg:") ) {
+            auto key = line.sliced(7);
+            regsettings.remove(key);
+            if ( regsettings.contains(key) ) {
+                failed.append(line);
+            }
+        } else if ( line.startsWith("+++file-type:") ) {
+            QString key{"Classes/" + line.sliced(13)};
+            regsettings.beginGroup(key + "/OpenWithProgIds");
+            bool empty{regsettings.childKeys().isEmpty()};
+            regsettings.endGroup();
+            if ( empty && !regsettings.value(key + "/.").isValid() ) {
+                regsettings.remove(key);
+                if ( regsettings.contains(key) ) {
+                    failed.append(line);
+                }
+            }
+        } else if ( line.startsWith("+++dir:") ) {
+            QString dirPath{line.sliced(7)};
+            if ( QDir{}.rmdir(dirPath) ) {
+                print_line(tr("Removed %1").arg(dirPath));
+            } else {
+                failed.append(dirPath);
+            }
+        }
     }
-    return true;
+    return failed;
 }
 
 bool Installer::isInstallBundle(QDir dir)
@@ -600,16 +624,23 @@ bool Installer::registerApp()
 
 void Installer::addedFileType()
 {
-    print_line(tr("Update icon cache"));
-    QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"});
-    print_line(tr("Update mime database"));
+    if ( QProcess::execute("xdg-icon-resource", QStringList{"forceupdate"}) == 0 ) {
+        print_line(tr("Updated icon cache"));
+    } else {
+        print_line(tr("Failed: Update icon cache"), true);
+    }
+
     QDir shareDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
-    QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")});
+    if ( QProcess::execute("update-mime-database", QStringList{shareDir.filePath("mime")}) == 0 ) {
+        print_line(tr("Updated mime database"));
+    } else {
+        print_line(tr("Failed: Update mime database"), true);
+    }
 }
 
-bool Installer::removeSpecial(QString item)
+QStringList Installer::removeSpecials(QStringList specials)
 {
-    return true; // there are no entries which need acting on here
+    return {}; // there are no entries which need acting on here
 }
 
 bool Installer::isInstallBundle(QDir dir)
@@ -619,9 +650,12 @@ bool Installer::isInstallBundle(QDir dir)
 
 void Installer::update_desktop_database()
 {
-    print_line(tr("Update desktop database"));
     QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
-    QProcess::execute("update-desktop-database", QStringList{appsDir.path()});
+    if ( QProcess::execute("update-desktop-database", QStringList{appsDir.path()}) == 0 ) {
+        print_line(tr("Updated desktop database"));;
+    } else {
+        print_line(tr("Failed: Update desktop database"), true);
+    }
 }
 
 #else

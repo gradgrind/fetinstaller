@@ -102,7 +102,7 @@ private:
     bool desktop_icon(QString &icon, QString execbase);
     bool registerApp();
     void addedFileType();
-    bool removeSpecial(QString item);
+    QStringList removeSpecials(QStringList specials);
     bool hasFileTypeAssociation();
     bool isInstallBundle(QDir dir);
     void update_desktop_database();

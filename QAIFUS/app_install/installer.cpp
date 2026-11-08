@@ -580,10 +580,18 @@ void Installer::handleCopyingFinished()
                 fail = true;
             }
             if ( fail ) {
-                for ( const auto& f : std:: as_const(localfiles) ) {
+                // Remove the "specials".
+                QStringList failed;
+                QStringList specials; // they must be done after the files
+                for ( const auto& f : std::as_const(localfiles) ) {
                     if ( f.startsWith("+++") ) {
-                        if ( removeSpecial(f) ) continue;
+                        specials.append(f);
+                        continue;
                     } else if ( QFile::remove(f) ) continue;
+                    failed.append(f);
+                }
+                failed += removeSpecials(specials);
+                for ( const auto& f : std::as_const(failed) ) {
                     print_line(tr("(Recovery:) Removal failed: %1").arg(f), true);
                 }
                 ui->launch->setChecked(false);

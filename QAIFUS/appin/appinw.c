@@ -150,7 +150,7 @@ int unpack(wchar_t* dir)
     _flushall();
     wchar_t* tar = L"tar";
     // The command to CreateProcessW, here in xsystem, may not be a constant (see docs).
-    wchar_t* bsdtar = compose(L"where bsdtar >nul 2>nul");
+    wchar_t* bsdtar = compose(L"where bsdtar");
     if ( xsystem(bsdtar) == 0 ) {
         tar = L"bsdtar";
     }

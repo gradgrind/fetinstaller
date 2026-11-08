@@ -52,7 +52,11 @@ void Uninstaller::removeSpecials(const QStringList specials)
     QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
     for ( const auto& line : specials ) {
         if ( line.startsWith("+++reg:") ) {
-            regsettings.remove(line.sliced(7));
+            auto key = line.sliced(7);
+            regsettings.remove(key);
+            if ( regsettings.contains(key) ) {
+                unregister_failed.append(line);
+            }
         } else if ( line.startsWith("+++file-type:") ) {
             QString key{"Classes/" + line.sliced(13)};
             regsettings.beginGroup(key + "/OpenWithProgIds");
@@ -60,6 +64,9 @@ void Uninstaller::removeSpecials(const QStringList specials)
             regsettings.endGroup();
             if ( empty && !regsettings.value(key + "/.").isValid() ) {
                 regsettings.remove(key);
+                if ( regsettings.contains(key) ) {
+                    unregister_failed.append(line);
+                }
             }
             shchangenotify = true;
         } else if ( line.startsWith("+++dir:") ) {

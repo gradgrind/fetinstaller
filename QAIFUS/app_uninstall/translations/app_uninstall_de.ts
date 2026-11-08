@@ -114,22 +114,22 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
     </message>
     <message>
         <location filename="../unregister.cpp" line="32"/>
-        <location filename="../unregister.cpp" line="68"/>
+        <location filename="../unregister.cpp" line="75"/>
         <source>Removed %1</source>
         <translation>%1 wurde entfernt</translation>
     </message>
     <message>
-        <location filename="../unregister.cpp" line="93"/>
+        <location filename="../unregister.cpp" line="100"/>
         <source>Update icon cache</source>
         <translation>Icon-Cache aktualisieren</translation>
     </message>
     <message>
-        <location filename="../unregister.cpp" line="95"/>
+        <location filename="../unregister.cpp" line="102"/>
         <source>Update mime database</source>
         <translation>Die Dateityp-Datenbank wird aktualisiert</translation>
     </message>
     <message>
-        <location filename="../unregister.cpp" line="100"/>
+        <location filename="../unregister.cpp" line="107"/>
         <source>Update desktop database</source>
         <translation>Schreibtisch-Datenbank aktualisieren</translation>
     </message>
