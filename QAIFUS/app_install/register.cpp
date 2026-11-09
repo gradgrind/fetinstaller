@@ -51,9 +51,60 @@ bool Installer::preRegister()
     return true;
 }
 
+class Registration
+{
+    struct reg_item {
+        enum{GROUP, ENDGROUP, SET} type;
+        QString key;
+        QVariant val;
+    };
+
+    QList<reg_item> items;
+
+public:
+    void beginGroup(QString name)
+    {
+        items.append({reg_item::GROUP, name, {}});
+    }
+
+    void endGroup()
+    {
+        items.append({reg_item::ENDGROUP, {}, {}});
+    }
+
+    void setValue(QString key, QVariant val)
+    {
+        items.append({reg_item::SET, key, val});
+    }
+
+    QString registerItems()
+    {
+        QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
+        for ( const auto& item : std::as_const(items) ) {
+            switch ( item.type ) {
+
+            case reg_item::GROUP:
+                regsettings.beginGroup(item.key);
+                break;
+            case reg_item::ENDGROUP:
+                regsettings.endGroup();
+                break;
+            case reg_item::SET:
+                regsettings.setValue(item.key, item.val);
+                if ( regsettings.value(item.key) != item.val ) {
+                    return item.key + "=" + item.val.toString();
+                }
+                break;
+
+            }
+        }
+        return {};
+    }
+};
+
 bool Installer::registerApp()
 {
-    QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
+    Registration reg;
     QString proj{appinfo.PROJECTNAME};
     if ( ui->versioned->isChecked() ) {
         proj += "-" + appinfo.PROJECTVERSION;
@@ -61,7 +112,7 @@ bool Installer::registerApp()
     // Register uninstaller.
     QString app_uninstall_reg{"Microsoft/Windows/CurrentVersion/Uninstall/" + proj};
 
-    regsettings.beginGroup(app_uninstall_reg);
+    reg.beginGroup(app_uninstall_reg);
 
     localfiles.append("+++reg:" + app_uninstall_reg);
 
@@ -69,12 +120,12 @@ bool Installer::registerApp()
     QString idir{QDir::toNativeSeparators(app_dir.path())};
 
     print_line(tr("Register project and uninstaller"));
-    regsettings.setValue("DisplayName", proj);
-    regsettings.setValue("UninstallString", '"' + idir + '\\' + UNINSTALLER_NAME + '"');
-    regsettings.setValue("Publisher", appinfo.Publisher);
-    regsettings.setValue("WebLink", appinfo.WebLink);
-    regsettings.setValue("DisplayVersion", appinfo.PROJECTVERSION);
-    regsettings.setValue("UninstallLocation", idir);
+    reg.setValue("DisplayName", proj);
+    reg.setValue("UninstallString", '"' + idir + '\\' + UNINSTALLER_NAME + '"');
+    reg.setValue("Publisher", appinfo.Publisher);
+    reg.setValue("WebLink", appinfo.WebLink);
+    reg.setValue("DisplayVersion", appinfo.PROJECTVERSION);
+    reg.setValue("UninstallLocation", idir);
     // Installation size
     qint64 size{0};
     for ( const auto &dirEntry : QDirListing(
@@ -84,9 +135,9 @@ bool Installer::registerApp()
                  | QDirListing::IteratorFlag::IncludeHidden) ) { //TODO: IncludeHidden?
         size += dirEntry.size();
     }
-    regsettings.setValue("EstimatedSize", static_cast<quint32>(size / 1024)); // Windows uses KiB (1024 bytes)
+    reg.setValue("EstimatedSize", static_cast<quint32>(size / 1024)); // Windows uses KiB (1024 bytes)
 
-    regsettings.endGroup();
+    reg.endGroup();
 
     if ( !ui->versioned->isChecked() ) {
         // File-type association
@@ -109,20 +160,27 @@ bool Installer::registerApp()
                 print_line(tr("Register file-type association for '%1'").arg(assoc_ext));
                 QString key_c1{key_c + assoc_ext + "/OpenWithProgIds/" + assoc_progid};
                 localfiles.append("+++reg:" + key_c1);
-                regsettings.setValue(key_c1, "");
+                reg.setValue(key_c1, "");
 
                 QString key_c2{key_c + assoc_progid};
                 localfiles.append("+++reg:" + key_c2);
-                regsettings.beginGroup(key_c2);
-                regsettings.setValue("shell/open/FriendlyAppName", exec + " " + appinfo.PROJECTVERSION);
+                reg.beginGroup(key_c2);
+                reg.setValue("shell/open/FriendlyAppName", exec + " " + appinfo.PROJECTVERSION);
                 QString appPath{"\"" + idir + "\\" + exec + execval.extension + "\""};
-                regsettings.setValue("shell/open/command/.", appPath + " \"%1\"");
-                regsettings.setValue("DefaultIcon/.", appPath + ",0");
-                regsettings.endGroup();
+                reg.setValue("shell/open/command/.", appPath + " \"%1\"");
+                reg.setValue("DefaultIcon/.", appPath + ",0");
+                reg.endGroup();
 
                 localfiles.append("+++file-type:" + assoc_ext);
             }
         }
+    }
+
+    // Do the actual registry entries.
+    QString fail = reg.registerItems();
+    if ( !fail.isEmpty() ) {
+        print_line(tr("Registry entry failed: %1").arg(fail));
+        return false;
     }
 
     // Start menu entries
@@ -254,6 +312,10 @@ Apparently it has already been installed in some other way.)");
 bool Installer::isInstalled(QString dir)
 {
     // Assume an uninstaller is in the _installer_ directory.
+    // Return true if one of the executables is a symlink to an app bundle
+    // with an uninstaller in the expected place. This alone is no guarantee
+    // that the uninstaller will clear the way for an installation, but generally
+    // it will do.
     QFileInfo uinfo;
     if ( dir.isEmpty() ) {
         // Check each of the EXECUTABLES:
@@ -269,7 +331,7 @@ bool Installer::isInstalled(QString dir)
             QString execpath{QDir::home().absoluteFilePath(".local/bin/" + exec)};
             QString xpath{QFileInfo{execpath}.readSymLink()};
             if ( xpath.isEmpty() ) {
-                return false; // only if this is a symlink can the app count as "installed"
+                continue; // only if this is a symlink can the app count as "installed"
             }
             // Seek installation directory, and hence uninstaller.
             uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "/../_installer_/app_uninstall"};

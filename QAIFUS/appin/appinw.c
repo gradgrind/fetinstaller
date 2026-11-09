@@ -88,20 +88,20 @@ tmpok:
     }
 
     // Unpack the app bundle.
-    if ( unpack(tmpdir) != 0 ) {
-        return 1;
+    int rc = unpack(tmpdir);
+    if ( rc == 0 ) {
+        // Run the installer.
+        wchar_t* cmd = compose(L"\"%ls\\app_install.exe\"", tmpdir);
+        _flushall();
+        DWORD xrc = xsystem(cmd);
+        if ( xrc != 0 ) {
+            rc = 1;
+            wchar_t* msg = compose(L"Installation failed: %ls", cmd);
+            error(msg);
+            free(msg);
+        }
+        free(cmd);
     }
-
-    // Run the installer.
-    wchar_t* cmd = compose(L"\"%ls\\app_install.exe\"", tmpdir);
-    _flushall();
-    DWORD ok = xsystem(cmd);
-    if ( ok != 0 ) {
-        wchar_t* msg = compose(L"Installation failed: %ls", cmd);
-        error(msg);
-        free(msg);
-    }
-    free(cmd);
 
     // Remove the temporary directory (nftw is not available on Windows).
     // The path must be double-0 terminated ...
@@ -121,15 +121,13 @@ tmpok:
         NULL };
     int delrc = SHFileOperationW(&shfo);
     if (delrc != 0) {
+        rc = 1;
         wchar_t* msg = compose(L"Failed to remove temporary directory: %ls", tmpdir);
         error(msg);
         free(msg);
     }
     free(tmpdir);
-    if ( delrc != 0 | ok != 0 ) {
-        return 1;
-    }
-    return 0;
+    return rc;
 }
 
 HANDLE g_hChildStd_IN_Rd = NULL;
@@ -164,13 +162,13 @@ int unpack(wchar_t* dir)
     // Create a pipe for the child process's STDIN.
     if ( !CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0) ) {
         error(L"Failed: Stdin CreatePipe");
-        return -1;
+        return 1;
     }
 
     // Ensure the write handle to the pipe for STDIN is not inherited.
     if ( !SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) ) {
         error(L"Failed: Stdin SetHandleInformation");
-        return -1;
+        return 1;
     }
 
     // Create the child process.
@@ -180,7 +178,7 @@ int unpack(wchar_t* dir)
         error(msg);
         free(msg);
         free(cmd);
-        return -1;
+        return 1;
     }
 
     // Write to the pipe that is the standard input for a child process.
@@ -194,7 +192,7 @@ int unpack(wchar_t* dir)
     if ( !GetExitCodeProcess(piProcInfo.hProcess, &child_cc) ) {
         error(L"Failed: unpacking the app bundle");
         free(cmd);
-        return -1;
+        return 1;
     }
     //wprintf(L"CHILD cc: %d\n", child_cc);
     //wprintf(L"Archive written to child STDIN pipe.\n");

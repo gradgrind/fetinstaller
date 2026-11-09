@@ -20,7 +20,7 @@ class CopyWorker : public QObject
     Q_OBJECT
 
 public slots:
-    void copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);
+    void copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles* iFiles);
 
 signals:
     void number_of_files(int count);

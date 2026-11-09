@@ -129,7 +129,7 @@ public:
     bool app_initialized{false};
 
 signals:
-    void doCopy(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles);
+    void doCopy(const QDir& srcDir, const QDir& dstDir, const InstallFiles* iFiles);
 };
 
 #endif // INSTALLER_H

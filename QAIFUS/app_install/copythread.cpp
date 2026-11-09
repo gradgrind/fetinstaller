@@ -1,19 +1,19 @@
 #include "copythread.h"
 
-void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles& iFiles) {
+void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const InstallFiles *iFiles) {
     /* ... here is the long-running operation ... */
 
     // Start by copying the directories, which should be sorted such that parent directories are always
     // before their child directories. Alphabetical sorting should be adequate.
-    qsizetype n{iFiles.installationDirs.length()
-          + iFiles.installationFiles.length()
-          + iFiles.installationLinks.length()};
-    if ( iFiles.with_uninstaller ) {
-        n += iFiles.uninstallerFiles.length();
+    qsizetype n{iFiles->installationDirs.length()
+          + iFiles->installationFiles.length()
+          + iFiles->installationLinks.length()};
+    if ( iFiles->with_uninstaller ) {
+        n += iFiles->uninstallerFiles.length();
     }
     emit number_of_files(n);
 
-    for ( const auto& d : iFiles.installationDirs ) {
+    for ( const auto& d : iFiles->installationDirs ) {
         if ( dstDir.exists(d) ) {
             emit dir_exists(d);
         } else if ( dstDir.mkdir(d) ) {
@@ -24,7 +24,7 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
     }
 
     // Copy the regular files
-    for ( const auto& f : iFiles.installationFiles ) {
+    for ( const auto& f : iFiles->installationFiles ) {
         if ( QFile::copy(srcDir.filePath(f), dstDir.filePath(f)) ) {
             emit file_copied(f);
         } else {
@@ -33,9 +33,9 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
     }
 
     // Copy the uninstaller files
-    if ( iFiles.with_uninstaller ) {
+    if ( iFiles->with_uninstaller ) {
         dstDir.mkdir("_installer_");
-        for ( const auto& f : iFiles.uninstallerFiles ) {
+        for ( const auto& f : iFiles->uninstallerFiles ) {
             if ( QFile::copy(srcDir.filePath(f), dstDir.filePath(f)) ) {
                 emit file_copied(f);
             } else {
@@ -45,7 +45,7 @@ void CopyWorker::copyDirectory(const QDir& srcDir, const QDir& dstDir, const Ins
     }
 
     // Set symlinks / Windows shortcuts
-    for ( const auto& fx : iFiles.installationLinks ) {
+    for ( const auto& fx : iFiles->installationLinks ) {
         if ( QFile::link(fx.second, dstDir.filePath(fx.first)) ) {
             emit link_copied(fx);
         } else {

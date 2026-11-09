@@ -470,7 +470,7 @@ void Installer::page_3()
     // Start copying
     copyErrors.clear();
     installFiles.with_uninstaller = !ui->unpack_only->isChecked();
-    emit doCopy(src_dir, app_dir, installFiles);
+    emit doCopy(src_dir, app_dir, &installFiles);
 }
 
 // In the slots below, the filepath arguments are all relative to the destination base
