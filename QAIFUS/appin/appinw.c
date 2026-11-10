@@ -14,6 +14,7 @@
 #include <stdarg.h>
 #include <wchar.h>
 #include <windows.h>
+#include <shellapi.h>
 #include <errno.h>
 #include <process.h>
 #include <direct.h>

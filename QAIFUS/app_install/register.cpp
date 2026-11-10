@@ -214,7 +214,7 @@ bool Installer::registerApp()
         if ( desktopName.isEmpty() ) {
             continue;
         }
-        if ( !ui->versioned->isChecked() ) {
+        if ( ui->versioned->isChecked() ) {
             desktopName += "-" + appinfo.PROJECTVERSION;
         }
         desktopName += ".lnk";
