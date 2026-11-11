@@ -81,8 +81,7 @@ int main(int argc, char **argv)
 
         // Wait for child to finish
         int stat;
-        wait(&stat);
-        if ( !WIFEXITED(stat) || WEXITSTATUS(stat) != 0 ) {
+        if ( waitpid(p, &stat, 0) == -1 || !WIFEXITED(stat) || WEXITSTATUS(stat) != 0 ) {
             childmsg = "Failed: unpack process";
         }
     }
