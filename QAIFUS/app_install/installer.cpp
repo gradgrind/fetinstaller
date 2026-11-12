@@ -556,7 +556,7 @@ void Installer::handleCopyingFinished()
             bool fail{false};
             if ( registerApp() ) {
                 // Open file to record files installed outside the installation directory.
-                QFile file_log{app_dir.absoluteFilePath("_installer_/system_files")};
+                QSaveFile file_log{app_dir.absoluteFilePath("_installer_/system_files")};
                 if ( file_log.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
                     QTextStream log_stream(&file_log);
                     for ( const auto& f : std:: as_const(localfiles) ) {
@@ -564,16 +564,19 @@ void Installer::handleCopyingFinished()
                         // If a file-type association is to be set up, finalize it:
                         if ( f.startsWith("+++file-type:") ) addedFileType();
                     }
-                    file_log.close();
-
-                    update_desktop_database();
-
-                    installationPartial = false; // for page_4 handler => don't show page 4
-                    print_line(tr("Installation successful!"));
-                    ui->launch->setEnabled(true);
+                    if ( file_log.commit() ) {
+                        update_desktop_database();
+                        installationPartial = false; // for page_4 handler => don't show page 4
+                        print_line(tr("Installation successful!"));
+                        ui->launch->setEnabled(true);
+                    } else {
+                        fail = true;
+                    }
                 } else {
-                    print_line(tr("ERROR, could not create the 'system_files' list"), true);
                     fail = true;
+                }
+                if ( fail ) {
+                    print_line(tr("ERROR, could not create the 'system_files' list"), true);
                 }
             } else {
                 print_line(tr("App registration failed."), true);

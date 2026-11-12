@@ -1,4 +1,8 @@
 // Windows version ...
+// This uses the example from
+//   https://learn.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
+// as a basis for unpacking the archive by sending it to stdin of a child
+// process running the tar command.
 
 // To suppress console window, compile with:
 //   gcc -mwindows -o appinw appinw.c
@@ -30,11 +34,22 @@ wchar_t* compose(wchar_t* fmt, ...);
 void error(wchar_t* msg);
 int unpack(wchar_t* dir);
 DWORD xsystem(wchar_t* cmd);
+int CreateChildProcess(wchar_t* cmdline);
+int WriteToPipe();
+
+HANDLE g_hChildStd_IN_Rd = NULL;
+HANDLE g_hChildStd_IN_Wr = NULL;
+PROCESS_INFORMATION piProcInfo;
 
 int main(void)
 {
-    // Set console mode to UTF-16 wide characters
-    _setmode(_fileno(stdout), _O_U16TEXT);
+    // Set console mode to UTF-16 wide characters.
+    // This is only relevant when compiled for console mode.
+    {
+        int fn = _fileno(stdout);
+        if ( fn >= 0 )
+            _setmode(_fileno(stdout), _O_U16TEXT);
+    }
 
     wchar_t* msgx;
     // Get a suitable base path for the temporary directory.
@@ -128,15 +143,8 @@ tmpok:
         free(msg);
     }
     free(tmpdir);
-    return rc;
+    ExitProcess(rc);
 }
-
-HANDLE g_hChildStd_IN_Rd = NULL;
-HANDLE g_hChildStd_IN_Wr = NULL;
-PROCESS_INFORMATION piProcInfo;
-
-int CreateChildProcess(wchar_t* cmdline);
-void WriteToPipe();
 
 int unpack(wchar_t* dir)
 {
@@ -169,7 +177,7 @@ int unpack(wchar_t* dir)
     // Ensure the write handle to the pipe for STDIN is not inherited.
     if ( !SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) ) {
         error(L"Failed: Stdin SetHandleInformation");
-        return 1;
+        return 2;
     }
 
     // Create the child process.
@@ -179,13 +187,15 @@ int unpack(wchar_t* dir)
         error(msg);
         free(msg);
         free(cmd);
-        return 1;
+        return 3;
     }
 
     // Write to the pipe that is the standard input for a child process.
     // Data is written to the pipe's buffers, so it is not necessary to wait
     // until the child process is running before writing data.
-    WriteToPipe();
+    int rc = WriteToPipe();
+    if ( rc != 0 )
+        return rc;
 
     // Wait until child process exits.
     WaitForSingleObject(piProcInfo.hProcess, INFINITE);
@@ -193,7 +203,7 @@ int unpack(wchar_t* dir)
     if ( !GetExitCodeProcess(piProcInfo.hProcess, &child_cc) ) {
         error(L"Failed: unpacking the app bundle");
         free(cmd);
-        return 1;
+        return 4;
     }
     //wprintf(L"CHILD cc: %d\n", child_cc);
     //wprintf(L"Archive written to child STDIN pipe.\n");
@@ -246,28 +256,29 @@ int CreateChildProcess(wchar_t* cmdline)
     return 0;
 }
 
-void WriteToPipe()
+int WriteToPipe()
 {
     // Write the archive to the pipe for the child's STDIN.
     // Stop when there is no more data.
     DWORD bytesWritten;
     //wprintf(L"%p %u %p\n", &gAppData[0], gAppSize, &gAppEnd);
     //wprintf(L"%p\n", &gAppData[gAppSize]);
-    if ( !WriteFile(
-            g_hChildStd_IN_Wr,
-            &gAppData[0],
-            gAppSize,
-            &bytesWritten,
-            NULL) ) {
+    BOOL bSuccess = WriteFile(
+        g_hChildStd_IN_Wr,
+        &gAppData[0],
+        gAppSize,
+        &bytesWritten,
+        NULL);
+    BOOL cSuccess = CloseHandle(g_hChildStd_IN_Wr);
+    if ( !bSuccess ) {
         error(L"Failed: Pass archive to unpacker subprocess");
-        ExitProcess(1);
+        return -2;
     }
-
-    // Close the pipe handle so the child process stops reading.
-    if ( !CloseHandle(g_hChildStd_IN_Wr) ) {
+    if ( !cSuccess ) {
         error(L"Failed: StdInWr CloseHandle");
-        ExitProcess(1);
+        return -3;
     }
+    return 0;
 }
 
 // Variadic function to compose strings.

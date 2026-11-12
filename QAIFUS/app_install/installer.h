@@ -31,7 +31,6 @@ struct registerItem {
     QString value;
     qint64 nvalue{0};
     bool numeric{false};
-
 };
 
 #else

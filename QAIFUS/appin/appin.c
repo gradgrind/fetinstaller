@@ -7,6 +7,7 @@
 #include <ftw.h>
 #include <string.h>
 #include <sys/types.h>
+#include <pwd.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -25,27 +26,56 @@ void tidy();
 
 int main(int argc, char **argv)
 {
-    char* tmp0 = getenv("TMPDIR");
-    if ( tmp0 == NULL || strlen(tmp0) < 4 ) {
-        tmp0 = "/tmp";
+    // Make a temporary directory inside the user's home directory.
+    char* tmp0 = NULL;
+    {
+        uid_t uid = getuid();
+        uid_t euid = geteuid();
+        if ( uid != euid ) {
+            msg = "UID mismatch.";
+            fatal();
+        }
+        struct passwd* pw = getpwuid(uid);
+        if ( !pw ) {
+            msg = "User unknown.";
+            fatal();
+        }
+        // Set the temporary base directory.
+        asprintf(&tmp0, "%s/.local/tmp", pw->pw_dir);
+        struct stat sbuf;
+        int rc = stat(tmp0, &sbuf);
+        // Check if the directory exists
+        if ( rc != 0 ) {
+            // Create the directory
+            if ( mkdir(tmp0, 0700) != 0 ) {
+                asprintf(&msgx, "Failed: create temporary directory base: %s", tmp0);
+            }
+        } else if ( !S_ISDIR(sbuf.st_mode) ) {
+            asprintf(&msgx, "Invalid temporary directory base: %s", tmp0);
+        }
+        if ( msgx ) {
+            free(tmp0);
+            fatal();
+        }
+        errno = 0;
     }
-    char* user = getlogin();
-    if ( !user ) {      // very unlikey
-        user = "___";   // not very critical anyway, just so that there is something
-    }
-    asprintf(&tmpdir, "%s/%s_gradgrind_AppIn", tmp0, user);
+
+    asprintf(&tmpdir, "%s/gradgrind_AppIn", tmp0);
     if ( mkdir(tmpdir, 0700) != 0 ) {
         free(tmpdir);
-        asprintf(&tmpdir, "%s/%s_gradgrind_AppIn_", tmp0, user);
+        asprintf(&tmpdir, "%s/gradgrind_AppIn_", tmp0);
         if ( mkdir(tmpdir, 0700) != 0 ) {
-            asprintf(&msgx, "Temporary directory unavailable: %s\n", tmpdir);
+            asprintf(&msgx, "Temporary directory unavailable: %s", tmpdir);
+            free(tmp0);
             free(tmpdir);
             tmpdir = NULL;
             fatal();
         }
         // In this case, app_install should comment on this, actually
-        // there should be only one instance per user.
+        // there should be only one instance (per user).
     }
+    free(tmp0);
+    errno = 0;
 
     //printf("%p %u %p\n", &gAppData[0], gAppSize, &gAppEnd);
     //printf("%p\n", &gAppData[gAppSize]);
@@ -75,7 +105,7 @@ int main(int argc, char **argv)
         close(fd1[1]);
 
         if ( s != gAppSize ) {
-            msg = "Failed: send package to unpacker";
+            msg = "Failed: swaitpidend package to unpacker";
             // This will probably cause the child process to fail, too.
         }
 
@@ -131,11 +161,32 @@ void fatal()
     }
     char* e0 = NULL;
     asprintf(&e0, "Couldn't start installer ...\n%s\n%s\n%s", emsg, msg0, childmsg);
-    char* en = NULL;
-    asprintf(&en, "notify-send \"AppIn\" \"%s\" -i error", e0);
-    fprintf(stderr, "%s\n", e0);
-    system(en);
-    free(en);
+
+    pid_t px;
+    px = fork();
+    if (px < 0) {
+        // It really shouldn't land here, but just to have it covered ...
+        fprintf(stderr, "%s\n\nInternal error: fork failed.\n", e0);
+    }
+
+    // Parent process
+    else if (px > 0) {
+        // Wait for child to finish
+        int stat;
+        if ( waitpid(px, &stat, 0) == -1 || !WIFEXITED(stat) || WEXITSTATUS(stat) != 0 ) {
+            fprintf(stderr, "%s\n", e0);
+        }
+    }
+
+    // Child process
+    else {
+        execlp("kdialog", "kdialog", "--title", "AppIn", "--error", e0, (char*)NULL);
+        execlp("zenity", "zenity", "--error", "--title", "AppIn", "--text", e0, (char*)NULL);
+        execlp("notify-send", "notify-send", "AppIn", e0, "-i", "error", (char*)NULL);
+        // Unfortunately no functioning GUI reporter ...
+        exit(1);
+    }
+
     free(e0);
     if ( msgx ) {
         free(msgx);

@@ -4,9 +4,15 @@
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QSettings>
+#include <QSaveFile>
 
 // Update file-type associations and desktop files.
 // Windows: add app to registry.
+
+// All registration failures should abort the installation process, except
+// these, which just report the failure but don't prevent the installation
+// completing:
+//  - a desktop starter cannot be installed
 
 #if defined Q_OS_WIN
 #include <windows.h>
@@ -640,14 +646,15 @@ bool Installer::registerApp()
             }
         } else if ( reg.type == R_WRITE ) {
             // Write the file
-            QFile fw(reg.destination);
+            QSaveFile fw(reg.destination);
             if ( fw.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
                 QTextStream out(&fw);
                 out << reg.source;
-                fw.close();
-                localfiles.append(reg.destination);
-                print_line(reg.message);
-                continue;
+                if ( fw.commit() ) {
+                    localfiles.append(reg.destination);
+                    print_line(reg.message);
+                    continue;
+                }
             }
         }
         ok = false;
