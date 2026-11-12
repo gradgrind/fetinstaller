@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QStandardPaths>
 #include <QMessageBox>
+#include <QSaveFile>
 
 #define TMP_NAME "gradgrind_AppUnin"
 

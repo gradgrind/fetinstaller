@@ -208,7 +208,10 @@ void tidy()
 {
     // Tidy up: remove temporary directory
     if ( tmpdir ) {
-        if ( nftw(tmpdir, del_item, 20, FTW_DEPTH|FTW_MOUNT|FTW_PHYS) < 0 ) {
+        errno = 0;
+        nftw(tmpdir, del_item, 20, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
+        if ( access(tmpdir, F_OK) == 0 ) {
+        //if ( nftw(tmpdir, del_item, 20, FTW_DEPTH|FTW_MOUNT|FTW_PHYS) < 0 ) {
             const char* msg0 = "Failed: remove temporary directory, %s";
             asprintf(&msgx, msg0, tmpdir);
             free (tmpdir);

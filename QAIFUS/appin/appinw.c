@@ -135,8 +135,10 @@ tmpok:
         FALSE,
         NULL,
         NULL };
-    int delrc = SHFileOperationW(&shfo);
-    if (delrc != 0) {
+    SHFileOperationW(&shfo);
+    if ( _waccess(tmpdir, 0) == 0 ) {
+    //int delrc = SHFileOperationW(&shfo);
+    //if ( delrc != 0 || shfo.fAnyOperationsAborted ) {
         rc = 1;
         wchar_t* msg = compose(L"Failed to remove temporary directory: %ls", tmpdir);
         error(msg);
@@ -270,7 +272,7 @@ int WriteToPipe()
         &bytesWritten,
         NULL);
     BOOL cSuccess = CloseHandle(g_hChildStd_IN_Wr);
-    if ( !bSuccess ) {
+    if ( !bSuccess || bytesWritten != gAppSize ) {
         error(L"Failed: Pass archive to unpacker subprocess");
         return -2;
     }

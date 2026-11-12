@@ -97,7 +97,10 @@ public:
                 break;
             case reg_item::SET:
                 regsettings.setValue(item.key, item.val);
-                if ( regsettings.value(item.key) != item.val ) {
+                // Try to be sure that the writes have worked.
+                regsettings.sync();
+                if ( regsettings.status() != QSettings::NoError
+                        || regsettings.value(item.key) != item.val ) {
                     return item.key + "=" + item.val.toString();
                 }
                 break;
@@ -271,7 +274,10 @@ QStringList Installer::removeSpecials(QStringList specials)
         if ( line.startsWith("+++reg:") ) {
             auto key = line.sliced(7);
             regsettings.remove(key);
-            if ( regsettings.contains(key) ) {
+            // Try to be sure that the removal has worked.
+            regsettings.sync();
+            if ( regsettings.status() != QSettings::NoError
+                    || regsettings.contains(key) ) {
                 failed.append(line);
             }
         } else if ( line.startsWith("+++file-type:") ) {
@@ -281,7 +287,10 @@ QStringList Installer::removeSpecials(QStringList specials)
             regsettings.endGroup();
             if ( empty && !regsettings.value(key + "/.").isValid() ) {
                 regsettings.remove(key);
-                if ( regsettings.contains(key) ) {
+                // Try to be sure that the removal has worked.
+                regsettings.sync();
+                if ( regsettings.status() != QSettings::NoError
+                        || regsettings.contains(key) ) {
                     failed.append(line);
                 }
             }
