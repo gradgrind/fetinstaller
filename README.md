@@ -24,6 +24,8 @@ This project is directed specifically at C++/Qt GUI applications which compile t
 
  - easily adaptable bash (Linux) and Powershell (Windows) scripts to build the installer, plus one, small, configuration file
 
+**Currently QAIFUS is tested only on x86_64. It may be usable on other architectures, but there have so far been no attempts to test this.**
+
 The reason to restrict the scope to C++/Qt GUI applications is that the installer and uninstaller themselves are small C++/Qt GUI applications and they share the bundled libraries with the main application. Without the main application's bundled libraries, such an installer framework would be far too large.
 
 Using basically the same framework for building the installer as is used for the application itself should make the whole process easier to learn and more transparent, when compared to using other tools with obscure configuration languages (e.g. NSIS). It should also be relatively straightforward to customise the installer/uninstaller to suit the needs of a particular application.
@@ -45,6 +47,10 @@ To add entries in the desktop applications menu ("start menu"), file-type associ
 ## Windows
 
 On Windows I have chosen "C:\Users\<User-Name>\AppData\Local\Programs" as the standard location for installation packages. Entries in the "start menu" are done with specially placed shortcuts; file-type associations are done in the registry (in the user-writable section). Also an entry for the uninstaller is placed in the registry, so that it can be uninstalled in the "normal" ways.
+
+### Windows 10
+
+The installer uses `tar` to unpack itself. This is available on Windows, but the version on Windows 10 does not support the "xz" compression which is used by QAIFUS. To overcome this shortcoming, it is necessary to place a suitable `bsdtar` executable in the "PATH", e.g. in `C:\Users\USER NAME\AppData\Local\Microsoft\WindowsApps`. See the Releases page for a working `bsdtar.exe`.
 
 ## Building the installer package
 

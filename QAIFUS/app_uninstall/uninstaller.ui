@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>521</width>
-    <height>419</height>
+    <width>575</width>
+    <height>448</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -57,6 +57,12 @@
         <widget class="QPlainTextEdit" name="text_1">
          <property name="readOnly">
           <bool>true</bool>
+         </property>
+         <property name="plainText">
+          <string>The following folder will be deleted:
+%1
+
+Also any associated items which were installed with this package, such as &quot;start-menu&quot; entries and file-ending associations, will be removed.</string>
          </property>
         </widget>
        </item>

@@ -56,17 +56,28 @@
         <translation>Pfad des Anwendungsordners</translation>
     </message>
     <message>
-        <location filename="../uninstaller.ui" line="66"/>
+        <location filename="../uninstaller.ui" line="62"/>
+        <source>The following folder will be deleted:
+%1
+
+Also any associated items which were installed with this package, such as &quot;start-menu&quot; entries and file-ending associations, will be removed.</source>
+        <translation>Folgender Ordner wird gelöscht:
+%1
+
+Auch damit verbundene Objekte, die mit diesem Paket installiert wurden, z.B. &quot;Start-Menü&quot;-Einträge und Dateiendungszuordnungen, werden entfernt.</translation>
+    </message>
+    <message>
+        <location filename="../uninstaller.ui" line="72"/>
         <source>Do you really want to uninstall %1?</source>
         <translation>Soll %1 wirklich deinstalliert werden?</translation>
     </message>
     <message>
-        <location filename="../uninstaller.ui" line="155"/>
+        <location filename="../uninstaller.ui" line="161"/>
         <source>## Uninstall %1</source>
         <translation>## %1 deinstallieren</translation>
     </message>
     <message>
-        <location filename="../uninstaller.ui" line="168"/>
+        <location filename="../uninstaller.ui" line="174"/>
         <source>QAIFUS Installer Framework, Version %1</source>
         <translation>QAIFUS Installationswerkzeug, Version %1</translation>
     </message>
