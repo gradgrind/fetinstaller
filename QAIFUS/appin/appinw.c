@@ -148,22 +148,8 @@ tmpok:
     ExitProcess(rc);
 }
 
-int unpack(wchar_t* dir)
+int do_tar(wchar_t* cmd)
 {
-    // On older Windows versions the built-in "tar" might not support
-    // xz archives. In that case it is necessary to install bsdtar.
-    // This can be done by placing the executable "bsdtar.exe" in the
-    // user's "AppData\Local\Microsoft\WindowsApps", which should already
-    // be in the PATH.
-    wchar_t* cmd0 = L"%ls -xJf - -C \"%ls\"";
-    _flushall();
-    wchar_t* tar = L"tar";
-    // The command to CreateProcessW, here in xsystem, may not be a constant (see docs).
-    wchar_t* bsdtar = compose(L"where bsdtar");
-    if ( xsystem(bsdtar) == 0 ) {
-        tar = L"bsdtar";
-    }
-
     SECURITY_ATTRIBUTES saAttr;
     // Set the bInheritHandle flag so pipe handles are inherited.
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -172,23 +158,16 @@ int unpack(wchar_t* dir)
 
     // Create a pipe for the child process's STDIN.
     if ( !CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0) ) {
-        error(L"Failed: Stdin CreatePipe");
-        return 1;
+       return 1;
     }
 
     // Ensure the write handle to the pipe for STDIN is not inherited.
     if ( !SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) ) {
-        error(L"Failed: Stdin SetHandleInformation");
         return 2;
     }
 
     // Create the child process.
-    wchar_t* cmd = compose(cmd0, tar, dir);
     if ( CreateChildProcess(cmd) != 0 ) {
-        wchar_t* msg = compose(L"Failed: Create child process (%ls)", cmd);
-        error(msg);
-        free(msg);
-        free(cmd);
         return 3;
     }
 
@@ -196,26 +175,58 @@ int unpack(wchar_t* dir)
     // Data is written to the pipe's buffers, so it is not necessary to wait
     // until the child process is running before writing data.
     int rc = WriteToPipe();
-    if ( rc != 0 )
-        return rc;
-
-    // Wait until child process exits.
-    WaitForSingleObject(piProcInfo.hProcess, INFINITE);
-    DWORD child_cc;
-    if ( !GetExitCodeProcess(piProcInfo.hProcess, &child_cc) ) {
-        error(L"Failed: unpacking the app bundle");
-        free(cmd);
-        return 4;
+    if ( rc == 0 ) {
+        // Wait until child process exits.
+        WaitForSingleObject(piProcInfo.hProcess, INFINITE);
+        DWORD child_cc;
+        if ( !GetExitCodeProcess(piProcInfo.hProcess, &child_cc) || child_cc != 0 ) {
+            rc = 4;
+        }
     }
-    //wprintf(L"CHILD cc: %d\n", child_cc);
-    //wprintf(L"Archive written to child STDIN pipe.\n");
-
     CloseHandle(piProcInfo.hProcess);
     CloseHandle(piProcInfo.hThread);
+    return rc;
+}
 
-    //wprintf(L"\n->End of parent execution.\n");
+int unpack(wchar_t* dir)
+{
+    // On older Windows versions the built-in "tar" might not support
+    // xz archives. In that case it is necessary to install bsdtar.
+    // This can be done by placing the executable "bsdtar.exe" in the
+    // user's "AppData\Local\Microsoft\WindowsApps", which should already
+    // be in the PATH.
+    wchar_t* cmd = compose(L"tar -xJf - -C \"%ls\"", dir);
+    int rc = do_tar(cmd);
+    if ( rc > 0 ) {
+        free(cmd);
+        cmd = compose(L"bsdtar -xJf - -C \"%ls\"", dir);
+        _set_errno(0);
+        rc = do_tar(cmd);
+        switch ( rc ) {
+
+        case 1:
+            error(L"Failed: Stdin CreatePipe");
+            break;
+
+        case 2:
+            error(L"Failed: Stdin SetHandleInformation");
+            break;
+
+        case 3:
+            wchar_t* msg = compose(
+                L"Failed: Create child process (%ls)\n  => bsdtar missing?", cmd);
+            error(msg);
+            free(msg);
+            break;
+
+        case 4:
+            error(L"Failed: unpacking the app bundle");
+            break;
+
+        }
+    }
     free(cmd);
-    return 0;
+    return rc;
 }
 
 int CreateChildProcess(wchar_t* cmdline)
