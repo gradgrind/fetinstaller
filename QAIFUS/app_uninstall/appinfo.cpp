@@ -11,19 +11,17 @@ AppInfo::AppInfo() {}
 
 bool AppInfo::init()
 {
-    // If there is a command-line argument it must be the address of the installation to remove.
-    // This is only supported on Windows, where a program cannot delete its own files.
     // On Windows "app_uninstall0.exe" will copy the uninstaller, together with necessary
-    // library and plugin files, to a temporary directory. It will then run "app_uninstall.exe"
-    // in the temporary directory, passing the path to the installation to be removed as argument.
-    // The switch is done using the C function "_execl" so that the installer replaces the
-    // pre-installer.
+    // library and plugin files, to a temporary directory. It also places a link,
+    // "UNINSTALL_TARGET.lnk", to its own directory – the actual application directory –
+    // in this temporary directory. "app_uninstall.exe" then runs in the temporary directory.
+    // On Linux that is not necessary, "app_uninstall.exe" can delete its own directory.
 
     // Determine the installation's base directory, starting with the base directory of the
     // uninstaller (this program): "appdir".
     appdir.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
 #if defined Q_OS_WIN
-    // The uninstaller is expected to be in the root directory of the installation.
+    // The uninstaller is expected to be in the root directory.
 #else
     // The uninstaller is expected to be in the "_installer_" directory of the installation.
     appdir.cdUp();
