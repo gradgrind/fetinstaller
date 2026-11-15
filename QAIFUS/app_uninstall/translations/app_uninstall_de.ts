@@ -163,44 +163,56 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
 <context>
     <name>main</name>
     <message>
-        <location filename="../app_uninstall.cpp" line="47"/>
+        <location filename="../app_uninstall.cpp" line="56"/>
         <source>ADMIN user</source>
         <translation>Administrator</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="48"/>
+        <location filename="../app_uninstall.cpp" line="57"/>
         <source>The installer must be run as a normal user.</source>
         <translation>Das Installationsprogramm muss vom normalen Benutzer ohne Admin-Rechte gestartet werden.</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="68"/>
+        <location filename="../app_uninstall.cpp" line="64"/>
+        <source>Blocked</source>
+        <translation>Gesperrt</translation>
+    </message>
+    <message>
+        <location filename="../app_uninstall.cpp" line="65"/>
+        <source>It seems that another uninstaller process is running.
+Please finish that before starting this one.</source>
+        <translation>Anscheinend läuft schon ein Deinstallationsprozess.
+Bitte den anderen zu Ende führen, bevor ein neuer Versuch mit diesem gestartet wird.</translation>
+    </message>
+    <message>
+        <location filename="../app_uninstall.cpp" line="87"/>
         <source>Failed: Remove the temporary folder, %1</source>
         <translation>Fehlgeschlagen: Zwischenordner entfernen, %1</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="71"/>
+        <location filename="../app_uninstall.cpp" line="90"/>
         <source>Failed: delete folder %1</source>
         <comment>Do not use apostrophe, it will break the Powershell script!</comment>
         <translation>Fehlgeschlagen: Ordner löschen, %1</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="75"/>
+        <location filename="../app_uninstall.cpp" line="94"/>
         <source>Temporary folder not found: %1</source>
         <comment>Do not use apostrophe, it will break the Powershell script!</comment>
         <translation>Zwischenordner nicht gefunden: %1</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="79"/>
+        <location filename="../app_uninstall.cpp" line="98"/>
         <source>Error</source>
         <translation>Fehler</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="91"/>
+        <location filename="../app_uninstall.cpp" line="110"/>
         <source>Tidying</source>
         <translation>Aufräumen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="62"/>
+        <location filename="../app_uninstall.cpp" line="78"/>
         <source>Critical Error</source>
         <translation>Schwerwiegender Fahler</translation>
     </message>
