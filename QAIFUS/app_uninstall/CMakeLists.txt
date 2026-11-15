@@ -18,6 +18,8 @@ qt_add_executable(${this_target}
     deleteworker.h deleteworker.cpp
     unregister.cpp
     appinfo.cpp appinfo.h
+    checkinuse.cpp
+    checkinuse.h
 )
 
 include(../common2.cmake)
