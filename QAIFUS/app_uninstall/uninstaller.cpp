@@ -1,10 +1,23 @@
 #include "uninstaller.h"
 #include "ui_uninstaller.h"
+#include "checkinuse.h"
 
 #include <QFile>
 #include <QPushButton>
 #include <QTimer>
 #include <QProcess>
+
+static const char* UNINSTALL_INTRO = QT_TRANSLATE_NOOP("Uninstaller", R"(
+The folder above will be deleted.
+Also any associated items which were installed with this package,
+such as "start-menu" entries and file-ending associations,
+will be removed.
+)");
+
+static const char* UNINSTALL_BLOCKED = QT_TRANSLATE_NOOP("Uninstaller", R"(
+BLOCKED: Files in the folder above are in use by active processes.
+Before uninstalling this package, these processes must be terminated.
+)");
 
 static const char* UNINSTALL_INCOMPLETE = QT_TRANSLATE_NOOP("Uninstaller", R"(
 The installation folder could not be deleted:
@@ -34,7 +47,7 @@ Uninstaller::Uninstaller(AppInfo& app_info, QWidget *parent)
     connect(ui->buttonBox_1, &QDialogButtonBox::rejected, qApp, &QApplication::quit);
     connect(ui->buttonBox_2, &QDialogButtonBox::accepted, this, &QApplication::quit);
 
-    ui->appinstall_path->setText(app_info.basedir.path());
+    ui->appinstall_path->setText(app_info.basedir.path());   
 
     //NOTE: If the time is too short, a blank window might get shown at first ...
     QTimer::singleShot(100, this, &Uninstaller::page_1);
@@ -59,7 +72,12 @@ void Uninstaller::print_line(QString line, bool bold)
 void Uninstaller::page_1()
 {
     ui->stackedWidget->setCurrentIndex(0);
-    ui->text_1->clear();
+    if ( dirInUse(base_dir) != 0 ) {
+        ui->text_1->setPlainText(tr(UNINSTALL_BLOCKED));
+        ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(false);
+    } else {
+        ui->text_1->setPlainText(tr(UNINSTALL_INTRO));
+    }
 }
 
 void Uninstaller::page_2()

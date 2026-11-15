@@ -3,7 +3,6 @@
  */
 
 #include "checkinuse.h"
-#include <QDir>
 
 #if defined Q_OS_WIN
 
@@ -18,10 +17,9 @@
 BOOL GetProcessList();
 BOOL ListProcessModules(DWORD dwPID);
 
-uint dirInUse(QString dirpath)
+uint dirInUse(QDir dir)
 {
     //QString dirpath{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/Programs")};
-    QDir dir{dirpath};
 
     HANDLE hProcessSnap;
     HANDLE hProcess;
@@ -90,10 +88,9 @@ uint dirInUse(QString dirpath)
 
 #elif defined Q_OS_LINUX
 
-uint dirInUse(QString dirpath)
+uint dirInUse(QDir dir)
 {
     //QString dirpath{QDir::home().absoluteFilePath(".local/apps")};
-    QDir dir{dirpath};
     QDirListing dirList("/proc/", QDirListing::IteratorFlag::DirsOnly);
     for (const auto &dirEntry : dirList) {
         QDir pdir{dirEntry.absoluteFilePath()};

@@ -2,7 +2,8 @@
 #define CHECKINUSE_H
 
 #include <QCoreApplication>
+#include <QDir>
 
-uint dirInUse(QString dirpath);
+uint dirInUse(QDir dir);
 
 #endif // CHECKINUSE_H

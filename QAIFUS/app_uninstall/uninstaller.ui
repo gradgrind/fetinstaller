@@ -58,12 +58,6 @@
          <property name="readOnly">
           <bool>true</bool>
          </property>
-         <property name="plainText">
-          <string>The following folder will be deleted:
-%1
-
-Also any associated items which were installed with this package, such as &quot;start-menu&quot; entries and file-ending associations, will be removed.</string>
-         </property>
         </widget>
        </item>
        <item>

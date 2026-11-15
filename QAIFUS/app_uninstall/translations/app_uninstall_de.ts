@@ -4,41 +4,41 @@
 <context>
     <name>AppInfo</name>
     <message>
-        <location filename="../appinfo.cpp" line="38"/>
+        <location filename="../appinfo.cpp" line="36"/>
         <source>Missing link: %1</source>
         <translation>Fehlende Verknüpfung: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="45"/>
+        <location filename="../appinfo.cpp" line="43"/>
         <source>Invalid application folder: %1</source>
         <translation>Ungültiger Anwendungsordner: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="53"/>
+        <location filename="../appinfo.cpp" line="51"/>
         <source>Invalid command line:
   - %1</source>
         <translation>Ungültige Befehlszeile:
   - %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="60"/>
-        <location filename="../appinfo.cpp" line="69"/>
-        <location filename="../appinfo.cpp" line="76"/>
+        <location filename="../appinfo.cpp" line="58"/>
+        <location filename="../appinfo.cpp" line="67"/>
+        <location filename="../appinfo.cpp" line="74"/>
         <source>Critical</source>
         <translation>Schwerwiegender Fahler</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="60"/>
+        <location filename="../appinfo.cpp" line="58"/>
         <source>BUG, no ABOUT_QAIFUS file: %1</source>
         <translation>Programmfehler, ABOUT_QAIFUS-Datei fehlt: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="69"/>
+        <location filename="../appinfo.cpp" line="67"/>
         <source>BUG, no QAIFUS_VERSION: %1</source>
         <translation>Programmfehler, keine QAIFUS_VERSION: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="76"/>
+        <location filename="../appinfo.cpp" line="74"/>
         <source>BUG, no QAIFUS_INFO: %1</source>
         <translation>Programmfehler, keine QAIFUS_INFO: %1</translation>
     </message>
@@ -56,33 +56,48 @@
         <translation>Pfad des Anwendungsordners</translation>
     </message>
     <message>
-        <location filename="../uninstaller.ui" line="62"/>
-        <source>The following folder will be deleted:
-%1
-
-Also any associated items which were installed with this package, such as &quot;start-menu&quot; entries and file-ending associations, will be removed.</source>
-        <translation>Folgender Ordner wird gelöscht:
-%1
-
-Auch damit verbundene Objekte, die mit diesem Paket installiert wurden, z.B. &quot;Start-Menü&quot;-Einträge und Dateiendungszuordnungen, werden entfernt.</translation>
-    </message>
-    <message>
-        <location filename="../uninstaller.ui" line="72"/>
+        <location filename="../uninstaller.ui" line="66"/>
         <source>Do you really want to uninstall %1?</source>
         <translation>Soll %1 wirklich deinstalliert werden?</translation>
     </message>
     <message>
-        <location filename="../uninstaller.ui" line="161"/>
+        <location filename="../uninstaller.ui" line="155"/>
         <source>## Uninstall %1</source>
         <translation>## %1 deinstallieren</translation>
     </message>
     <message>
-        <location filename="../uninstaller.ui" line="174"/>
+        <location filename="../uninstaller.ui" line="168"/>
         <source>QAIFUS Installer Framework, Version %1</source>
         <translation>QAIFUS Installationswerkzeug, Version %1</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="9"/>
+        <location filename="../uninstaller.cpp" line="10"/>
+        <source>
+The folder above will be deleted.
+Also any associated items which were installed with this package,
+such as &quot;start-menu&quot; entries and file-ending associations,
+will be removed.
+</source>
+        <translation>
+Der oben aufgeführte Ordner wird gelöscht.
+Auch damit verbundene Objekte, die mit diesem Paket installiert wurden,
+z.B. &quot;Start-Menü&quot;-Einträge und Dateiendungszuordnungen,
+werden entfernt.
+</translation>
+    </message>
+    <message>
+        <location filename="../uninstaller.cpp" line="17"/>
+        <source>
+BLOCKED: Files in the folder above are in use by active processes.
+Before uninstalling this package, these processes must be terminated.
+</source>
+        <translation>
+GESPERRT: Dateien im oben aufgeführten Ordner werden von aktiven Prozessen benutzt.
+Bevor dieses Paket deinstalliert wird, müssen diese Prozesse beendet werden.
+</translation>
+    </message>
+    <message>
+        <location filename="../uninstaller.cpp" line="22"/>
         <source>
 The installation folder could not be deleted:
   %1
@@ -99,22 +114,22 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
 </translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="103"/>
+        <location filename="../uninstaller.cpp" line="121"/>
         <source>*** Remove installation files ***</source>
         <translation>*** Installationsdateien löschen ***</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="150"/>
+        <location filename="../uninstaller.cpp" line="168"/>
         <source>App successfully uninstalled.</source>
         <translation>Anwendung erfolgreich entfernt.</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="152"/>
+        <location filename="../uninstaller.cpp" line="170"/>
         <source>System files not uninstalled:</source>
         <translation>Systemdateien nicht entfernt:</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="154"/>
+        <location filename="../uninstaller.cpp" line="172"/>
         <source> - Couldn&apos;t remove %1</source>
         <translation> - %1 konnte nicht entfernt werden</translation>
     </message>
