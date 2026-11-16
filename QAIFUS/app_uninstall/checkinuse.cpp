@@ -17,9 +17,10 @@
 BOOL GetProcessList();
 BOOL ListProcessModules(DWORD dwPID);
 
-uint dirInUse(QDir dir)
+uint dirInUse(QDir dir, qint64 pid0)
 {
     //QString dirpath{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/Programs")};
+    // pid0 is not used here, any process using the directory must be found.
 
     HANDLE hProcessSnap;
     HANDLE hProcess;
@@ -88,7 +89,7 @@ uint dirInUse(QDir dir)
 
 #elif defined Q_OS_LINUX
 
-uint dirInUse(QDir dir)
+uint dirInUse(QDir dir, qint64 pid0)
 {
     //QString dirpath{QDir::home().absoluteFilePath(".local/apps")};
     QDirListing dirList("/proc/", QDirListing::IteratorFlag::DirsOnly);
@@ -101,8 +102,8 @@ uint dirInUse(QDir dir)
             QString f{link.fileInfo().symLinkTarget()};
             if ( !dir.relativeFilePath(f).startsWith("..") ) {
                 bool ok;
-                int pid = dirEntry.fileName().toInt(&ok);
-                if ( ok )
+                qint64 pid = dirEntry.fileName().toLongLong(&ok);
+                if ( ok && pid != pid0 )
                     return pid;
             }
         }

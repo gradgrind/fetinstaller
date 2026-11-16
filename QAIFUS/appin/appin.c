@@ -60,26 +60,23 @@ int main(int argc, char **argv)
         errno = 0;
     }
 
-    asprintf(&tmpdir, "%s/gradgrind_AppIn", tmp0);
-    if ( mkdir(tmpdir, 0700) != 0 ) {
+    for ( int i = 0; i < 5; ++i ) {
+        asprintf(&tmpdir, "%s/gradgrind_AppIn_%d_", tmp0, i);
+        if ( mkdir(tmpdir, 0700) == 0 ) {
+            break;
+        }
         free(tmpdir);
-        for ( int i = 0; i < 10; ++i ) {
-            asprintf(&tmpdir, "%s/gradgrind_AppIn_%d_", tmp0, i);
-            if ( mkdir(tmpdir, 0700) == 0 ) {
-                break;
-            }
-            free(tmpdir);
-            tmpdir = NULL;
-        }
-        if ( !tmpdir ) {
-            asprintf(&msgx,
-                "Temporary directory unavailable: %s/gradgrind_AppIn_?_", tmp0);
-            free(tmp0);
-            fatal();
-        }
-        // In this case, app_install should comment on this, actually
-        // there should be only one instance (per user).
+        tmpdir = NULL;
     }
+    if ( !tmpdir ) {
+        asprintf(&msgx,
+            "Temporary directory unavailable: %s/gradgrind_AppIn_?_", tmp0);
+        free(tmp0);
+        fatal();
+    }
+    // In this case, app_install should comment on this, actually
+    // there should be only one instance (per user).
+
     free(tmp0);
     errno = 0;
 

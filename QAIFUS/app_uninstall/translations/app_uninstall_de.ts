@@ -88,12 +88,12 @@ werden entfernt.
     <message>
         <location filename="../uninstaller.cpp" line="17"/>
         <source>
-BLOCKED: Files in the folder above are in use by active processes.
-Before uninstalling this package, these processes must be terminated.
+BLOCKED: Files in the folder above are in use by an active process.
+Before uninstalling this package, the process with ID %1 must be terminated.
 </source>
         <translation>
-GESPERRT: Dateien im oben aufgeführten Ordner werden von aktiven Prozessen benutzt.
-Bevor dieses Paket deinstalliert wird, müssen diese Prozesse beendet werden.
+GESPERRT: Dateien im oben aufgeführten Ordner werden von einem aktiven Prozess benutzt.
+Bevor dieses Paket deinstalliert wird, muss der Prozess mit ID %1 beendet werden.
 </translation>
     </message>
     <message>
@@ -114,22 +114,22 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
 </translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="121"/>
+        <location filename="../uninstaller.cpp" line="122"/>
         <source>*** Remove installation files ***</source>
         <translation>*** Installationsdateien löschen ***</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="168"/>
+        <location filename="../uninstaller.cpp" line="169"/>
         <source>App successfully uninstalled.</source>
         <translation>Anwendung erfolgreich entfernt.</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="170"/>
+        <location filename="../uninstaller.cpp" line="171"/>
         <source>System files not uninstalled:</source>
         <translation>Systemdateien nicht entfernt:</translation>
     </message>
     <message>
-        <location filename="../uninstaller.cpp" line="172"/>
+        <location filename="../uninstaller.cpp" line="173"/>
         <source> - Couldn&apos;t remove %1</source>
         <translation> - %1 konnte nicht entfernt werden</translation>
     </message>
@@ -163,56 +163,56 @@ Eine neue Installation wird nur möglich, wenn der Ordner nicht mehr existiert.
 <context>
     <name>main</name>
     <message>
-        <location filename="../app_uninstall.cpp" line="56"/>
+        <location filename="../app_uninstall.cpp" line="60"/>
         <source>ADMIN user</source>
         <translation>Administrator</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="57"/>
+        <location filename="../app_uninstall.cpp" line="61"/>
         <source>The installer must be run as a normal user.</source>
         <translation>Das Installationsprogramm muss vom normalen Benutzer ohne Admin-Rechte gestartet werden.</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="64"/>
+        <location filename="../app_uninstall.cpp" line="69"/>
         <source>Blocked</source>
         <translation>Gesperrt</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="65"/>
+        <location filename="../app_uninstall.cpp" line="70"/>
         <source>It seems that another uninstaller process is running.
 Please finish that before starting this one.</source>
         <translation>Anscheinend läuft schon ein Deinstallationsprozess.
 Bitte den anderen zu Ende führen, bevor ein neuer Versuch mit diesem gestartet wird.</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="87"/>
+        <location filename="../app_uninstall.cpp" line="93"/>
         <source>Failed: Remove the temporary folder, %1</source>
         <translation>Fehlgeschlagen: Zwischenordner entfernen, %1</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="90"/>
+        <location filename="../app_uninstall.cpp" line="96"/>
         <source>Failed: delete folder %1</source>
         <comment>Do not use apostrophe, it will break the Powershell script!</comment>
         <translation>Fehlgeschlagen: Ordner löschen, %1</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="94"/>
+        <location filename="../app_uninstall.cpp" line="100"/>
         <source>Temporary folder not found: %1</source>
         <comment>Do not use apostrophe, it will break the Powershell script!</comment>
         <translation>Zwischenordner nicht gefunden: %1</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="98"/>
+        <location filename="../app_uninstall.cpp" line="104"/>
         <source>Error</source>
         <translation>Fehler</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="110"/>
+        <location filename="../app_uninstall.cpp" line="116"/>
         <source>Tidying</source>
         <translation>Aufräumen</translation>
     </message>
     <message>
-        <location filename="../app_uninstall.cpp" line="78"/>
+        <location filename="../app_uninstall.cpp" line="84"/>
         <source>Critical Error</source>
         <translation>Schwerwiegender Fahler</translation>
     </message>

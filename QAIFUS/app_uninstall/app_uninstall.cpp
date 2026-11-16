@@ -40,12 +40,16 @@ int main(int argc, char *argv[])
         a.installTranslator(&translator);
     }
 
+    int cc{1}; // completion code (ok is 0)
     // Set up a lock-file to ensure that there is only one active uninstaller process.
     QString statedir{QStandardPaths::writableLocation(QStandardPaths::StateLocation)};
     //qInfo() << statedir;
     QDir{}.mkpath(statedir);
     QLockFile lockfile{statedir + "/lock"};
-    int cc{1};
+    lockfile.setStaleLockTime(0);
+    // Initialize paths
+    AppInfo appinfo;
+    bool init_ok = appinfo.init();
 
     // Test for admin privileges
     qunsetenv("XDG_CONFIG_DIRS"); // needed for some Linux environments, to ensure the test works.
@@ -55,31 +59,33 @@ int main(int argc, char *argv[])
             nullptr,
             QCoreApplication::translate("main", "ADMIN user"),
             QCoreApplication::translate("main", "The installer must be run as a normal user."));
-    } else {
-        lockfile.setStaleLockTime(0);
-        if ( !lockfile.tryLock() ) {
-            // Another uninstaller process is (probably) active.
-            QMessageBox::critical(
-                nullptr,
-                QCoreApplication::translate("main", "Blocked"),
-                QCoreApplication::translate("main",
-                    "It seems that another uninstaller process is running.\n"
-                    "Please finish that before starting this one."));
-        } else {
-            // Initialize paths
-            AppInfo appinfo;
-            if ( appinfo.init() ) {
-                Uninstaller w(appinfo);
-                w.show();
-                cc = QApplication::exec();
-            } else {
-                QMessageBox::critical(
-                    nullptr,
-                    QCoreApplication::translate("main", "Critical Error"),
-                    appinfo.error);
-            }
-        }
+        goto tidy;
     }
+
+    if ( !lockfile.tryLock() ) {
+        // Another uninstaller process is (probably) active.
+        QMessageBox::critical(
+            nullptr,
+            QCoreApplication::translate("main", "Blocked"),
+            QCoreApplication::translate("main",
+                "It seems that another uninstaller process is running.\n"
+                "Please finish that before starting this one."));
+        goto tidy;
+    }
+
+    // Initialize paths
+    if ( init_ok ) {
+        Uninstaller w(appinfo);
+        w.show();
+        cc = QApplication::exec();
+    } else {
+        QMessageBox::critical(
+            nullptr,
+            QCoreApplication::translate("main", "Critical Error"),
+            appinfo.error);
+    }
+
+tidy:
 
 #if defined Q_OS_WIN
     // Remove temporary directory.

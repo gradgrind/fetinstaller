@@ -118,14 +118,6 @@ void Installer::page_0()
 
     ui->buttonBox_0->button(QDialogButtonBox::Ok)->setEnabled(false);
 
-    // Check that this is not running from a directory ending with "_". That is used by the
-    // unpacker to signal that there may be another installer running. Strip the "_" to get the
-    // directory in question.
-    if ( src_dir.absolutePath().endsWith('_') ) {
-        addBoldLine(ui->messages_0, tr(UNPACKING_ERROR).arg(src_dir.absolutePath().removeLast()));
-        return;
-    }
-
     // Scan the app bundle.
     scanComplete =false;
     scanOk = false;
@@ -177,20 +169,9 @@ void Installer::page_0()
 
         linktest slink{testLink(rpath)};
         if ( !slink.message.isEmpty() ) {
-//TODO
-// link: error            // link: error or warning
-//            if ( slink.link.isEmpty() ) {
-                // error
             badfiles++;
             addBoldLine(ui->messages_0, slink.message);
             ui->messages_0->appendPlainText("");
-//            } else {
-//                // warning
-//                warnings++;
-//                ui->messages_0->appendPlainText(slink.message);
-//                ui->messages_0->appendPlainText("");
-//                installationLinks.append({slink.link, slink.target});
-//            }
         } else if ( !slink.link.isEmpty() ) {
             // valid link
             installationLinks.append({slink.link, slink.target});
@@ -369,7 +350,7 @@ void Installer::uninstallExisting()
     // The first stage, the copying, should be pretty quick, so I can use QProcess::execute.
     int e = QProcess::execute(uninstall_exe, QStringList{"--copy-only"});
     if ( e != 0 ) {
-        print_line(tr("Failed: copying the uninstaller: '%1'").arg(uninstall_exe), true);
+        print_line(tr("Failed: prepare the uninstaller: %1").arg(uninstall_exe), true);
         return;
     } else {
         QDir tmpdir0{QDir::temp()};
@@ -379,10 +360,11 @@ void Installer::uninstallExisting()
             QApplication::setOverrideCursor(Qt::WaitCursor);
             setEnabled(false);
             installationPartial = true;
-            uninstall_process.startCommand("\"" + tmpPath + "\"");
+            uninstall_process.setProgram(tmpPath);
+            uninstall_process.start();
             // The path to the installation to be removed should be available in the temporary directory.
         } else {
-            print_line(tr("Failed: starting the uninstaller: '%1'").arg(tmpPath), true);
+            print_line(tr("Failed: start the uninstaller: %1").arg(tmpPath), true);
             return;
         }
     }
@@ -391,7 +373,7 @@ void Installer::uninstallExisting()
     QApplication::setOverrideCursor(Qt::WaitCursor);
     setEnabled(false);
     installationPartial = true;
-    uninstall_process.startCommand(uninstall_exe);
+    uninstall_process.start(uninstall_exe);
     // The uninstaller should be running ... wait for the "finished" signal (-> uninstallDone())
 #endif
 }
@@ -539,7 +521,7 @@ void Installer::handleLinkCopied(QPair<QString, QString> filepaths)
 void Installer::handleLinkFailed(QPair<QString, QString> filepaths)
 {
     copyErrors.append(
-        tr("ERROR, could not link '%1' to: %2")
+        tr("ERROR, could not link: %1 -> %2")
             .arg(app_dir.filePath(filepaths.first),
                 app_dir.filePath(filepaths.second)));
 }
@@ -627,7 +609,7 @@ void Installer::page_4()
             ui->uninstall->appendPlainText(tr("Partial installation removed successfully"));
         } else {
             ui->uninstall->appendPlainText(
-                tr("Partial installation could not be fully removed: '%1'").arg(app_dir.absolutePath()));
+                tr("Partial installation could not be fully removed: %1").arg(app_dir.absolutePath()));
         }
 
         QApplication::restoreOverrideCursor();

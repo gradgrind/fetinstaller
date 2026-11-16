@@ -61,6 +61,8 @@ public:
     explicit Installer(QLocale locale, QWidget *parent = nullptr);
     ~Installer();
 
+    QDir src_dir;
+
 private slots:
     void page_0();
     void page_1();
@@ -113,7 +115,6 @@ private:
     InstallFiles installFiles; // files and directories to be installed
     QList<registerItem> registrationList;
     QStringList localfiles;
-    QDir src_dir;
     QDir dst_dir;
     QDir app_dir; // within dst_dir, the actual installation directory
     QString versioned_project; // app name + "-" + app version

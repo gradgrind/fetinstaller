@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QtEnvironmentVariables>
+#include "../app_uninstall/checkinuse.h"
 
 int main(int argc, char *argv[])
 {
@@ -32,10 +33,64 @@ int main(int argc, char *argv[])
             nullptr,
             QCoreApplication::translate("main", "ADMIN user"),
             QCoreApplication::translate("main", "The installer must be run as a normal user."));
-        return 1;
+        return 0;
     }
     Installer w(locale);
     if ( w.app_initialized ) {
+        // Check for "stale" temporary directories.
+        //qInfo() << "src_dir:" << w.src_dir.absolutePath();
+        QDir tmp{w.src_dir.absoluteFilePath("..")};
+        //qInfo() << "tmp:" << tmp.absolutePath();
+        QDirListing dirList(tmp.absolutePath(), QDirListing::IteratorFlag::DirsOnly);
+        for ( const auto &dirEntry : dirList ) {
+            //qInfo() << " ++" << dirEntry.absoluteFilePath();
+            if ( dirEntry.absoluteFilePath() != w.src_dir.absolutePath()
+                    && dirEntry.fileName().startsWith("gradgrind_AppIn_")) {
+                QDir oldtmp{dirEntry.absoluteFilePath()};
+                qint64 pid1 = dirInUse(oldtmp, -1);
+                if ( pid1 == 0 ) {
+                    // The directory is unused.
+                    // Offer to delete it.
+                    if ( QMessageBox::question(
+                        nullptr,
+                        QCoreApplication::translate("main", "Delete Folder?"),
+                        QCoreApplication::translate(
+                            "main",
+                             "A temporary folder seems to be left over from an\n"
+                             "earlier installation:\n   %1\n\n Delete it?")
+                                .arg(QDir::toNativeSeparators(
+                                    oldtmp.absolutePath()))) == QMessageBox::Yes )
+                    {
+                        oldtmp.removeRecursively();
+                        if ( oldtmp.exists() ) {
+                            QMessageBox::critical(
+                                nullptr,
+                                QCoreApplication::translate("main", "Failed"),
+                                QCoreApplication::translate(
+                                    "main",
+                                    "Failed: delete temporary folder: %1")
+                                        .arg(QDir::toNativeSeparators(oldtmp.absolutePath()))
+                            );
+                        }
+                    }
+                } else {
+                    // This is probably another installer.
+                    QMessageBox::critical(
+                        nullptr,
+                        QCoreApplication::translate("main", "Blocked"),
+                        QCoreApplication::translate(
+                            "main",
+                            "There seems to be another installer active,\n"
+                            "using the temporary folder: %1\n"
+                            "Please finish the process with ID %2 and try again.")
+                                .arg(QDir::toNativeSeparators(oldtmp.absolutePath()))
+                                .arg(pid1)
+                    );
+                    return 0;
+                }
+            }
+        }
+
         w.show();
         return QApplication::exec();
     }

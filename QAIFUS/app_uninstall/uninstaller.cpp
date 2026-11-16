@@ -15,8 +15,8 @@ will be removed.
 )");
 
 static const char* UNINSTALL_BLOCKED = QT_TRANSLATE_NOOP("Uninstaller", R"(
-BLOCKED: Files in the folder above are in use by active processes.
-Before uninstalling this package, these processes must be terminated.
+BLOCKED: Files in the folder above are in use by an active process.
+Before uninstalling this package, the process with ID %1 must be terminated.
 )");
 
 static const char* UNINSTALL_INCOMPLETE = QT_TRANSLATE_NOOP("Uninstaller", R"(
@@ -72,8 +72,9 @@ void Uninstaller::print_line(QString line, bool bold)
 void Uninstaller::page_1()
 {
     ui->stackedWidget->setCurrentIndex(0);
-    if ( dirInUse(base_dir) != 0 ) {
-        ui->text_1->setPlainText(tr(UNINSTALL_BLOCKED));
+    auto pid = dirInUse(base_dir, QCoreApplication::applicationPid());
+    if ( pid != 0 ) {
+        ui->text_1->setPlainText(tr(UNINSTALL_BLOCKED).arg(pid));
         ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(false);
     } else {
         ui->text_1->setPlainText(tr(UNINSTALL_INTRO));

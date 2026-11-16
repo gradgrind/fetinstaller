@@ -6,25 +6,31 @@
 #include <QProcess>
 #include <QSettings>
 #include <QMessageBox>
+#include "../app_uninstall/checkinuse.h"
 
 #if defined Q_OS_WIN
 //#include <process.h> // not using _execl
 #else
-#include <unistd.h>
+#include <unistd.h> // actually not relevant, the app is Windows only!
 #endif
 
 #define TMP_NAME "gradgrind_AppUnin"
 
 static const char* TMP_BUSY = QT_TRANSLATE_NOOP("Uninstall0", R"(
-The temporary folder is already in use: %1
-It could be in use by another uninstaller – if so, don't delete it!
-Also if it is in use by a completely different application (unlikely), don't delete it!
+The uninstaller's temporary folder is already in use:
+   %1
 
-The folder might have been left by a faulty run of the uninstaller.
+Before trying to run this uninstaller again, please stop the process,
+probably another uninstaller, with ID %2.)");
 
-Only if you are sure it is no longer in use should you delete it.
+static const char* TMP_REMAINS = QT_TRANSLATE_NOOP("Uninstall0", R"(
+The uninstaller's temporary folder exists already:
+   %1
 
-Delete this folder?)");
+It is probably just a remnant of an earlier unsuccessful uninstaller
+process, but please check before allowing it to be removed.
+
+Remove the folder?)");
 
 QDir appdir;
 QDir tmpdir;
@@ -64,10 +70,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Check no command-line arguments
+    // Check command-line arguments
     QStringList args = QCoreApplication::arguments();
     if ( args.length() == 2 && args.at(1) == "--copy-only" ) {
-        // The "copy-only" switch is to make it also possible on Windows for the installer to
+        // The "copy-only" switch is to make it possible on Windows for the installer to
         // wait for the uninstaller to complete. It can perform the two steps (copy to temporary
         // folder, then uninstall) separately, waiting for each to complete.
         copy_only = true;
@@ -90,61 +96,38 @@ int main(int argc, char *argv[])
     // simpler code can be used, with a fixed temporary folder.
 
     QDir tmpdir0{QDir::temp()};
-    QString tmpPath{tmpdir0.absoluteFilePath(TMP_NAME)};
-    if ( QFileInfo::exists(tmpPath) ) {
+    QDir tmpdir1{tmpdir0.absoluteFilePath(TMP_NAME)};
+    if ( !tmpdir0.mkdir(TMP_NAME) ) {
+        auto pid = dirInUse(tmpdir1, -1);
+        if ( pid != 0 ) {
+            error(QCoreApplication::translate(
+                "Uninstall0",
+                TMP_BUSY).arg(QDir::toNativeSeparators(tmpdir1.path())).arg(pid));
+            return 1;
+        }
+
         if ( QMessageBox::question(
                 nullptr,
                 QCoreApplication::translate("Uninstall0", "Delete Folder?"),
-                QCoreApplication::translate("Uninstall0", TMP_BUSY)
-                    .arg(QDir::toNativeSeparators(tmpPath))) == QMessageBox::Yes )
+                QCoreApplication::translate("Uninstall0", TMP_REMAINS)
+                    .arg(QDir::toNativeSeparators(tmpdir1.path()))) == QMessageBox::Yes )
         {
-            if ( !QDir{tmpPath}.removeRecursively() ) {
+            tmpdir1.removeRecursively();
+            if ( !tmpdir0.mkdir(TMP_NAME) ) {
                 error(QCoreApplication::translate(
                           "Uninstall0",
                           "Failed: delete temporary folder: %1")
-                            .arg(QDir::toNativeSeparators(tmpPath)));
+                          .arg(QDir::toNativeSeparators(tmpdir1.path())));
                 return 1;
             }
         } else {
             return 1;
         }
     }
-    if ( tmpdir0.mkdir(TMP_NAME) ) {
-        tmpdir.setPath(tmpPath);
-    } else {
-        error(QCoreApplication::translate(
-                  "Uninstall0",
-                  "Failed: create temporary folder: %1")
-                    .arg(QDir::toNativeSeparators(tmpPath)));
-        return 1;
-    }
-
- /* This is a sketch allowing multiple temporary folders. The inserted number could be returned as
- * completion code (for copy_only). Of course this is rather misusing the completion code idea,
- * but it is a rather simple way of handling the problem of how to return the temporary folder.
-
-    QString fmt{"AppUnIn_%1"};
-    int nn{0};
-    for ( int n = 10; n < 20; ++n ) {
-        QString tmpname = fmt.arg(n);
-        if ( tmpdir0.mkdir(tmpname) ) {
-            tmpdir.setPath(tmpdir0.absoluteFilePath(tmpname));
-            nn = n;
-            break;
-        }
-    }
-    if ( nn == 0 ) {
-        error(QCoreApplication::translate(
-            "Uninstall0",
-            "Couldn't create temporary folder.\nPerhaps too many are already in use:\n  %1")
-                .arg(tmpdir0.absoluteFilePath(fmt.arg("nn"))));
-        return 1;
-    }
-*/
+    tmpdir = tmpdir1;
 
     // Copy uninstaller to temporary directory.
     if ( uninstaller2tmp() ) {
-
 
 #if defined Q_OS_WIN
         // Create a link to appdir.absolutePath() in tmpdir
@@ -173,6 +156,7 @@ int main(int argc, char *argv[])
                   "Uninstall0",
                   "Couldn't start uninstaller: %1").arg(QDir::toNativeSeparators(cmd)));
 #else
+        // Actually, this bit is superfluous because the whole app is only for Windows!
         // The uninstaller is expected to be in the "bin" directory of the installation.
         QByteArray cmdbytes{tmpdir.absoluteFilePath("bin/app_uninstall.exe").toLocal8Bit()};
         const char* cmd = cmdbytes.constData();

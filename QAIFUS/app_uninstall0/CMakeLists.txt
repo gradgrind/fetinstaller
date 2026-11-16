@@ -15,6 +15,7 @@ qt_add_executable(${this_target}
     WIN32
     ${app_icon_resource_windows}
     app_uninstall0.cpp
+    ../app_uninstall/checkinuse.cpp ../app_uninstall/checkinuse.h
 )
 
 include(../common2.cmake)

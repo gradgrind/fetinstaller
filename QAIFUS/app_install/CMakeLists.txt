@@ -19,6 +19,7 @@ qt_add_executable(${this_target}
     symlinks.cpp
     register.cpp
     appinfo.h appinfo.cpp
+    ../app_uninstall/checkinuse.h ../app_uninstall/checkinuse.cpp
 )
 
 include(../common2.cmake)

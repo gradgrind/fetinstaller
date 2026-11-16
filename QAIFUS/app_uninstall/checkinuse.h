@@ -4,6 +4,6 @@
 #include <QCoreApplication>
 #include <QDir>
 
-uint dirInUse(QDir dir);
+uint dirInUse(QDir dir, qint64 pid0);
 
 #endif // CHECKINUSE_H
