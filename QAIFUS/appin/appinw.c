@@ -87,21 +87,22 @@ tmpok:
     }
 
     // Create the temporary directory.
-    wchar_t* tmpdir = compose(L"%ls\\gradgrind_AppIn", tmp0);
-    if ( _wmkdir(tmpdir) != 0 ) {
-        free(tmpdir);
-        tmpdir = compose(L"%ls\\gradgrind_AppIn_", tmp0);
-        if ( _wmkdir(tmpdir) != 0 ) {
-            wchar_t* msgx = compose(L"Temporary directory unavailable: %ls\n", tmpdir);
-            free(tmpdir);
-            tmpdir = NULL;
-            error(msgx);
-            free(msgx);
-            return 1;
+    wchar_t* tmpdir = NULL;
+    for ( int i = 0; i < 5; ++i ) {
+        wchar_t* tmpdir = compose(L"%ls\\gradgrind_AppIn_%d_", tmp0, i);
+        if ( _wmkdir(tmpdir) == 0 ) {
+            break;
         }
-        // In this case, app_install should comment on this, actually
-        // there should be only one instance per user.
+        free(tmpdir);
+        tmpdir = NULL;
     }
+    if ( !tmpdir ) {
+        msgx = compose(L"Temporary directory unavailable: %ls\\gradgrind_AppIn_?_", tmp0);
+        free(tmp0);
+        fatal();
+    }
+    free(tmp0);
+    _set_errno(0);
 
     // Unpack the app bundle.
     int rc = unpack(tmpdir);

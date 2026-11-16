@@ -168,127 +168,127 @@ To proceed, uninstall the existing app.</source>
 Um fortzufahren, muss die schon vorhandene Anwendung deinstalliert werden.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="214"/>
+        <location filename="../installer.cpp" line="195"/>
         <source>ERROR, file not readable: %1</source>
         <translation>FEHLER, Datei nicht lesbar: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="221"/>
+        <location filename="../installer.cpp" line="202"/>
         <source>ERROR, invalid &apos;file&apos;: %1</source>
         <translation>FEHLER, ungültige „Datei“: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="246"/>
+        <location filename="../installer.cpp" line="227"/>
         <source>%1 invalid files – installation is not recommended, rather fix the source!</source>
         <translation>%1 ungültige Dateien – lieber nicht installieren, sondern die Quellen reparieren!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="252"/>
+        <location filename="../installer.cpp" line="233"/>
         <source>%1 invalid files – please fix the source!</source>
         <translation>%1 ungültige Dateien – bitte die Quellen reparieren!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="294"/>
+        <location filename="../installer.cpp" line="275"/>
         <source>Open Directory</source>
         <translation>Ordner öffnen</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="318"/>
+        <location filename="../installer.cpp" line="299"/>
         <source>Destination not a folder: %1</source>
         <translation>Das Ziel ist kein Ordner: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="331"/>
+        <location filename="../installer.cpp" line="312"/>
         <source>A &apos;versioned&apos; installation might, however, be possible.</source>
         <translation>Eine mit Versionsnummer versehene Installation wäre u.U. möglich.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="338"/>
+        <location filename="../installer.cpp" line="319"/>
         <source>Destination not empty: %1</source>
         <translation>Das Ziel ist nicht leer: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="342"/>
+        <location filename="../installer.cpp" line="323"/>
         <source>To use the destination, uninstall the existing app.</source>
         <translation>Um dieses Ziel zu verwenden, muss die schon vorhandene Anwendung deinstalliert werden.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="350"/>
+        <location filename="../installer.cpp" line="331"/>
         <source>Warning: the app will be unpacked only, there will be no system integration.</source>
         <translation>Warnung: Die Anwendung wird nur entpackt, es erfolgt keinerlei Systemintegration.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="354"/>
+        <location filename="../installer.cpp" line="335"/>
         <source>--&gt; &apos;Registration&apos; not possible.</source>
         <translation>--&gt; Eine „Registrierung“ ist nicht möglich.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="372"/>
+        <location filename="../installer.cpp" line="353"/>
         <source>Failed: prepare the uninstaller: %1</source>
         <translation>Fehlgeschlagen: das Installationsprogramm vorbereiten: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="386"/>
+        <location filename="../installer.cpp" line="367"/>
         <source>Failed: start the uninstaller: %1</source>
         <translation>Fehlgeschlagen: Das Installationsprogramm starten: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="631"/>
+        <location filename="../installer.cpp" line="612"/>
         <source>Partial installation could not be fully removed: %1</source>
         <translation>Teilinstallation konnte nicht vollständig entfernt werden: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="405"/>
+        <location filename="../installer.cpp" line="386"/>
         <source>Failed: uninstall (%1)</source>
         <translation>Fehlgeschlagen: Deinstallieren (%1)</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="493"/>
+        <location filename="../installer.cpp" line="474"/>
         <source>ERROR, directory exists already: %1</source>
         <translation>FEHLER, Ordner existiert schon: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="543"/>
+        <location filename="../installer.cpp" line="524"/>
         <source>ERROR, could not link: %1 -&gt; %2</source>
         <translation>FEHLER, Verknüpfung konnte nicht erstellt werden: %1 -&gt; %2</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="555"/>
+        <location filename="../installer.cpp" line="536"/>
         <source>Unpacking successful!</source>
         <translation>Entpacken erfolgreich!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="572"/>
+        <location filename="../installer.cpp" line="553"/>
         <source>Installation successful!</source>
         <translation>Installation erfolgreich!</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="581"/>
+        <location filename="../installer.cpp" line="562"/>
         <source>ERROR, could not create the &apos;system_files&apos; list</source>
         <translation>FEHLER, die Listendatei „system_files“ konnte nicht erstellt werden</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="584"/>
+        <location filename="../installer.cpp" line="565"/>
         <source>App registration failed.</source>
         <translation>Anwendungsregistrierung schlug fehl.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="600"/>
+        <location filename="../installer.cpp" line="581"/>
         <source>(Recovery:) Removal failed: %1</source>
         <translation>(Wiederherstellung:) Entfernung schlug fehl: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="611"/>
+        <location filename="../installer.cpp" line="592"/>
         <source>%1 installation errors</source>
         <translation>%1 Installationsfehler</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="628"/>
+        <location filename="../installer.cpp" line="609"/>
         <source>Partial installation removed successfully</source>
         <translation>Teilinstallation erfolgreich entfernt</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="428"/>
+        <location filename="../installer.cpp" line="409"/>
         <source>Destination not writable: %1</source>
         <translation>Ziel nicht schreibbar: %1</translation>
     </message>
@@ -329,17 +329,17 @@ Bitte überprüfen, ob das Installationspaket korrumpiert wurde.&lt;br&gt;
 Gegebenenfalls den Auslieferer kontaktieren.</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="358"/>
+        <location filename="../installer.cpp" line="339"/>
         <source>Warning: this &apos;versioned&apos; installation will add no file-type association</source>
         <translation>Warnung: eine mit Versionsnummer versehenen Installation wird keine Dateientyp-Endung registrieren</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="498"/>
+        <location filename="../installer.cpp" line="479"/>
         <source>ERROR, could not create directory: %1</source>
         <translation>FEHLER, Ordner konnte nicht erstellt werden: %1</translation>
     </message>
     <message>
-        <location filename="../installer.cpp" line="531"/>
+        <location filename="../installer.cpp" line="512"/>
         <source>ERROR, could not copy file to: %1</source>
         <translation>FEHLER, Datei konnte nicht kopiert werden. Ziel: %1</translation>
     </message>
@@ -551,14 +551,56 @@ Anscheinend ist die Anwendung schon anderweitig installiert.</translation>
 <context>
     <name>main</name>
     <message>
-        <location filename="../app_install.cpp" line="33"/>
+        <location filename="../app_install.cpp" line="34"/>
         <source>ADMIN user</source>
         <translation>Administrator</translation>
     </message>
     <message>
-        <location filename="../app_install.cpp" line="34"/>
+        <location filename="../app_install.cpp" line="35"/>
         <source>The installer must be run as a normal user.</source>
         <translation>Die Installation muss als normaler Benutzer durchgeführt werden.</translation>
+    </message>
+    <message>
+        <location filename="../app_install.cpp" line="56"/>
+        <source>Delete Folder?</source>
+        <translation>Ordner löschen?</translation>
+    </message>
+    <message>
+        <location filename="../app_install.cpp" line="57"/>
+        <source>A temporary folder seems to be left over from an
+earlier installation:
+   %1
+
+ Delete it?</source>
+        <translation>Ein Zwischenordner ist anscheinend von einem früheren
+Installlationsvorgang übrig geblieben:
+   %1
+
+ Löschen?</translation>
+    </message>
+    <message>
+        <location filename="../app_install.cpp" line="68"/>
+        <source>Failed</source>
+        <translation>Fehlgeschlagen</translation>
+    </message>
+    <message>
+        <location filename="../app_install.cpp" line="69"/>
+        <source>Failed: delete temporary folder: %1</source>
+        <translation>Fehlgeschlagen: Zwischenordner löschen: %1</translation>
+    </message>
+    <message>
+        <location filename="../app_install.cpp" line="80"/>
+        <source>Blocked</source>
+        <translation>Gesperrt</translation>
+    </message>
+    <message>
+        <location filename="../app_install.cpp" line="81"/>
+        <source>There seems to be another installer active,
+using the temporary folder: %1
+Please finish the process with ID %2 and try again.</source>
+        <translation>Anscheinend ist ein anderer Installationsprozess aktiv,
+der folgenden Zwischenordner benutzt: %1
+Bitte den Prozess mit ID %2 beenden und noch einmal versuchen.</translation>
     </message>
 </context>
 </TS>

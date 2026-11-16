@@ -74,9 +74,6 @@ int main(int argc, char **argv)
         free(tmp0);
         fatal();
     }
-    // In this case, app_install should comment on this, actually
-    // there should be only one instance (per user).
-
     free(tmp0);
     errno = 0;
 
