@@ -89,7 +89,7 @@ tmpok:
     // Create the temporary directory.
     wchar_t* tmpdir = NULL;
     for ( int i = 0; i < 5; ++i ) {
-        wchar_t* tmpdir = compose(L"%ls\\gradgrind_AppIn_%d_", tmp0, i);
+        tmpdir = compose(L"%ls\\gradgrind_AppIn_%d_", tmp0, i);
         if ( _wmkdir(tmpdir) == 0 ) {
             break;
         }
@@ -98,10 +98,10 @@ tmpok:
     }
     if ( !tmpdir ) {
         msgx = compose(L"Temporary directory unavailable: %ls\\gradgrind_AppIn_?_", tmp0);
-        free(tmp0);
-        fatal();
+        error(msgx);
+        free(msgx);
+        return 1;
     }
-    free(tmp0);
     _set_errno(0);
 
     // Unpack the app bundle.
