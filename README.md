@@ -30,7 +30,7 @@ The reason to restrict the scope to C++/Qt GUI applications is that the installe
 
 Using basically the same framework for building the installer as is used for the application itself should make the whole process easier to learn and more transparent, when compared to using other tools with obscure configuration languages (e.g. NSIS). It should also be relatively straightforward to customise the installer/uninstaller to suit the needs of a particular application.
 
-The installer and uninstaller are built using CMAKE, which is the standard tool for Qt, so this should also be the preferred tool for building the application itself. It should then be easy to ensure that the libraries, plugins, etc., get stored in the correct places.
+The installer and uninstaller are built using CMake, which is the standard tool for Qt, so this should also be the preferred tool for building the application itself. It should then be easy to ensure that the libraries, plugins, etc., get stored in the correct places.
 
 ## Including the application package together with installer in an executable unpacker
 

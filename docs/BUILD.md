@@ -60,6 +60,6 @@ The installation package in "build/app_bundle" is then compressed ("tar.xz") and
 
 ### Requirements
 
- - Qt development files from the Qt Online Installer (in their default installation location) – only the base libraries, CMake and Mingw (currently version 1310, see file `common_base.ps1`) are required.
+ - Qt development files from the Qt Online Installer (in their default installation location) – only the base libraries, CMake, Ninja and Mingw (currently version 1310, see file `common_base.ps1`) are required.
 
  - A `tar` command with support for "xz" compression – the built-in version on Windows 11 should be adequate. Otherwise `bsdtar` can be installed – if the script finds `bsdtar` it "prefers" it to `tar`.

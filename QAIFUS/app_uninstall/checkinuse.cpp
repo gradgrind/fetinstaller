@@ -71,8 +71,9 @@ uint dirInUse(QDir dir, qint64 pid0)
 
         // Now walk the module list of the process, looking for file within `dir`
         do {
-            QString f{QString::fromWCharArray(me32.szExePath)};
-            if ( !dir.relativeFilePath(f).startsWith("..") ) {
+            QString f{QDir::fromNativeSeparators(QString::fromWCharArray(me32.szExePath))};
+            QString fr{dir.relativeFilePath(f)};
+            if ( !fr.startsWith("..") && dir.isRelativePath(fr) ) {
                 pid = dwPID;
                 break;
             }
@@ -100,7 +101,8 @@ uint dirInUse(QDir dir, qint64 pid0)
             QDirListing::IteratorFlag::ResolveSymlinks | QDirListing::IteratorFlag::IncludeBrokenSymlinks);
         for (const auto &link : mapfiles) {
             QString f{link.fileInfo().symLinkTarget()};
-            if ( !dir.relativeFilePath(f).startsWith("..") ) {
+            QString fr{dir.relativeFilePath(f)};
+            if ( !fr.startsWith("..") && dir.isRelativePath(fr) ) {
                 bool ok;
                 qint64 pid = dirEntry.fileName().toLongLong(&ok);
                 if ( ok && pid != pid0 )
