@@ -76,6 +76,7 @@ void Uninstaller::page_1()
     if ( pid != 0 ) {
         ui->text_1->setPlainText(tr(UNINSTALL_BLOCKED).arg(pid));
         ui->buttonBox_1->button(QDialogButtonBox::Ok)->setEnabled(false);
+        ui->label_page_1->hide();
     } else {
         ui->text_1->setPlainText(tr(UNINSTALL_INTRO));
     }

@@ -9,7 +9,8 @@
 #if defined Q_OS_WIN
 #include <process.h>
 
-// A Powershell command to remove the temporary directory, reporting an error if it didn't work.
+// A Powershell command to remove the temporary directory,
+// reporting an error if it didn't work.
 const QString PSCMD{R"(
 if ( Test-Path -LiteralPath '%1' ) {
     Remove-Item -LiteralPath '%1' -Recurse -Force;
@@ -28,7 +29,8 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    // Allow the language for translation to be read from the environment variable "QTLANG".
+    // Allow the language for translation to be read from the environment
+    // variable "QTLANG".
     auto locale = QLocale(qEnvironmentVariable("QTLANG"));
     if ( locale.language() == QLocale::C ) {
         // No valid language was found.
@@ -51,14 +53,18 @@ int main(int argc, char *argv[])
     AppInfo appinfo;
     bool init_ok = appinfo.init();
 
-    // Test for admin privileges
-    qunsetenv("XDG_CONFIG_DIRS"); // needed for some Linux environments, to ensure the test works.
+    // Test for admin privileges.
+
+    // Needed for some Linux environments, to ensure the test works:
+    qunsetenv("XDG_CONFIG_DIRS");
+
     QSettings settings(QSettings::SystemScope, "gradgrind", "app_installer");
     if ( settings.isWritable() ) {
         QMessageBox::critical(
             nullptr,
             QCoreApplication::translate("main", "ADMIN user"),
-            QCoreApplication::translate("main", "The installer must be run as a normal user."));
+            QCoreApplication::translate(
+                "main", "The installer must be run as a normal user."));
         goto tidy;
     }
 
@@ -90,26 +96,30 @@ tidy:
 #if defined Q_OS_WIN
     // Remove temporary directory.
     QString dpath{QDir::toNativeSeparators(appinfo.appdir.absolutePath())};
-    QString msgFail{QCoreApplication::translate("main", "Failed: Remove the temporary folder, %1")
+    QString msgFail{QCoreApplication::translate(
+        "main", "Failed: Remove the temporary folder, %1")
             .arg(dpath)};
     dpath.replace('\'', "''");    // escape apostrophes
     QString emsg{QCoreApplication::translate(
-                     "main",
-                     "Failed: delete folder %1",
-                     "Do not use apostrophe, it will break the Powershell script!").arg(dpath)};
+        "main",
+        "Failed: delete folder %1",
+        "Do not use apostrophe, it will break the Powershell script!").arg(dpath)};
     QString emsg0{QCoreApplication::translate(
-                     "main",
-                     "Temporary folder not found: %1",
-                     "Do not use apostrophe, it will break the Powershell script!").arg(dpath)};
-    QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"), emsg, emsg0)};
+        "main",
+        "Temporary folder not found: %1",
+        "Do not use apostrophe, it will break the Powershell script!").arg(dpath)};
+    QString cmd{PSCMD.arg(dpath, QCoreApplication::translate("main", "Error"),
+         emsg, emsg0)};
     /*
         QMessageBox::information(
             nullptr,
             QCoreApplication::translate("main", "Powershell"),
             cmd);
     */
-    _wexeclp(L"powershell", L"powershell", L"-WindowStyle", L"Hidden", L"-Command", cmd.data(), (wchar_t*) NULL);
-    //_wexeclp(L"powershell", L"powershell", L"-NoExit", L"-Command", cmd.data(), (wchar_t*) NULL);
+    _wexeclp(L"powershell", L"powershell", L"-WindowStyle", L"Hidden", L"-Command",
+        cmd.data(), (wchar_t*) NULL);
+    //_wexeclp(L"powershell", L"powershell", L"-NoExit", L"-Command",
+    //    cmd.data(), (wchar_t*) NULL);
     // Shouldn't return!
     QMessageBox::critical(
         nullptr,

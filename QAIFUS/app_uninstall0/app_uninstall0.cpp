@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
         copy_only = true;
     } else if ( args.length() != 1 ) {
         error(QCoreApplication::translate(
-                  "Uninstall0",
-                  "Invalid command line:\n  - %1").arg(args.join("\n  - ")));
+            "Uninstall0",
+            "Invalid command line:\n  - %1").arg(args.join("\n  - ")));
         return 1;
     }
 
@@ -96,35 +96,34 @@ int main(int argc, char *argv[])
     // simpler code can be used, with a fixed temporary folder.
 
     QDir tmpdir0{QDir::temp()};
-    QDir tmpdir1{tmpdir0.absoluteFilePath(TMP_NAME)};
+    tmpdir.setPath(tmpdir0.absoluteFilePath(TMP_NAME));
     if ( !tmpdir0.mkdir(TMP_NAME) ) {
-        auto pid = dirInUse(tmpdir1, -1);
+        auto pid = dirInUse(tmpdir, -1);
         if ( pid != 0 ) {
             error(QCoreApplication::translate(
                 "Uninstall0",
-                TMP_BUSY).arg(QDir::toNativeSeparators(tmpdir1.path())).arg(pid));
+                TMP_BUSY).arg(QDir::toNativeSeparators(tmpdir.path())).arg(pid));
             return 1;
         }
 
         if ( QMessageBox::question(
-                nullptr,
-                QCoreApplication::translate("Uninstall0", "Delete Folder?"),
-                QCoreApplication::translate("Uninstall0", TMP_REMAINS)
-                    .arg(QDir::toNativeSeparators(tmpdir1.path()))) == QMessageBox::Yes )
+            nullptr,
+            QCoreApplication::translate("Uninstall0", "Delete Folder?"),
+            QCoreApplication::translate("Uninstall0", TMP_REMAINS)
+                .arg(QDir::toNativeSeparators(tmpdir.path()))) == QMessageBox::Yes )
         {
-            tmpdir1.removeRecursively();
+            tmpdir.removeRecursively();
             if ( !tmpdir0.mkdir(TMP_NAME) ) {
                 error(QCoreApplication::translate(
-                          "Uninstall0",
-                          "Failed: delete temporary folder: %1")
-                          .arg(QDir::toNativeSeparators(tmpdir1.path())));
+                "Uninstall0",
+                "Failed: delete temporary folder: %1")
+                    .arg(QDir::toNativeSeparators(tmpdir.path())));
                 return 1;
             }
         } else {
             return 1;
         }
     }
-    tmpdir = tmpdir1;
 
     // Copy uninstaller to temporary directory.
     if ( uninstaller2tmp() ) {
@@ -133,10 +132,10 @@ int main(int argc, char *argv[])
         // Create a link to appdir.absolutePath() in tmpdir
         if ( !QFile::link(appdir.absolutePath(), tmpdir.filePath("UNINSTALL_TARGET.lnk")) ) {
             error(QCoreApplication::translate(
-                      "Uninstall0",
-                      "Failed: link to target: %1 -> %2")
-                      .arg(QDir::toNativeSeparators(tmpdir.filePath("UNINSTALL_TARGET.lnk"))
-                           , QDir::toNativeSeparators(appdir.absolutePath())));
+                "Uninstall0",
+                "Failed: link to target: %1 -> %2")
+                    .arg(QDir::toNativeSeparators(tmpdir.filePath("UNINSTALL_TARGET.lnk"))
+                        , QDir::toNativeSeparators(appdir.absolutePath())));
             goto recover;
         }
 #endif
@@ -153,19 +152,19 @@ int main(int argc, char *argv[])
             return 0;
         }
         error(QCoreApplication::translate(
-                  "Uninstall0",
-                  "Couldn't start uninstaller: %1").arg(QDir::toNativeSeparators(cmd)));
+            "Uninstall0",
+            "Couldn't start uninstaller: %1").arg(QDir::toNativeSeparators(cmd)));
 #else
         // Actually, this bit is superfluous because the whole app is only for Windows!
-        // The uninstaller is expected to be in the "bin" directory of the installation.
-        QByteArray cmdbytes{tmpdir.absoluteFilePath("bin/app_uninstall.exe").toLocal8Bit()};
+        // The uninstaller is expected to be in the "_installer_" directory of the installation.
+        QByteArray cmdbytes{tmpdir.absoluteFilePath("_installer_/app_uninstall.exe").toLocal8Bit()};
         const char* cmd = cmdbytes.constData();
         QByteArray arg1{appdir.absolutePath().toLocal8Bit()};
         execl(cmd, cmd, arg1.constData(), (char*) NULL);
         // execl doesn't return, if it works.
         error(QCoreApplication::translate(
-                  "Uninstall0",
-                  "Failed: switch to uninstaller in %1").arg(tmpdir.absolutePath()));
+            "Uninstall0",
+            "Failed: switch to uninstaller in %1").arg(tmpdir.absolutePath()));
 #endif
     }
 
@@ -181,9 +180,9 @@ bool delTmp() {
     if ( tmpdir.removeRecursively() )
         return true;
     error(QCoreApplication::translate(
-              "Uninstall0",
-              "Failed: Remove temporary folder: %1")
-                .arg(QDir::toNativeSeparators(tmpdir.absolutePath())));
+        "Uninstall0",
+        "Failed: Remove temporary folder: %1")
+            .arg(QDir::toNativeSeparators(tmpdir.absolutePath())));
     return false;
 }
 
@@ -217,8 +216,9 @@ bool uninstaller2tmp()
         elist.append(e);
     }
     for ( const auto &dirEntry : QDirListing(
-             appdir.absolutePath(),
-             QDirListing::IteratorFlag::FilesOnly ) ) {
+        appdir.absolutePath(),
+        QDirListing::IteratorFlag::FilesOnly ) )
+    {
         // Only regular files ...
         const QString fileName = dirEntry.fileName();
         if ( fileName.endsWith(".dll") ) {
@@ -230,9 +230,10 @@ bool uninstaller2tmp()
     }
     // Add plugins
     for ( const auto &dirEntry : QDirListing(
-             appdir.absoluteFilePath("plugins"),
-             QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive) ) {
-        // Only regular files ...
+        appdir.absoluteFilePath("plugins"),
+        QDirListing::IteratorFlag::FilesOnly | QDirListing::IteratorFlag::Recursive) )
+    {
+        // Only "regular" files are copied
         e = copyfile(appdir.relativeFilePath(dirEntry.absoluteFilePath()));
         if ( !e.isEmpty() ) {
             elist.append(e);
@@ -242,9 +243,9 @@ bool uninstaller2tmp()
         return true;
     }
     error(QCoreApplication::translate(
-              "Uninstall0",
-              "Failed: copy file(s) to temporary folder:\n - %1")
-                .arg(elist.join("\n - ")));
+        "Uninstall0",
+        "Failed: copy file(s) to temporary folder:\n - %1")
+            .arg(elist.join("\n - ")));
     return false;
 #else
     error("Not implemented: uninstaller2tmp()");
