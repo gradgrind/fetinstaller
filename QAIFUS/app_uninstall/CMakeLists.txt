@@ -20,6 +20,7 @@ qt_add_executable(${this_target}
     appinfo.cpp appinfo.h
     checkinuse.cpp
     checkinuse.h
+    tmpdir.h
 )
 
 include(../common2.cmake)

@@ -7,14 +7,13 @@
 #include <QSettings>
 #include <QMessageBox>
 #include "../app_uninstall/checkinuse.h"
+#include "../app_uninstall/tmpdir.h"
 
 #if defined Q_OS_WIN
 //#include <process.h> // not using _execl
 #else
 #include <unistd.h> // actually not relevant, the app is Windows only!
 #endif
-
-#define TMP_NAME "gradgrind_AppUnin"
 
 static const char* TMP_BUSY = QT_TRANSLATE_NOOP("Uninstall0", R"(
 The uninstaller's temporary folder is already in use:
@@ -95,7 +94,7 @@ int main(int argc, char *argv[])
     // As it is perhaps not really necessary to allow two uninstallers to run at the same time,
     // simpler code can be used, with a fixed temporary folder.
 
-    QDir tmpdir0{QDir::temp()};
+    QDir tmpdir0{get_tmp_path()};
     tmpdir.setPath(tmpdir0.absoluteFilePath(TMP_NAME));
     if ( !tmpdir0.mkdir(TMP_NAME) ) {
         auto pid = dirInUse(tmpdir, -1);

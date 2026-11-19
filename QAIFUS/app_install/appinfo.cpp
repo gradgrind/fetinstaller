@@ -26,18 +26,12 @@ AppInfo::AppInfo()
 #endif
 }
 
-bool AppInfo::read0(QSettings& appsettings, QString& var, QString key, bool critical)
+bool AppInfo::read0(QSettings& appsettings, QString& var, QString key)
 {
     auto val = appsettings.value(key);
     if ( val.isValid() ) {
         var = val.toString();
         return true;
-    }
-    if ( critical ) {
-        QMessageBox::critical(
-            nullptr,
-            tr("Critical"),
-            tr("Configuration Error, no '%1': '%2'").arg(key, appconf));
     }
     return false;
 }
@@ -55,13 +49,13 @@ bool AppInfo::reados(QSettings& appsettings, QString& var, QString key)
     return false;
 }
 
-bool AppInfo::read(QSettings& appsettings, QString& var, QString key, bool critical)
+bool AppInfo::read(QSettings& appsettings, QString& var, QString key)
 // Read a setting, trying the `ostype` section first, falling back to the top level.
 {
     if ( reados(appsettings, var, key) ) {
         return true;
     }
-    return read0(appsettings, var, key, critical);
+    return read0(appsettings, var, key);
 }
 
 bool AppInfo::init(QLocale locale)
@@ -96,10 +90,18 @@ bool AppInfo::init(QLocale locale)
     }
     QSettings appsettings{appconf, QSettings::IniFormat};
 
-    if ( !read(appsettings, PROJECTNAME, "PROJECT", true) )
+    if ( !read(appsettings, PROJECTNAME, "PROJECT") )
+        QMessageBox::critical(
+            nullptr,
+            tr("Critical"),
+            tr("Configuration Error, no '%1': '%2'").arg("PROJECT", appconf));
         return false;
 
-    if ( !read(appsettings, PROJECTVERSION, "VERSION", true) )
+    if ( !read(appsettings, PROJECTVERSION, "VERSION") )
+        QMessageBox::critical(
+            nullptr,
+            tr("Critical"),
+            tr("Configuration Error, no '%1': '%2'").arg("VERSION", appconf));
         return false;
 
     // PROJECTLONGNAME is optional, if possible, get a translated version.

@@ -8,6 +8,7 @@
 
 #if defined Q_OS_WIN
 #include <process.h>
+#include "tmpdir.h"
 
 // A Powershell command to remove the temporary directory,
 // reporting an error if it didn't work.
@@ -94,7 +95,21 @@ int main(int argc, char *argv[])
 tidy:
 
 #if defined Q_OS_WIN
-    // Remove temporary directory.
+    // Remove temporary directory, if it is one ...
+    QDir tmpdir0{get_tmp_path()};
+    // The temporary directory is fixed.
+    if ( appinfo.appdir.absolutePath() != tmpdir0.absoluteFilePath(TMP_NAME) ) {
+        QMessageBox::warning(
+            nullptr,
+            QCoreApplication::translate("main", "Temporary Folder"),
+            QCoreApplication::translate("main",
+                "The uninstaller was run from a non-standard folder:\n"
+                "   %1\n"
+                "This folder has not been removed.")
+                    .arg(appinfo.appdir.absolutePath()));
+        return cc;
+    }
+
     QString dpath{QDir::toNativeSeparators(appinfo.appdir.absolutePath())};
     QString msgFail{QCoreApplication::translate(
         "main", "Failed: Remove the temporary folder, %1")

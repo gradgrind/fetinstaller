@@ -40,18 +40,17 @@ int main(int argc, char **argv)
             msg = "User unknown.";
             fatal();
         }
-        // Set the temporary base directory.
-        asprintf(&tmp0, "%s/.local/tmp", pw->pw_dir);
+        // Set the temporary directory, checking that ".local" exists.
+        asprintf(&tmp0, "%s/.local", pw->pw_dir);
         struct stat sbuf;
         int rc = stat(tmp0, &sbuf);
-        // Check if the directory exists
         if ( rc != 0 ) {
             // Create the directory
-            if ( mkdir(tmp0, 0700) != 0 ) {
-                asprintf(&msgx, "Failed: create temporary directory base: %s", tmp0);
+            if ( mkdir(tmp0, 0755) != 0 ) {
+                asprintf(&msgx, "Failed: create '.local' directory: %s", tmp0);
             }
         } else if ( !S_ISDIR(sbuf.st_mode) ) {
-            asprintf(&msgx, "Invalid temporary directory base: %s", tmp0);
+            asprintf(&msgx, "Invalid '.local' directory: %s", tmp0);
         }
         if ( msgx ) {
             free(tmp0);
@@ -60,8 +59,9 @@ int main(int argc, char **argv)
         errno = 0;
     }
 
+    // Choose an application temporary directory.
     for ( int i = 0; i < 5; ++i ) {
-        asprintf(&tmpdir, "%s/gradgrind_AppIn_%d_", tmp0, i);
+        asprintf(&tmpdir, "%s/tmp_gradgrind_AppIn_%d_", tmp0, i);
         if ( mkdir(tmpdir, 0700) == 0 ) {
             break;
         }
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     }
     if ( !tmpdir ) {
         asprintf(&msgx,
-            "Temporary directory unavailable: %s/gradgrind_AppIn_?_", tmp0);
+            "Temporary directory unavailable: %s/tmp_gradgrind_AppIn_[0-4]_", tmp0);
         free(tmp0);
         fatal();
     }
@@ -133,13 +133,9 @@ int main(int argc, char **argv)
     }
 
     chdir(tmpdir);
-    if ( system("_installer_/app_install") != 0 ) {
-        msg = "Installer failed.";
-        fatal();
-    }
-
+    int cc = system("_installer_/app_install")
     tidy();
-    return 0;
+    return cc;
 }
 
 void fatal()

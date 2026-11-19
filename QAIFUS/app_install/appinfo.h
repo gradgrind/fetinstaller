@@ -18,9 +18,9 @@ class AppInfo : QObject
 {
     Q_OBJECT
 
-    bool read0(QSettings& appsettings, QString& var, QString key, bool critical=false);
+    bool read0(QSettings& appsettings, QString& var, QString key);
     bool reados(QSettings &appsettings, QString& var, QString key);
-    bool read(QSettings& appsettings, QString& var, QString key, bool critical=false);
+    bool read(QSettings& appsettings, QString& var, QString key);
     QString appconf; // configuration file (full path)
     QString ostype;
 

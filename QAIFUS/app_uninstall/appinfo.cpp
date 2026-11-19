@@ -22,6 +22,8 @@ bool AppInfo::init()
     appdir.setPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath());
 #if defined Q_OS_WIN
     // The uninstaller is expected to be in the root directory.
+    // It is also expected that this is a temporary directory, or at least not the
+    // installation directory itself, because that won't work on Windows.
 #else
     // The uninstaller is expected to be in the "_installer_" directory of the installation.
     appdir.cdUp();

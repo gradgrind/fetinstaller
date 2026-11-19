@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
             nullptr,
             QCoreApplication::translate("main", "ADMIN user"),
             QCoreApplication::translate("main", "The installer must be run as a normal user."));
-        return 0;
+        return 1;
     }
     Installer w(locale);
     if ( w.app_initialized ) {
@@ -44,13 +44,12 @@ int main(int argc, char *argv[])
         QDirListing dirList(tmp.absolutePath(), QDirListing::IteratorFlag::DirsOnly);
         for ( const auto &dirEntry : dirList ) {
             //qInfo() << " ++" << dirEntry.absoluteFilePath();
-            if ( dirEntry.absoluteFilePath() != w.src_dir.absolutePath()
-                    && dirEntry.fileName().startsWith("gradgrind_AppIn_")) {
+            if ( dirEntry.fileName().startsWith("tmp_gradgrind_AppIn_")
+                    && dirEntry.absoluteFilePath() != w.src_dir.absolutePath() ) {
                 QDir oldtmp{dirEntry.absoluteFilePath()};
                 qint64 pid1 = dirInUse(oldtmp, -1);
                 if ( pid1 == 0 ) {
-                    // The directory is unused.
-                    // Offer to delete it.
+                    // The directory is (apparently) unused, offer to delete it.
                     if ( QMessageBox::question(
                         nullptr,
                         QCoreApplication::translate("main", "Delete Folder?"),
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
                                 .arg(QDir::toNativeSeparators(oldtmp.absolutePath()))
                                 .arg(pid1)
                     );
-                    return 0;
+                    return 1;
                 }
             }
         }
