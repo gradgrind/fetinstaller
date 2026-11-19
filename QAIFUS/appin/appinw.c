@@ -110,12 +110,8 @@ tmpok:
         // Run the installer.
         wchar_t* cmd = compose(L"\"%ls\\app_install.exe\"", tmpdir);
         _flushall();
-        DWORD xrc = xsystem(cmd);
-        if ( xrc != 0 ) {
+        if ( xsystem(cmd) != 0 ) {
             rc = 1;
-            wchar_t* msg = compose(L"Installation failed: %ls", cmd);
-            error(msg);
-            free(msg);
         }
         free(cmd);
     }
@@ -198,12 +194,23 @@ int unpack(wchar_t* dir)
     // be in the PATH.
     wchar_t* cmd = compose(L"tar -xJf - -C \"%ls\"", dir);
     int rc = do_tar(cmd);
-    if ( rc > 0 ) {
+    if ( rc != 0 ) {
         free(cmd);
         cmd = compose(L"bsdtar -xJf - -C \"%ls\"", dir);
         _set_errno(0);
         rc = do_tar(cmd);
         switch ( rc ) {
+
+        case 0:
+            break;
+
+        case -2:
+            error(L"Failed: Pass archive to unpacker subprocess");
+            break;
+
+        case -3:
+            error(L"Failed: StdInWr CloseHandle");
+            break;
 
         case 1:
             error(L"Failed: Stdin CreatePipe");
@@ -223,6 +230,9 @@ int unpack(wchar_t* dir)
         case 4:
             error(L"Failed: unpacking the app bundle");
             break;
+
+        default:
+            error(L"BUG: unexpected error");
 
         }
     }
@@ -285,11 +295,9 @@ int WriteToPipe()
         NULL);
     BOOL cSuccess = CloseHandle(g_hChildStd_IN_Wr);
     if ( !bSuccess || bytesWritten != gAppSize ) {
-        error(L"Failed: Pass archive to unpacker subprocess");
         return -2;
     }
     if ( !cSuccess ) {
-        error(L"Failed: StdInWr CloseHandle");
         return -3;
     }
     return 0;
@@ -354,7 +362,9 @@ DWORD xsystem(wchar_t* cmd)
             &si,                // Pointer to STARTUPINFO structure
             &pi)                // Pointer to PROCESS_INFORMATION structure
         ) {
-        wprintf(L"CreateProcess failed (%ls).\n", cmd);
+        wchar_t* msg = compose(L"CreateProcess failed: %ls", cmd);
+        error(msg);
+        free(msg);
         return -1;
     }
 

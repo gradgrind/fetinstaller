@@ -44,7 +44,11 @@ int main(int argc, char *argv[])
         QDirListing dirList(tmp.absolutePath(), QDirListing::IteratorFlag::DirsOnly);
         for ( const auto &dirEntry : dirList ) {
             //qInfo() << " ++" << dirEntry.absoluteFilePath();
+#if defined Q_OS_WIN
+            if ( dirEntry.fileName().startsWith("gradgrind_AppIn_")
+#else
             if ( dirEntry.fileName().startsWith("tmp_gradgrind_AppIn_")
+#endif
                     && dirEntry.absoluteFilePath() != w.src_dir.absolutePath() ) {
                 QDir oldtmp{dirEntry.absoluteFilePath()};
                 qint64 pid1 = dirInUse(oldtmp, -1);

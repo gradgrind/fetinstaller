@@ -4,48 +4,54 @@
 <context>
     <name>AppInfo</name>
     <message>
-        <location filename="../appinfo.cpp" line="39"/>
-        <location filename="../appinfo.cpp" line="71"/>
-        <location filename="../appinfo.cpp" line="80"/>
-        <location filename="../appinfo.cpp" line="87"/>
-        <location filename="../appinfo.cpp" line="94"/>
-        <location filename="../appinfo.cpp" line="127"/>
-        <location filename="../appinfo.cpp" line="141"/>
+        <location filename="../appinfo.cpp" line="65"/>
+        <location filename="../appinfo.cpp" line="74"/>
+        <location filename="../appinfo.cpp" line="81"/>
+        <location filename="../appinfo.cpp" line="88"/>
+        <location filename="../appinfo.cpp" line="96"/>
+        <location filename="../appinfo.cpp" line="104"/>
+        <location filename="../appinfo.cpp" line="131"/>
+        <location filename="../appinfo.cpp" line="145"/>
         <source>Critical</source>
         <translation>Schwerwiegender Fehler</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="40"/>
-        <source>Configuration Error, no &apos;%1&apos;: &apos;%2&apos;</source>
-        <translation>Konfigurationsfehler, kein &apos;%1&apos;: &apos;%2&apos;</translation>
-    </message>
-    <message>
-        <location filename="../appinfo.cpp" line="71"/>
+        <location filename="../appinfo.cpp" line="65"/>
         <source>BUG, no ABOUT_QAIFUS file: %1</source>
         <translation>Programmfehler, keine ABOUT_QAIFUS-Datei: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="80"/>
+        <location filename="../appinfo.cpp" line="74"/>
         <source>BUG, no QAIFUS_VERSION: %1</source>
         <translation>Programmfehler, keine QAIFUS_VERSION: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="87"/>
+        <location filename="../appinfo.cpp" line="81"/>
         <source>BUG, no QAIFUS_INFO: %1</source>
         <translation>Programmfehler, keine QAIFUS_INFO: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="94"/>
+        <location filename="../appinfo.cpp" line="88"/>
         <source>BUG, no application configuration: %1</source>
         <translation>Programmfehler, keine Anwendungskonfiguration: %1</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="128"/>
+        <location filename="../appinfo.cpp" line="97"/>
+        <source>Configuration Error, no &apos;PROJECT&apos;: &apos;%1&apos;</source>
+        <translation>Konfigurationsfehler, kein &apos;PROJECT&apos;: &apos;%1&apos;</translation>
+    </message>
+    <message>
+        <location filename="../appinfo.cpp" line="105"/>
+        <source>Configuration Error, no &apos;VERSION&apos;: &apos;%1&apos;</source>
+        <translation>Konfigurationsfehler, kein &apos;VERSION&apos;: &apos;%1&apos;</translation>
+    </message>
+    <message>
+        <location filename="../appinfo.cpp" line="132"/>
         <source>Invalid EXEC in app.conf: (%1) %2=%3</source>
         <translation>Ungültige EXEC-Zeile in app.conf: (%1) %2=%3</translation>
     </message>
     <message>
-        <location filename="../appinfo.cpp" line="142"/>
+        <location filename="../appinfo.cpp" line="146"/>
         <source>No &apos;EXEC&apos; for LAUNCH=%1 in app.conf.</source>
         <translation>Keine &apos;EXEC&apos;-Zeile für LAUNCH=%1 in app.conf.</translation>
     </message>
@@ -561,12 +567,12 @@ Anscheinend ist die Anwendung schon anderweitig installiert.</translation>
         <translation>Die Installation muss als normaler Benutzer durchgeführt werden.</translation>
     </message>
     <message>
-        <location filename="../app_install.cpp" line="56"/>
+        <location filename="../app_install.cpp" line="55"/>
         <source>Delete Folder?</source>
         <translation>Ordner löschen?</translation>
     </message>
     <message>
-        <location filename="../app_install.cpp" line="57"/>
+        <location filename="../app_install.cpp" line="56"/>
         <source>A temporary folder seems to be left over from an
 earlier installation:
    %1
@@ -579,22 +585,22 @@ Installlationsvorgang übrig geblieben:
  Löschen?</translation>
     </message>
     <message>
-        <location filename="../app_install.cpp" line="68"/>
+        <location filename="../app_install.cpp" line="67"/>
         <source>Failed</source>
         <translation>Fehlgeschlagen</translation>
     </message>
     <message>
-        <location filename="../app_install.cpp" line="69"/>
+        <location filename="../app_install.cpp" line="68"/>
         <source>Failed: delete temporary folder: %1</source>
         <translation>Fehlgeschlagen: Zwischenordner löschen: %1</translation>
     </message>
     <message>
-        <location filename="../app_install.cpp" line="80"/>
+        <location filename="../app_install.cpp" line="79"/>
         <source>Blocked</source>
         <translation>Gesperrt</translation>
     </message>
     <message>
-        <location filename="../app_install.cpp" line="81"/>
+        <location filename="../app_install.cpp" line="80"/>
         <source>There seems to be another installer active,
 using the temporary folder: %1
 Please finish the process with ID %2 and try again.</source>

@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     }
 
     chdir(tmpdir);
-    int cc = system("_installer_/app_install")
+    int cc = system("_installer_/app_install");
     tidy();
     return cc;
 }

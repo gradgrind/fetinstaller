@@ -90,19 +90,21 @@ bool AppInfo::init(QLocale locale)
     }
     QSettings appsettings{appconf, QSettings::IniFormat};
 
-    if ( !read(appsettings, PROJECTNAME, "PROJECT") )
+    if ( !read(appsettings, PROJECTNAME, "PROJECT") ) {
         QMessageBox::critical(
             nullptr,
             tr("Critical"),
-            tr("Configuration Error, no '%1': '%2'").arg("PROJECT", appconf));
+            tr("Configuration Error, no 'PROJECT': '%1'").arg(appconf));
         return false;
+    }
 
-    if ( !read(appsettings, PROJECTVERSION, "VERSION") )
+    if ( !read(appsettings, PROJECTVERSION, "VERSION") ) {
         QMessageBox::critical(
             nullptr,
             tr("Critical"),
-            tr("Configuration Error, no '%1': '%2'").arg("VERSION", appconf));
+            tr("Configuration Error, no 'VERSION': '%1'").arg(appconf));
         return false;
+    }
 
     // PROJECTLONGNAME is optional, if possible, get a translated version.
     if ( !read(
