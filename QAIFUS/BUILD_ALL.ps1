@@ -121,8 +121,8 @@ Write-Host
 Write-Host "Build app installer: $PROJECT_NAME-$PROJECT_VERSION.exe"
 Write-Host
 
-cd "..\..\appin"
-gcc -mwindows -o "..\$PROJECT_NAME-$PROJECT_VERSION.exe" appinw.c
+cd ".."
+gcc -mwindows -o "..\$PROJECT_NAME-$PROJECT_VERSION.exe" ..\appin\appinw.c
 
 if ( !$? )
 {

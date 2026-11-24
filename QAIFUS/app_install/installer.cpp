@@ -66,7 +66,6 @@ Installer::Installer(QLocale locale, QWidget *parent)
 
     ui->label_page_0->setText(ui->label_page_0->text().arg(appinfo.PROJECTNAME));
     ui->label_page_1->setText(ui->label_page_1->text().arg(appinfo.PROJECTNAME));
-    ui->removeExisting->setText(ui->removeExisting->text().arg(appinfo.PROJECTNAME));
     // If LAUNCH is set in app.conf, offer to launch its value (app name).
     if ( appinfo.LAUNCH.isEmpty() ) {
         ui->launch->setChecked(false);
@@ -303,12 +302,11 @@ void Installer::setInstallPath(QString ipath)
     ui->setDefaultPath->setEnabled(ipath != defaultInstallationPath);
 
     // If doing an actual installation, check for an existing one
+    blockers.clear(); // collect installation clashes
     if ( !ui->unpack_only->isChecked() && isInstalled() ) {
         ui->removeExisting->show();
-        if ( ui->versioned->isChecked() ) {
-            print_line(tr(ALREADY_INSTALLED).arg(versioned_project), true);
-        } else {
-            print_line(tr(ALREADY_INSTALLED).arg(appinfo.PROJECTNAME), true);
+        print_line(tr(ALREADY_INSTALLED).arg(uninstall_name), true);
+        if ( !ui->versioned->isChecked() ) {
             print_line(tr("A 'versioned' installation might, however, be possible."));
         }
         return;
@@ -318,7 +316,7 @@ void Installer::setInstallPath(QString ipath)
     if ( !app_dir.isEmpty() ) {
         print_line(tr("Destination not empty: %1").arg(app_dir.path()), true);
         // Check for app uninstaller.
-        if ( isInstalled(app_dir.path()) ) {
+        if ( dirHasUninstaller(app_dir.path()) ) {
             ui->removeExisting->show();
             print_line(tr("To use the destination, uninstall the existing app."), true);
         }

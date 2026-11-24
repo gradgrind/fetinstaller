@@ -17,7 +17,7 @@ qt_add_executable(${this_target}
     installer_resources.qrc
     copythread.h copythread.cpp
     symlinks.cpp
-    register.cpp
+    register_linux.cpp register_windows.cpp
     appinfo.h appinfo.cpp
     ../app_uninstall/checkinuse.h ../app_uninstall/checkinuse.cpp
 )

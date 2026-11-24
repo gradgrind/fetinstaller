@@ -271,7 +271,7 @@ A further possibility is to just unpack the installation directory without regis
        <item>
         <widget class="QPushButton" name="removeExisting">
          <property name="text">
-          <string>Remove existing %1 installation</string>
+          <string>Remove existing installation</string>
          </property>
         </widget>
        </item>

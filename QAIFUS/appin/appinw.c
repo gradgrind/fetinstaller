@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <io.h>
 
-INCBIN(App, "../build/app_bundle.tar.xz"); // apparently INCBIN needs UNIX separators
+INCBIN(App, "app_bundle.tar.xz"); // (apparently INCBIN needs UNIX separators)
 
 wchar_t* compose(wchar_t* fmt, ...);
 void error(wchar_t* msg);

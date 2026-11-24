@@ -6,376 +6,142 @@
 #include <QSettings>
 #include <QSaveFile>
 
+#if defined Q_OS_LINUX
+#include <QXmlStreamReader>
+
 // Update file-type associations and desktop files.
-// Windows: add app to registry.
 
 // All registration failures should abort the installation process, except
 // these, which just report the failure but don't prevent the installation
 // completing:
 //  - a desktop starter cannot be installed
 
-#if defined Q_OS_WIN
-#include <windows.h>
-#include <shlobj.h>
-
-#define UNINSTALLER_NAME "app_uninstall0.exe"
-
-bool Installer::isInstalled(QString dir)
-{
-    if ( dir.isEmpty() ) {
-        QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
-        QString proj{appinfo.PROJECTNAME};
-        if ( ui->versioned->isChecked() ) {
-            proj += "-" + appinfo.PROJECTVERSION;
-        }
-        QString UNINFO{"Microsoft/Windows/CurrentVersion/Uninstall/" + proj};
-        auto ustring = regsettings.value(UNINFO + "/UninstallLocation");
-        if ( ustring.isNull() ) {
-            return false;
-        }
-        uninstall_exe = QDir::fromNativeSeparators(ustring.toString()) + "/" + UNINSTALLER_NAME;
-    } else {
-        uninstall_exe = dir + "/" + UNINSTALLER_NAME;
-    }
-    // The app counts as "installed" only if the uninstaller exists.
-    return QFileInfo{uninstall_exe}.isFile();
-}
-
-bool Installer::hasFileTypeAssociation()
-{
-    for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
-        if ( !i.value().extra.isEmpty() ) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Installer::preRegister()
-{
-    localfiles.clear(); // collect files added outside the app bundle, and registry entries
-    return true;
-}
-
-class Registration
-{
-    struct reg_item {
-        enum{GROUP, ENDGROUP, SET} type;
-        QString key;
-        QVariant val;
-    };
-
-    QList<reg_item> items;
-
-public:
-    void beginGroup(QString name)
-    {
-        items.append({reg_item::GROUP, name, {}});
-    }
-
-    void endGroup()
-    {
-        items.append({reg_item::ENDGROUP, {}, {}});
-    }
-
-    void setValue(QString key, QVariant val)
-    {
-        items.append({reg_item::SET, key, val});
-    }
-
-    QString registerItems()
-    {
-        QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
-        for ( const auto& item : std::as_const(items) ) {
-            switch ( item.type ) {
-
-            case reg_item::GROUP:
-                regsettings.beginGroup(item.key);
-                break;
-            case reg_item::ENDGROUP:
-                regsettings.endGroup();
-                break;
-            case reg_item::SET:
-                regsettings.setValue(item.key, item.val);
-                // Try to be sure that the writes have worked.
-                regsettings.sync();
-                if ( regsettings.status() != QSettings::NoError
-                        || regsettings.value(item.key) != item.val ) {
-                    return item.key + "=" + item.val.toString();
-                }
-                break;
-
-            }
-        }
-        return {};
-    }
-};
-
-bool Installer::registerApp()
-{
-    Registration reg;
-    QString proj{appinfo.PROJECTNAME};
-    if ( ui->versioned->isChecked() ) {
-        proj += "-" + appinfo.PROJECTVERSION;
-    }
-    // Register uninstaller.
-    QString app_uninstall_reg{"Microsoft/Windows/CurrentVersion/Uninstall/" + proj};
-
-    reg.beginGroup(app_uninstall_reg);
-
-    localfiles.append("+++reg:" + app_uninstall_reg);
-
-    // The app folders are versioned regardless of whether the installation is versioned.
-    QString idir{QDir::toNativeSeparators(app_dir.path())};
-
-    print_line(tr("Register project and uninstaller"));
-    reg.setValue("DisplayName", proj);
-    reg.setValue("UninstallString", '"' + idir + '\\' + UNINSTALLER_NAME + '"');
-    reg.setValue("Publisher", appinfo.Publisher);
-    reg.setValue("WebLink", appinfo.WebLink);
-    reg.setValue("DisplayVersion", appinfo.PROJECTVERSION);
-    reg.setValue("UninstallLocation", idir);
-    // Installation size
-    qint64 size{0};
-    for ( const auto &dirEntry : QDirListing(
-             app_dir.path(),
-             QDirListing::IteratorFlag::FilesOnly
-                 | QDirListing::IteratorFlag::Recursive
-                 | QDirListing::IteratorFlag::IncludeHidden) ) { //TODO: IncludeHidden?
-        size += dirEntry.size();
-    }
-    reg.setValue("EstimatedSize", static_cast<quint32>(size / 1024)); // Windows uses KiB (1024 bytes)
-
-    reg.endGroup();
-
-    if ( !ui->versioned->isChecked() ) {
-        // File-type association
-        QString key_c{"Classes/"};
-        for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
-            QString exec = i.key();
-            auto execval = i.value();
-            if ( execval.extra.isEmpty() ) {
-                continue;
-            }
-            for ( const auto& fass : execval.extra.split(",") ) {
-                auto fassx = fass.split(">");
-                if ( fassx.length() != 2 ) {
-                    print_line(tr("Invalid EXEC entry in app.conf: %1=%2:%3:%4")
-                                   .arg(exec, execval.extension, execval.execName, execval.extra), true);
-                    return false;
-                }
-                QString assoc_ext{fassx.at(0)};
-                QString assoc_progid{fassx.at(1)};
-                print_line(tr("Register file-type association for '%1'").arg(assoc_ext));
-                QString key_c1{key_c + assoc_ext + "/OpenWithProgIds/" + assoc_progid};
-                localfiles.append("+++reg:" + key_c1);
-                reg.setValue(key_c1, "");
-
-                QString key_c2{key_c + assoc_progid};
-                localfiles.append("+++reg:" + key_c2);
-                reg.beginGroup(key_c2);
-                reg.setValue("shell/open/FriendlyAppName", exec + " " + appinfo.PROJECTVERSION);
-                QString appPath{"\"" + idir + "\\" + exec + execval.extension + "\""};
-                reg.setValue("shell/open/command/.", appPath + " \"%1\"");
-                reg.setValue("DefaultIcon/.", appPath + ",0");
-                reg.endGroup();
-
-                localfiles.append("+++file-type:" + assoc_ext);
-            }
-        }
-    }
-
-    // Do the actual registry entries.
-    QString fail = reg.registerItems();
-    if ( !fail.isEmpty() ) {
-        print_line(tr("Registry entry failed: %1").arg(fail));
-        return false;
-    }
-
-    // Start menu entries
-    QDir appsDir{QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)};
-
-    // If more than one entry, make a group.
-    { bool sme{false};
-        for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
-            if ( !i.value().execName.isEmpty() ) {
-                if ( sme ) {
-                    // Make a start menu group.
-                    if ( appsDir.mkdir(proj) ) {
-                        appsDir.cd(proj);
-                        localfiles.append("+++dir:" + appsDir.absolutePath());
-                        break;
-                    }
-                    print_line(tr("Couldn't create start menu group: '%1'")
-                        .arg(appsDir.absoluteFilePath(proj)), true);
-                    return false;
-                } else {
-                    sme = true;
-                }
-            }
-        }
-    }
-
-    for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
-        QString exec = i.key();
-        auto execval = i.value();
-        QString desktopName{execval.execName};
-        if ( desktopName.isEmpty() ) {
-            continue;
-        }
-        if ( ui->versioned->isChecked() ) {
-            desktopName += "-" + appinfo.PROJECTVERSION;
-        }
-        desktopName += ".lnk";
-        QString desktopPath{app_dir.absoluteFilePath(exec + execval.extension)};
-        QString link{appsDir.absoluteFilePath(desktopName)};
-        if ( QFile::link(desktopPath, link) ) {
-            print_line(tr("Install start menu entry: '%1'").arg(desktopName));
-            localfiles.append(link);
-        } else {
-            print_line(tr("Couldn't install start menu entry: %1").arg(link), true);
-            return false;
-        }
-
-        // Desktop starter, if requested.
-        if ( ui->installDesktopLink->isChecked() ) {
-            QDir dskDir{QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)};
-            QString link{dskDir.absoluteFilePath(desktopName)};
-            if ( QFile::link(desktopPath, link) ) {
-                print_line(tr("Install desktop starter: '%1'").arg(desktopName));
-                localfiles.append(link);
-            } else {
-                print_line(tr("Couldn't install desktop starter: %1").arg(link), true);
-                // This doesn't cause the installation to fail.
-            }
-        }
-    }
-    return true;
-}
-
-void Installer::addedFileType()
-{
-    // The SHChangeNotify function allows the association of the
-    // icons with the file type to be changed immediately.
-    SHChangeNotify(
-        SHCNE_ASSOCCHANGED,     // Event ID
-        SHCNF_IDLIST,           // Flags
-        NULL,                   // Item that changed
-        NULL                    // Not used
-        );
-    // There is no return value.
-}
-
-QStringList Installer::removeSpecials(QStringList specials)
-{
-    QStringList failed;
-    QSettings regsettings{"HKEY_CURRENT_USER\\Software", QSettings::NativeFormat};
-    for ( const auto& line : specials ) {
-        if ( line.startsWith("+++reg:") ) {
-            auto key = line.sliced(7);
-            regsettings.remove(key);
-            // Try to be sure that the removal has worked.
-            regsettings.sync();
-            if ( regsettings.status() != QSettings::NoError
-                    || regsettings.contains(key) ) {
-                failed.append(line);
-            }
-        } else if ( line.startsWith("+++file-type:") ) {
-            QString key{"Classes/" + line.sliced(13)};
-            regsettings.beginGroup(key + "/OpenWithProgIds");
-            bool empty{regsettings.childKeys().isEmpty()};
-            regsettings.endGroup();
-            if ( empty && !regsettings.value(key + "/.").isValid() ) {
-                regsettings.remove(key);
-                // Try to be sure that the removal has worked.
-                regsettings.sync();
-                if ( regsettings.status() != QSettings::NoError
-                        || regsettings.contains(key) ) {
-                    failed.append(line);
-                }
-            }
-        } else if ( line.startsWith("+++dir:") ) {
-            QString dirPath{line.sliced(7)};
-            if ( QDir{}.rmdir(dirPath) ) {
-                print_line(tr("Removed %1").arg(dirPath));
-            } else {
-                failed.append(dirPath);
-            }
-        }
-    }
-    return failed;
-}
-
-bool Installer::isInstallBundle(QDir dir)
-{
-    return dir.exists("app_uninstall.exe");
-}
-
-void Installer::update_desktop_database()
-{
-    // No action is necessary.
-}
-
-#elif defined Q_OS_LINUX
-#include <QXmlStreamReader>
+#define UNINSTALLER_NAME "_installer_/app_uninstall"
 
 static const char *OTHER_INSTALLATION = QT_TRANSLATE_NOOP("Installer", R"(
 '%1' is already in the PATH: %2
 
 Apparently it has already been installed in some other way.)");
 
-bool Installer::isInstalled(QString dir)
+bool Installer::getUninstaller(QString xpath)
+{
+    // Seek installation directory, and hence uninstaller.
+    QDir ubase{QFileInfo{xpath}.absolutePath()};
+    ubase.cdUp();
+    QFileInfo uinfo = QFileInfo{ubase.absoluteFilePath(UNINSTALLER_NAME)};
+    if ( uinfo.isExecutable() ) {
+        uninstall_exe = uinfo.absoluteFilePath();
+        uninstall_name = ubase.dirName();
+        // The app counts as "installed" if this exists and is executable.
+        return true;
+    }
+    return false;
+}
+
+bool Installer::isInstalled()
 {
     // Assume an uninstaller is in the _installer_ directory.
     // Return true if one of the executables is a symlink to an app bundle
     // with an uninstaller in the expected place. This alone is no guarantee
     // that the uninstaller will clear the way for an installation, but generally
     // it will do.
-    QFileInfo uinfo;
-    if ( dir.isEmpty() ) {
-        // Check each of the EXECUTABLES:
-        //   - Is it a symlink? No: not interesting.
-        //   - Yes: check for uninstaller in its target.
-        for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
-            QString exec = i.key();
-            if ( ui->versioned->isChecked() ) {
-                exec += "-" + appinfo.PROJECTVERSION;
-            }
-            auto execval = i.value();
-            exec += execval.extension;
-            QString execpath{QDir::home().absoluteFilePath(".local/bin/" + exec)};
+
+    // Check each of the EXECUTABLES:
+    //   - Is it a symlink? No: not interesting.
+    //   - Yes: check for uninstaller in its target.
+    // Collect the executable names for the start-menu test later.
+    QStringList enames;
+    // Collect the desktop file names.
+    QStringList dnames;
+    for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
+        QString exec = i.key();
+        QString ename = i.value().execName;
+        if ( ui->versioned->isChecked() ) {
+            exec += "-" + appinfo.PROJECTVERSION;
+            if ( !ename.isEmpty() )
+                ename += "-" + appinfo.PROJECTVERSION;
+        }
+        if ( !ename.isEmpty() ) {
+            enames.append(ename);
+            dnames.append(exec + ".desktop");
+        }
+        exec += i.value().extension;
+        QString execpath = QStandardPaths::findExecutable(exec);
+        if ( !execpath.isEmpty() ) {
+            // Only if this is a symlink can the app count as "installed" in this sense.
+            // But if there is an executable, it is probably sensible to avoid possible
+            // confusion by blocking the new installation.
             QString xpath{QFileInfo{execpath}.readSymLink()};
-            if ( xpath.isEmpty() ) {
-                continue; // only if this is a symlink can the app count as "installed"
-            }
-            // Seek installation directory, and hence uninstaller.
-            uinfo = QFileInfo{QFileInfo{xpath}.absolutePath() + "/../_installer_/app_uninstall"};
-            if ( uinfo.isExecutable() ) {
-                uninstall_exe = uinfo.absoluteFilePath();
-                // The app counts as "installed" if this exists and is executable.
+            if ( !xpath.isEmpty() && getUninstaller(xpath) )
                 return true;
+            // Count execpath as a blocker.
+            blockers.append(execpath);
+        }
+        // It is possible that "$HOME/.local/bin/" is not (yet) in the PATH, so check
+        // that explicitly.
+        execpath = QStandardPaths::findExecutable(
+            exec,
+            {QDir::home().absoluteFilePath(".local/bin")}
+        );
+        if ( !execpath.isEmpty() ) {
+            QString xpath = QFileInfo{execpath}.readSymLink();
+            if ( !xpath.isEmpty() && getUninstaller(xpath) )
+                return true;
+            if ( !blockers.contains(execpath) )
+                blockers.append(execpath);
+        }
+    }
+
+    // Search for start-menu items sharing a name with those from this package.
+    // Consider both desktop file names and their "Name=" entries.
+    for ( const auto& smpath : QStandardPaths::standardLocations(
+        QStandardPaths::ApplicationsLocation) )
+    {
+        for ( const auto& f : QDirListing(
+            smpath,
+            QDirListing::IteratorFlag::FilesOnly) )
+        {
+            QString dpath{f.absoluteFilePath()};
+            if ( dnames.contains(f.fileName()) ) {
+                blockers.append(dpath);
+            } else {
+                // Check the display name.
+                QFile file(dpath);
+                if ( !file.open(QIODevice::ReadOnly | QIODevice::Text) )
+                    continue; //TODO? report the failure?
+                QTextStream in(&file);
+                while ( !in.atEnd() ) {
+                    QString line = in.readLine();
+                    if ( line.startsWith("Name=") ) {
+                        if ( enames.contains(line.slice(5).trimmed()) )
+                            blockers.append(dpath);
+                        break;
+                    }
+                }
+                file.close();
             }
         }
-        return false;
     }
-    uinfo = QFileInfo{dir + "/_installer_/app_uninstall"};
-    uninstall_exe = uinfo.filePath();
+
+    return false;
+}
+
+bool Installer::dirHasUninstaller(QString dir)
+{
+    QDir udir{dir};
+    QFileInfo uinfo = QFileInfo{udir.absoluteFilePath(UNINSTALLER_NAME)};
     // The app counts as "installed" only if this exists and is executable.
-    return uinfo.isExecutable();
+    if ( uinfo.isExecutable() ) {
+        uninstall_exe = uinfo.filePath();
+        uninstall_name = udir.dirName();
+        return true;
+    }
+    return false;
 }
 
 bool Installer::hasFileTypeAssociation()
 {
     return !QDir{src_dir.absoluteFilePath("share/mime/packages")}.isEmpty();
-}
-
-bool Installer::execInPath(QString xname)
-{
-    QString xpath = QStandardPaths::findExecutable(xname);
-    if ( xpath.isEmpty() )
-        return false;
-    print_line(tr(OTHER_INSTALLATION).arg(xname, xpath), true);
-    return true;
 }
 
 bool Installer::preRegister()
@@ -403,9 +169,6 @@ bool Installer::preRegister()
             QString execbase{i.key()};
             auto execval = i.value();
             QString execv{execbase + "-" + appinfo.PROJECTVERSION + execval.extension};
-            if ( execInPath(execv) ) {
-                ok = false;
-            }
             QString execfull{execbase + execval.extension};
             QString execrpath{"bin/" + execfull};
             QString execfile{app_dir.absoluteFilePath(execrpath)};
@@ -431,7 +194,7 @@ bool Installer::preRegister()
                     QFile f(dtfile);
                     if ( !f.open(QFile::ReadOnly | QFile::Text) ) {
                         print_line("BUG, Repeated read in installation bundle failed: share/applications/"
-                                       + execbase + ".desktop", true);
+                            + execbase + ".desktop", true);
                         ok = false;
                     } else {
                         QTextStream in(&f);
@@ -471,9 +234,6 @@ bool Installer::preRegister()
             QString execbase{i.key()};
             auto execval = i.value();
             QString execfull{execbase + execval.extension};
-            if ( execInPath(execfull) ) {
-                ok = false;
-            }
             QString execrpath{"bin/" + execfull};
             QString execfile{app_dir.absoluteFilePath(execrpath)};
             if ( !QFileInfo{src_dir.filePath(execrpath)}.isExecutable() ) {
@@ -723,7 +483,7 @@ QStringList Installer::removeSpecials(QStringList specials)
 
 bool Installer::isInstallBundle(QDir dir)
 {
-    return dir.exists("_installer_/app_uninstall");
+    return dir.exists(UNINSTALLER_NAME);
 }
 
 void Installer::update_desktop_database()
@@ -735,9 +495,5 @@ void Installer::update_desktop_database()
         print_line(tr("Failed: Update desktop database"), true);
     }
 }
-
-#else
-
-//TODO
 
 #endif

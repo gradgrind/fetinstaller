@@ -98,7 +98,8 @@ private:
 
     void print_line(QString line, bool bold = false);
     void progressOne();
-    bool isInstalled(QString version = {});
+    bool isInstalled();
+    bool dirHasUninstaller(QString dir);
     bool preRegister();
     bool desktop_icon(QString &icon, QString execbase);
     bool registerApp();
@@ -107,7 +108,7 @@ private:
     bool hasFileTypeAssociation();
     bool isInstallBundle(QDir dir);
     void update_desktop_database();
-    bool execInPath(QString xname);
+    bool getUninstaller(QString xpath);
 
     QPlainTextEdit* textOutput{nullptr};
     QStringList copyErrors;
@@ -119,6 +120,8 @@ private:
     QDir app_dir; // within dst_dir, the actual installation directory
     QString versioned_project; // app name + "-" + app version
     QString uninstall_exe;
+    QString uninstall_name;
+    QStringList blockers;
     bool bugflag{false};
     bool scanComplete;
     bool scanOk;

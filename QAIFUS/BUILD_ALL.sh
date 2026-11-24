@@ -78,8 +78,8 @@ echo
 echo "Build app installer: $PROJECT_NAME-$PROJECT_VERSION.run"
 echo
 
-cd ../../appin
-musl-gcc -static -o "../$PROJECT_NAME-$PROJECT_VERSION.run" appin.c
+cd ..
+musl-gcc -static -o "../$PROJECT_NAME-$PROJECT_VERSION.run" ../appin/appin.c
 
 if [ $? -ne 0 ]; then
     echo "***!!!*** final (appin) packaging failed"

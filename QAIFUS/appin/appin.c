@@ -14,7 +14,7 @@
 #include <sys/wait.h>
 #include "incbin.h"
 
-INCBIN(App, "../build/app_bundle.tar.xz");
+INCBIN(App, "app_bundle.tar.xz");
 
 char* msg = NULL; // constant strings, don't free
 char* childmsg = NULL; // constant strings, don't free
