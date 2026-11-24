@@ -25,14 +25,13 @@
  * identifying the installation directory. Also, for GUI executables it might
  * be sensible to remove the "/WAIT" option, to avoid unwanted console windows.
  * That assumes of course that there is no need to wait for the GUI app to end.
+ */
 
 static const char *BATCH_STARTER = R"(@echo off
 chcp 65001 >NUL
-set APPBASE=path to
+set APPBASE=ppp
 start "" /B /WAIT "%APPBASE%\xxx.exe" %*
-)");
-
-*/
+)";
 
 bool Installer::isInstalled()
 {
@@ -87,7 +86,7 @@ bool Installer::isInstalled()
                     QString line = in.readLine();
                     auto i = line.indexOf("APPBASE=");
                     if ( i >= 0 ) {
-                        QString appbase = line.slice(i + 8).trimmed();
+                        QString appbase = QDir::fromNativeSeparators(line.slice(i + 8).trimmed());
                         // Check validity of path
                         if ( QFileInfo{appbase}.isDir() ) {
                             QString x{QStandardPaths::findExecutable(
@@ -170,17 +169,17 @@ class Registration
 public:
     void beginGroup(QString name)
     {
-        items.append({reg_item::GROUP, name, {}});
+        items.append(reg_item{reg_item::GROUP, name, {}});
     }
 
     void endGroup()
     {
-        items.append({reg_item::ENDGROUP, {}, {}});
+        items.append(reg_item{reg_item::ENDGROUP, {}, {}});
     }
 
     void setValue(QString key, QVariant val)
     {
-        items.append({reg_item::SET, key, val});
+        items.append(reg_item{reg_item::SET, key, val});
     }
 
     QString registerItems()
@@ -226,7 +225,7 @@ bool Installer::registerApp()
     localfiles.append("+++reg:" + app_uninstall_reg);
 
     // The app folders are versioned regardless of whether the installation is versioned.
-    QString idir{QDir::toNativeSeparators(app_dir.path())};
+    QString idir{QDir::toNativeSeparators(app_dir.absolutePath())};
 
     print_line(tr("Register project and uninstaller"));
     reg.setValue("DisplayName", proj);
@@ -317,18 +316,51 @@ bool Installer::registerApp()
         }
     }
 
-    for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
+    // Get the "standard" user entry in PATH.
+    QDir cmdDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
+    cmdDir.cd("Microsoft/WindowsApps");
+    for ( auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i )
+    {
         QString exec = i.key();
         auto execval = i.value();
         QString desktopName{execval.execName};
+
+        // Install a batch starter in cmdDir.
+        QString exec_exe{exec + execval.extension};
+        QString starter{BATCH_STARTER};
+        starter.replace("ppp", idir).replace("xxx.exe", exec_exe);
+        if ( !desktopName.isEmpty() ) {
+            // Assume that this is a GUI application and remove " /WAIT"
+            starter.replace(" /WAIT", "");
+        }
+        QString cmd_name{exec};
+        if ( ui->versioned->isChecked() ) {
+            cmd_name += "-" + appinfo.PROJECTVERSION;
+        }
+        QString outfile{cmdDir.absoluteFilePath(cmd_name + ".cmd")};
+        if ( QFileInfo::exists(outfile) ) {
+            print_line(tr("Starter exists already: %1").arg(outfile), true);
+            return false;
+        }
+        QFile file(outfile);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&file);
+            out << starter;
+            file.close();
+            localfiles.append(outfile);
+        } else {
+            print_line(tr("Couldn't write starter: %1").arg(outfile), true);
+            return false;
+        }
+
         if ( desktopName.isEmpty() ) {
             continue;
         }
+        QString desktopPath{app_dir.absoluteFilePath(exec_exe)};
         if ( ui->versioned->isChecked() ) {
             desktopName += "-" + appinfo.PROJECTVERSION;
         }
         desktopName += ".lnk";
-        QString desktopPath{app_dir.absoluteFilePath(exec + execval.extension)};
         QString link{appsDir.absoluteFilePath(desktopName)};
         if ( QFile::link(desktopPath, link) ) {
             print_line(tr("Install start menu entry: '%1'").arg(desktopName));
