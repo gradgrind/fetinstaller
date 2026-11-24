@@ -46,8 +46,10 @@ bool Installer::isInstalled()
     if ( ustring.isNull() ) {
         return false;
     }
-    uninstall_exe = QDir::fromNativeSeparators(ustring.toString()) + "/" + UNINSTALLER_NAME;
+    QDir udir{QDir::fromNativeSeparators(ustring.toString())};
+    uninstall_exe = udir.absoluteFilePath(UNINSTALLER_NAME);
     if ( QFileInfo{uninstall_exe}.isFile() )
+        uninstall_name = udir.dirName();
         return true;
 
     // Check each of the EXECUTABLES:
@@ -137,6 +139,7 @@ bool Installer::isInstalled()
 bool Installer::dirHasUninstaller(QString dir)
 {
     uninstall_exe = dir + "/" + UNINSTALLER_NAME;
+    uninstall_name = QDir{dir}.dirName();
     return QFileInfo{uninstall_exe}.isFile();
 }
 
