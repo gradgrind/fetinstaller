@@ -43,14 +43,14 @@ bool Installer::isInstalled()
     }
     QString UNINFO{"Microsoft/Windows/CurrentVersion/Uninstall/" + proj};
     auto ustring = regsettings.value(UNINFO + "/UninstallLocation");
-    if ( ustring.isNull() ) {
-        return false;
+    if ( !ustring.isNull() ) {
+        QDir udir{QDir::fromNativeSeparators(ustring.toString())};
+        uninstall_exe = udir.absoluteFilePath(UNINSTALLER_NAME);
+        if ( QFileInfo{uninstall_exe}.isFile() ) {
+            uninstall_name = udir.dirName();
+            return true;
+        }
     }
-    QDir udir{QDir::fromNativeSeparators(ustring.toString())};
-    uninstall_exe = udir.absoluteFilePath(UNINSTALLER_NAME);
-    if ( QFileInfo{uninstall_exe}.isFile() )
-        uninstall_name = udir.dirName();
-        return true;
 
     // Check each of the EXECUTABLES:
     //   - Is it a batch file? No: not interesting.
