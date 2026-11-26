@@ -20,11 +20,11 @@
 
 #define UNINSTALLER_NAME "app_uninstall0.exe"
 
-/* TODO: Add executables to PATH by means of batch files (.cmd) in a PATH directory.
- * The path encoding should be UTF-8. However, there needs to be an easy way of
- * identifying the installation directory. Also, for GUI executables it might
- * be sensible to remove the "/WAIT" option, to avoid unwanted console windows.
- * That assumes of course that there is no need to wait for the GUI app to end.
+/* Command-line xecutables are added to PATH by means of batch files (.cmd) in
+ * a PATH directory, the standard one for the user. The EXEC entries in app.conf
+ * are assumed to be command-line executables if there is no "execName" field.
+ * In the script (BATCH_STARTER) there needs to be an easy way of identifying
+ * the installation directory. This is "APPBASE", which should be UTF-8.
  */
 
 static const char *BATCH_STARTER = R"(@echo off
@@ -62,15 +62,17 @@ bool Installer::isInstalled()
     // This alone is no guarantee that the uninstaller will clear the way
     // for an installation, but generally it will do.
 
-    // Collect the executable names for the start-menu test later.
-    QStringList enames;
+    QStringList enames; // collect the execNames for the start-menu test later.
     for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
         QString exec = i.key();
         QString ename = i.value().execName;
         if ( ui->versioned->isChecked() ) {
             exec += "-" + appinfo.PROJECTVERSION;
-            ename += "-" + appinfo.PROJECTVERSION;
+            if ( !ename.isEmpty() )
+                ename += "-" + appinfo.PROJECTVERSION;
         }
+        if ( !ename.isEmpty() )
+            enames.append(ename);
         QString execpath = QStandardPaths::findExecutable(exec);
         if ( !execpath.isEmpty() ) {
             // Only if this is a particularly structured ".cmd" can the
@@ -319,6 +321,8 @@ bool Installer::registerApp()
         }
     }
 
+    // Add starter scripts in PATH for command-line executables. Assume that
+    // corresponds to EXEC lines with no "execName" field.
     // Get the "standard" user entry in PATH.
     QDir cmdDir{QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)};
     cmdDir.cd("Microsoft/WindowsApps");
@@ -326,37 +330,31 @@ bool Installer::registerApp()
     {
         QString exec = i.key();
         auto execval = i.value();
-        QString desktopName{execval.execName};
-
-        // Install a batch starter in cmdDir.
         QString exec_exe{exec + execval.extension};
-        QString starter{BATCH_STARTER};
-        starter.replace("ppp", idir).replace("xxx.exe", exec_exe);
-        if ( !desktopName.isEmpty() ) {
-            // Assume that this is a GUI application and remove " /WAIT"
-            starter.replace(" /WAIT", "");
-        }
-        QString cmd_name{exec};
-        if ( ui->versioned->isChecked() ) {
-            cmd_name += "-" + appinfo.PROJECTVERSION;
-        }
-        QString outfile{cmdDir.absoluteFilePath(cmd_name + ".cmd")};
-        if ( QFileInfo::exists(outfile) ) {
-            print_line(tr("Starter exists already: %1").arg(outfile), true);
-            return false;
-        }
-        QFile file(outfile);
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream out(&file);
-            out << starter;
-            file.close();
-            localfiles.append(outfile);
-        } else {
-            print_line(tr("Couldn't write starter: %1").arg(outfile), true);
-            return false;
-        }
-
+        QString desktopName{execval.execName};
         if ( desktopName.isEmpty() ) {
+            // Install a batch starter in cmdDir.
+            QString starter{BATCH_STARTER};
+            starter.replace("ppp", idir).replace("xxx.exe", exec_exe);
+            QString cmd_name{exec};
+            if ( ui->versioned->isChecked() ) {
+                cmd_name += "-" + appinfo.PROJECTVERSION;
+            }
+            QString outfile{cmdDir.absoluteFilePath(cmd_name + ".cmd")};
+            if ( QFileInfo::exists(outfile) ) {
+                print_line(tr("Starter exists already: %1").arg(outfile), true);
+                return false;
+            }
+            QFile file(outfile);
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream out(&file);
+                out << starter;
+                file.close();
+                localfiles.append(outfile);
+            } else {
+                print_line(tr("Couldn't write starter: %1").arg(outfile), true);
+                return false;
+            }
             continue;
         }
         QString desktopPath{app_dir.absoluteFilePath(exec_exe)};

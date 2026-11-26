@@ -49,10 +49,8 @@ bool Installer::isInstalled()
     // Check each of the EXECUTABLES:
     //   - Is it a symlink? No: not interesting.
     //   - Yes: check for uninstaller in its target.
-    // Collect the executable names for the start-menu test later.
-    QStringList enames;
-    // Collect the desktop file names.
-    QStringList dnames;
+    QStringList enames; // collect the execNames for the start-menu test later
+    QStringList dnames; // collect the desktop file names.
     for (auto i = appinfo.EXECUTABLES.cbegin(), end = appinfo.EXECUTABLES.cend(); i != end; ++i) {
         QString exec = i.key();
         QString ename = i.value().execName;
